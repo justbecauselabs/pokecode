@@ -1,0 +1,26 @@
+{
+  "name": "claude-code-mobile",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Claude Code Mobile - Native mobile app for Claude Code",
+  "scripts": {
+    "dev": "pnpm run --parallel dev",
+    "dev:backend": "pnpm --filter @claude-code-mobile/backend dev",
+    "dev:mobile": "pnpm --filter @claude-code-mobile/mobile start",
+    "build": "pnpm run --recursive build",
+    "build:backend": "pnpm --filter @claude-code-mobile/backend build",
+    "test": "pnpm run --recursive test",
+    "lint": "pnpm run --recursive lint",
+    "type-check": "pnpm run --recursive type-check",
+    "clean": "pnpm run --recursive clean && rm -rf node_modules",
+    "install:all": "pnpm install"
+  },
+  "devDependencies": {
+    "@changesets/cli": "^2.27.1"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=8.0.0"
+  },
+  "packageManager": "pnpm@8.15.6"
+}
