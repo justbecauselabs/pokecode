@@ -30,16 +30,16 @@ Tests are organized in the `/tests` directory:
 
 ```bash
 # Run all tests once
-pnpm test
+bun test
 
 # Run tests in watch mode
-pnpm test:watch
+bun test:watch
 
 # Run with UI
-pnpm test:ui
+bun test:ui
 
 # Run with coverage
-pnpm test:coverage
+bun test:coverage
 ```
 
 ## Unit Testing

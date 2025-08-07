@@ -203,12 +203,12 @@ git checkout -b release/v1.2.0
 
 ```bash
 # Update version in package.json
-npm version minor  # or major/patch
+bun version minor  # or major/patch
 
 # Update CHANGELOG.md
 # Run final tests
-pnpm test
-pnpm build
+bun test
+bun build
 
 # Commit changes
 git add .
@@ -358,17 +358,17 @@ Always run before pushing:
 
 ```bash
 # Format and lint
-pnpm format
-pnpm lint:fix
+bun format
+bun lint:fix
 
 # Run tests
-pnpm test
+bun test
 
 # Type check
-pnpm type-check
+bun type-check
 
 # Build check
-pnpm build
+bun build
 ```
 
 ### 4. Security Practices
@@ -396,13 +396,13 @@ Create `.husky/pre-commit`:
 . "$(dirname "$0")/_/husky.sh"
 
 # Run linting
-pnpm lint:fix
+bun lint:fix
 
 # Run type checking
-pnpm type-check
+bun type-check
 
 # Run tests for changed files
-pnpm test:related
+bun test:related
 ```
 
 ### Commit Message Hook
@@ -414,7 +414,7 @@ Create `.husky/commit-msg`:
 . "$(dirname "$0")/_/husky.sh"
 
 # Validate commit message format
-npx commitlint --edit $1
+bunx commitlint --edit $1
 ```
 
 ## Troubleshooting
@@ -484,12 +484,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: pnpm/action-setup@v2
-      - run: pnpm install
-      - run: pnpm lint
-      - run: pnpm type-check
-      - run: pnpm test:coverage
-      - run: pnpm build
+      - uses: bun/action-setup@v2
+      - run: bun install
+      - run: bun lint
+      - run: bun type-check
+      - run: bun test:coverage
+      - run: bun build
 ```
 
 ### Protected Branch Rules

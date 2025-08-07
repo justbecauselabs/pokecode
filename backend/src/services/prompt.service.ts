@@ -48,7 +48,7 @@ export class PromptService {
     );
 
     // Update last accessed time for session
-    await db.update(sessions).set({ lastAccessedAt: new Date() }).where(eq(sessions.id, sessionId));
+    await db.update(sessions).set({ lastAccessedAt: sql`CURRENT_TIMESTAMP` }).where(eq(sessions.id, sessionId));
 
     return this.formatPrompt(prompt);
   }

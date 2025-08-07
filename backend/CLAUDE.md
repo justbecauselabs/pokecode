@@ -133,25 +133,25 @@ Version control best practices and workflows.
 
 ```bash
 # Install dependencies
-pnpm install
+bun install
 
 # Start development server
-pnpm dev
+bun dev
 
 # Run tests
-pnpm test
+bun test
 
 # Run migrations
-pnpm migrate
+bun migrate
 
 # Open database studio
-pnpm migrate:studio
+bun migrate:studio
 
 # Check types
-pnpm type-check
+bun type-check
 
 # Format and lint
-pnpm format && pnpm lint:fix
+bun format && bun lint:fix
 ```
 
 ## Key Technologies

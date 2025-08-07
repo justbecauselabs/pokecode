@@ -55,7 +55,7 @@ export type NewUser = typeof users.$inferInsert;
 After modifying schema files, generate a migration:
 
 ```bash
-pnpm migrate:generate
+bun migrate:generate
 ```
 
 This creates a new migration file in the `/drizzle` directory.
@@ -65,7 +65,7 @@ This creates a new migration file in the `/drizzle` directory.
 Apply pending migrations to the database:
 
 ```bash
-pnpm migrate
+bun migrate
 ```
 
 Or use the migration script directly:
@@ -82,7 +82,7 @@ await migrate(db, { migrationsFolder: './drizzle' });
 For rapid development, push schema changes directly without migrations:
 
 ```bash
-pnpm migrate:push
+bun migrate:push
 ```
 
 ⚠️ **Warning**: Only use in development. This can cause data loss.
@@ -92,7 +92,7 @@ pnpm migrate:push
 Explore your database with Drizzle Studio:
 
 ```bash
-pnpm migrate:studio
+bun migrate:studio
 ```
 
 ## CRUD Operations

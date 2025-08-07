@@ -4,22 +4,23 @@
   "description": "Claude Code Mobile Backend API",
   "main": "dist/server.js",
   "scripts": {
-    "dev": "tsx watch src/server.ts",
-    "build": "tsc",
-    "start": "node dist/server.js",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "test:ui": "vitest --ui",
-    "test:coverage": "vitest run --coverage",
-    "lint": "biome check .",
-    "lint:fix": "biome check --write .",
-    "format": "biome format --write .",
-    "type-check": "tsc --noEmit",
-    "migrate": "tsx scripts/migrate.ts",
-    "migrate:generate": "drizzle-kit generate:pg",
-    "migrate:push": "drizzle-kit push:pg",
-    "migrate:studio": "drizzle-kit studio",
-    "seed": "tsx scripts/seed.ts"
+    "dev": "bun --watch src/server.ts",
+    "build": "bun build src/server.ts --target=bun --outdir=dist",
+    "start": "bun run dist/server.js",
+    "test": "bun test",
+    "test:watch": "bun test --watch",
+    "test:coverage": "bun test --coverage",
+    "test:e2e": "bun run scripts/e2e-test.ts",
+    "test:e2e:local": "API_URL=http://localhost:3000 bun run scripts/e2e-test.ts",
+    "lint": "bunx @biomejs/biome check .",
+    "lint:fix": "bunx @biomejs/biome check --write .",
+    "format": "bunx @biomejs/biome format --write .",
+    "type-check": "bunx tsc --noEmit",
+    "migrate": "bun run scripts/migrate.ts",
+    "migrate:generate": "bunx drizzle-kit generate:pg",
+    "migrate:push": "bunx drizzle-kit push:pg",
+    "migrate:studio": "bunx drizzle-kit studio",
+    "seed": "bun run scripts/seed.ts"
   },
   "dependencies": {
     "@fastify/autoload": "^5.10.0",
@@ -31,6 +32,8 @@
     "@fastify/swagger-ui": "^3.0.0",
     "@fastify/type-provider-typebox": "^4.0.0",
     "@sinclair/typebox": "^0.32.31",
+    "@types/bcryptjs": "^3.0.0",
+    "bcryptjs": "^3.0.2",
     "bullmq": "^5.7.0",
     "drizzle-orm": "^0.30.10",
     "fastify": "^4.27.0",
@@ -44,19 +47,15 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^2.1.3",
+    "@types/bun": "latest",
+    "@types/eventsource": "^1.1.15",
     "@types/jsonwebtoken": "^9.0.6",
-    "@types/node": "^20.12.12",
-    "@vitest/coverage-v8": "^1.6.0",
-    "@vitest/ui": "^1.6.0",
-    "dotenv": "^17.2.1",
+    "chalk": "^5.3.0",
     "drizzle-kit": "^0.21.2",
-    "tsx": "^4.11.0",
-    "typescript": "^5.4.5",
-    "vitest": "^1.6.0"
+    "eventsource": "^2.0.2",
+    "typescript": "^5.4.5"
   },
   "engines": {
-    "node": ">=20.0.0",
-    "pnpm": ">=8.0.0"
-  },
-  "packageManager": "pnpm@8.15.6"
+    "bun": ">=1.0.0"
+  }
 }

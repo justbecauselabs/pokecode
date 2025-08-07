@@ -4,23 +4,21 @@
   "private": true,
   "description": "Claude Code Mobile - Native mobile app for Claude Code",
   "scripts": {
-    "dev": "pnpm run --parallel dev",
-    "dev:backend": "pnpm --filter @claude-code-mobile/backend dev",
-    "dev:mobile": "pnpm --filter @claude-code-mobile/mobile start",
-    "build": "pnpm run --recursive build",
-    "build:backend": "pnpm --filter @claude-code-mobile/backend build",
-    "test": "pnpm run --recursive test",
-    "lint": "pnpm run --recursive lint",
-    "type-check": "pnpm run --recursive type-check",
-    "clean": "pnpm run --recursive clean && rm -rf node_modules",
-    "install:all": "pnpm install"
+    "dev": "bun run dev:backend & bun run dev:mobile",
+    "dev:backend": "cd backend && bun dev",
+    "dev:mobile": "cd mobile && bun start",
+    "build": "cd backend && bun build && cd ../mobile && bun prebuild",
+    "build:backend": "cd backend && bun build",
+    "test": "cd backend && bun test && cd ../mobile && bun test",
+    "lint": "cd backend && bun lint && cd ../mobile && bun lint",
+    "type-check": "cd backend && bun type-check && cd ../mobile && bun type-check",
+    "clean": "rm -rf backend/node_modules mobile/node_modules node_modules",
+    "install:all": "bun install && cd backend && bun install && cd ../mobile && bun install"
   },
   "devDependencies": {
     "@changesets/cli": "^2.27.1"
   },
   "engines": {
-    "node": ">=18.0.0",
-    "pnpm": ">=8.0.0"
-  },
-  "packageManager": "pnpm@8.15.6"
+    "bun": ">=1.0.0"
+  }
 }

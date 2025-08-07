@@ -87,6 +87,7 @@ export async function refreshAuthToken(): Promise<string | null> {
 
     // TODO: Implement actual refresh logic with API
     // This is a placeholder - implement your refresh endpoint call
+    // @ts-ignore - Expo provides process.env at build time
     const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/auth/refresh`, {
       method: 'POST',
       headers: {

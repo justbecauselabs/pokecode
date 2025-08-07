@@ -12,7 +12,7 @@ This is a monorepo containing:
 ## Prerequisites
 
 - Node.js >= 18.0.0
-- pnpm >= 8.0.0
+- bun >= 1.0.0
 - PostgreSQL
 - Redis
 - iOS Simulator (for iOS development)
@@ -22,7 +22,7 @@ This is a monorepo containing:
 
 1. **Install dependencies:**
    ```bash
-   pnpm install
+   bun install
    ```
 
 2. **Set up environment variables:**
@@ -38,17 +38,17 @@ This is a monorepo containing:
 
 3. **Run database migrations:**
    ```bash
-   pnpm --filter @claude-code-mobile/backend migrate
+   bun --filter @claude-code-mobile/backend migrate
    ```
 
 4. **Start development servers:**
    ```bash
    # Start both backend and mobile
-   pnpm dev
+   bun dev
 
    # Or start individually
-   pnpm dev:backend  # Backend on http://localhost:3001
-   pnpm dev:mobile   # Mobile with Expo
+   bun dev:backend  # Backend on http://localhost:3001
+   bun dev:mobile   # Mobile with Expo
    ```
 
 ## Development
@@ -65,9 +65,9 @@ The backend provides:
 
 ```bash
 cd backend
-pnpm dev        # Start development server
-pnpm test       # Run tests
-pnpm build      # Build for production
+bun dev        # Start development server
+bun test       # Run tests
+bun build      # Build for production
 ```
 
 API documentation available at: http://localhost:3001/docs
@@ -84,9 +84,9 @@ The mobile app features:
 
 ```bash
 cd mobile
-pnpm start      # Start Expo development server
-pnpm ios        # Run on iOS simulator
-pnpm android    # Run on Android emulator
+bun start      # Start Expo development server
+bun ios        # Run on iOS simulator
+bun android    # Run on Android emulator
 ```
 
 ## Architecture
@@ -108,36 +108,36 @@ pnpm android    # Run on Android emulator
 ## Scripts
 
 ### Root Commands
-- `pnpm dev` - Start all services in development mode
-- `pnpm build` - Build all packages
-- `pnpm test` - Run all tests
-- `pnpm lint` - Lint all packages
-- `pnpm type-check` - Type check all packages
+- `bun dev` - Start all services in development mode
+- `bun build` - Build all packages
+- `bun test` - Run all tests
+- `bun lint` - Lint all packages
+- `bun type-check` - Type check all packages
 
 ### Backend Commands
-- `pnpm dev:backend` - Start backend development server
-- `pnpm --filter @claude-code-mobile/backend migrate` - Run database migrations
-- `pnpm --filter @claude-code-mobile/backend test` - Run backend tests
+- `bun dev:backend` - Start backend development server
+- `bun --filter @claude-code-mobile/backend migrate` - Run database migrations
+- `bun --filter @claude-code-mobile/backend test` - Run backend tests
 
 ### Mobile Commands
-- `pnpm dev:mobile` - Start Expo development server
-- `pnpm --filter @claude-code-mobile/mobile ios` - Run on iOS
-- `pnpm --filter @claude-code-mobile/mobile android` - Run on Android
+- `bun dev:mobile` - Start Expo development server
+- `bun --filter @claude-code-mobile/mobile ios` - Run on iOS
+- `bun --filter @claude-code-mobile/mobile android` - Run on Android
 
 ## Testing
 
 ### Backend Testing
 ```bash
 cd backend
-pnpm test        # Run unit tests
-pnpm test:ui     # Run tests with UI
-pnpm test:coverage  # Generate coverage report
+bun test        # Run unit tests
+bun test:ui     # Run tests with UI
+bun test:coverage  # Generate coverage report
 ```
 
 ### Mobile Testing
 ```bash
 cd mobile
-pnpm test        # Run Jest tests
+bun test        # Run Jest tests
 ```
 
 ## Deployment
@@ -156,7 +156,7 @@ Use EAS Build for creating production builds:
 
 ```bash
 cd mobile
-pnpm eas:build:production
+bun eas:build:production
 ```
 
 ## Contributing

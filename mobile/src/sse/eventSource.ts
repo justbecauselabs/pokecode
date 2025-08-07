@@ -9,7 +9,7 @@ interface SSEOptions {
 }
 
 export class ClaudeCodeSSE {
-  private eventSource: EventSource | null = null;
+  private eventSource: any = null; // EventSource not available in React Native
   private controller: AbortController | null = null;
 
   async connect(sessionId: string, promptId: string, options: SSEOptions) {
@@ -39,12 +39,17 @@ export class ClaudeCodeSSE {
         throw new Error(`SSE connection failed: ${response.status}`);
       }
 
+      // @ts-ignore - Response.body exists in React Native
       const reader = response.body?.getReader();
       if (!reader) {
         throw new Error('No response body reader');
       }
 
-      const decoder = new TextDecoder();
+      // TextDecoder polyfill for React Native
+      // @ts-ignore - TextDecoder may not be available in all environments
+      const decoder = typeof TextDecoder !== 'undefined' 
+        ? new (TextDecoder as any)() 
+        : { decode: (value: Uint8Array) => String.fromCharCode.apply(null, Array.from(value)) };
       let buffer = '';
 
       while (true) {

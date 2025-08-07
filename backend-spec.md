@@ -1344,14 +1344,14 @@ WORKDIR /app
 # Dependencies
 FROM base AS deps
 COPY package*.json ./
-RUN npm ci --only=production
+RUN bun install --production
 
 # Build
 FROM base AS builder
 COPY package*.json ./
-RUN npm ci
+RUN bun install
 COPY . .
-RUN npm run build
+RUN bun run build
 
 # Runtime
 FROM base AS runner

@@ -17,7 +17,7 @@ Fastify-based API server for Claude Code Mobile application.
 
 1. **Install dependencies:**
    ```bash
-   pnpm install
+   bun install
    ```
 
 2. **Configure environment:**
@@ -28,12 +28,12 @@ Fastify-based API server for Claude Code Mobile application.
 
 3. **Run database migrations:**
    ```bash
-   pnpm migrate
+   bun migrate
    ```
 
 4. **Start development server:**
    ```bash
-   pnpm dev
+   bun dev
    ```
 
 ## API Documentation
@@ -81,23 +81,23 @@ The application uses PostgreSQL with the following main tables:
 
 ```bash
 # Run unit tests
-pnpm test
+bun test
 
 # Run tests with UI
-pnpm test:ui
+bun test:ui
 
 # Generate coverage report
-pnpm test:coverage
+bun test:coverage
 ```
 
 ## Production Build
 
 ```bash
 # Build TypeScript
-pnpm build
+bun build
 
 # Run production server
-pnpm start
+bun start
 ```
 
 ## Docker Deployment

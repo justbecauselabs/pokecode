@@ -16,7 +16,7 @@ React Native Expo application for Claude Code - AI-powered coding assistant on m
 
 1. **Install dependencies:**
    ```bash
-   pnpm install
+   bun install
    ```
 
 2. **Configure environment:**
@@ -27,13 +27,13 @@ React Native Expo application for Claude Code - AI-powered coding assistant on m
 
 3. **Start development:**
    ```bash
-   pnpm start
+   bun start
    ```
 
 4. **Run on devices:**
    ```bash
-   pnpm ios      # iOS Simulator
-   pnpm android  # Android Emulator
+   bun ios      # iOS Simulator
+   bun android  # Android Emulator
    ```
 
 ## Project Structure
@@ -76,34 +76,34 @@ mobile/
 
 ### Running Tests
 ```bash
-pnpm test
+bun test
 ```
 
 ### Type Checking
 ```bash
-pnpm type-check
+bun type-check
 ```
 
 ### Linting
 ```bash
-pnpm lint
+bun lint
 ```
 
 ## Building for Production
 
 ### Preview Builds
 ```bash
-pnpm eas:build:preview
+bun eas:build:preview
 ```
 
 ### Production Builds
 ```bash
-pnpm eas:build:production
+bun eas:build:production
 ```
 
 ### Local Builds
 ```bash
-pnpm prebuild
+bun prebuild
 ```
 
 ## Performance Optimizations
@@ -131,13 +131,13 @@ pnpm prebuild
 
 ### Clear Cache
 ```bash
-pnpm start --clear
+bun start --clear
 ```
 
 ### Reset Metro
 ```bash
 rm -rf .expo
-pnpm start
+bun start
 ```
 
 ### iOS Issues

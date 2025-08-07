@@ -42,7 +42,7 @@ export class SessionService {
     }
 
     // Update last accessed timestamp
-    await db.update(sessions).set({ lastAccessedAt: new Date() }).where(eq(sessions.id, sessionId));
+    await db.update(sessions).set({ lastAccessedAt: sql`CURRENT_TIMESTAMP` }).where(eq(sessions.id, sessionId));
 
     return this.formatSession(session);
   }
@@ -105,7 +105,7 @@ export class SessionService {
 
     // Update session
     const updateData: any = {
-      updatedAt: new Date(),
+      updatedAt: sql`CURRENT_TIMESTAMP`,
     };
 
     if (data.context !== undefined) {

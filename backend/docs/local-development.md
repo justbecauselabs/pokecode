@@ -5,7 +5,7 @@ This guide covers setting up and running the Claude Code Mobile backend for loca
 ## Prerequisites
 
 - Node.js >= 20.0.0
-- pnpm >= 8.0.0
+- bun >= 8.0.0
 - PostgreSQL (local or Docker)
 - Redis (local or Docker)
 
@@ -14,7 +14,7 @@ This guide covers setting up and running the Claude Code Mobile backend for loca
 ### 1. Install Dependencies
 
 ```bash
-pnpm install
+bun install
 ```
 
 ### 2. Environment Configuration
@@ -101,13 +101,13 @@ sudo systemctl start postgresql redis
 
 ```bash
 # Generate migration files from schema
-pnpm migrate:generate
+bun migrate:generate
 
 # Apply migrations to database
-pnpm migrate
+bun migrate
 
 # Or push schema directly (development only)
-pnpm migrate:push
+bun migrate:push
 ```
 
 ## Development Workflow
@@ -115,7 +115,7 @@ pnpm migrate:push
 ### Start Development Server
 
 ```bash
-pnpm dev
+bun dev
 ```
 
 This starts the server with hot-reload using `tsx watch`. The server will restart automatically when you make changes.
@@ -124,28 +124,28 @@ This starts the server with hot-reload using `tsx watch`. The server will restar
 
 ```bash
 # Development
-pnpm dev              # Start dev server with hot-reload
-pnpm build            # Build TypeScript to JavaScript
-pnpm start            # Start production server
+bun dev              # Start dev server with hot-reload
+bun build            # Build TypeScript to JavaScript
+bun start            # Start production server
 
 # Database
-pnpm migrate          # Run migrations
-pnpm migrate:generate # Generate new migration
-pnpm migrate:push     # Push schema changes (dev only)
-pnpm migrate:studio   # Open Drizzle Studio
-pnpm seed            # Seed database with test data
+bun migrate          # Run migrations
+bun migrate:generate # Generate new migration
+bun migrate:push     # Push schema changes (dev only)
+bun migrate:studio   # Open Drizzle Studio
+bun seed            # Seed database with test data
 
 # Testing
-pnpm test            # Run tests once
-pnpm test:watch      # Run tests in watch mode
-pnpm test:ui         # Open Vitest UI
-pnpm test:coverage   # Run tests with coverage
+bun test            # Run tests once
+bun test:watch      # Run tests in watch mode
+bun test:ui         # Open Vitest UI
+bun test:coverage   # Run tests with coverage
 
 # Code Quality
-pnpm lint            # Check code with Biome
-pnpm lint:fix        # Fix linting issues
-pnpm format          # Format code with Biome
-pnpm type-check      # Check TypeScript types
+bun lint            # Check code with Biome
+bun lint:fix        # Fix linting issues
+bun format          # Format code with Biome
+bun type-check      # Check TypeScript types
 ```
 
 ## Development Tools
@@ -163,7 +163,7 @@ http://localhost:3000/documentation
 Use Drizzle Studio to explore your database:
 
 ```bash
-pnpm migrate:studio
+bun migrate:studio
 ```
 
 Opens at: http://localhost:4983
@@ -192,7 +192,7 @@ Create `.vscode/launch.json`:
       "type": "node",
       "request": "launch",
       "name": "Debug Backend",
-      "runtimeExecutable": "pnpm",
+      "runtimeExecutable": "bun",
       "runtimeArgs": ["dev"],
       "skipFiles": ["<node_internals>/**"],
       "outFiles": ["${workspaceFolder}/dist/**/*.js"],
@@ -204,7 +204,7 @@ Create `.vscode/launch.json`:
       "type": "node",
       "request": "launch",
       "name": "Debug Tests",
-      "runtimeExecutable": "pnpm",
+      "runtimeExecutable": "bun",
       "runtimeArgs": ["test:watch"],
       "skipFiles": ["<node_internals>/**"],
       "console": "integratedTerminal"
@@ -288,8 +288,8 @@ export * from './examples';
 3. Generate and run migration:
 
 ```bash
-pnpm migrate:generate
-pnpm migrate
+bun migrate:generate
+bun migrate
 ```
 
 ### Creating a Service
@@ -360,7 +360,7 @@ async function seed() {
 seed().catch(console.error);
 ```
 
-Run with: `pnpm seed`
+Run with: `bun seed`
 
 ## Troubleshooting
 
@@ -406,7 +406,7 @@ redis-cli monitor
 rm -rf dist/
 
 # Check types without building
-pnpm type-check
+bun type-check
 
 # Restart TS server in VS Code
 Cmd+Shift+P > "TypeScript: Restart TS Server"
@@ -416,7 +416,7 @@ Cmd+Shift+P > "TypeScript: Restart TS Server"
 
 ```bash
 # Check migration status
-pnpm migrate:studio
+bun migrate:studio
 
 # Rollback last migration (if needed)
 # Note: Drizzle doesn't have built-in rollback
@@ -425,7 +425,7 @@ pnpm migrate:studio
 # Reset database (CAUTION: Data loss!)
 DROP SCHEMA public CASCADE;
 CREATE SCHEMA public;
-pnpm migrate
+bun migrate
 ```
 
 ## Performance Tips
@@ -437,7 +437,7 @@ pnpm migrate
 ```json
 {
   "scripts": {
-    "dev:all": "concurrently \"pnpm dev\" \"pnpm migrate:studio\""
+    "dev:all": "concurrently \"bun dev\" \"bun migrate:studio\""
   }
 }
 ```
@@ -467,11 +467,11 @@ Recommended extensions for development:
 Set up pre-commit hooks with Husky:
 
 ```bash
-pnpm add -D husky lint-staged
-pnpm husky init
+bun add -D husky lint-staged
+bun husky init
 
 # Add to .husky/pre-commit
-pnpm lint-staged
+bun lint-staged
 ```
 
 Configure in package.json:
@@ -479,8 +479,8 @@ Configure in package.json:
 ```json
 {
   "lint-staged": {
-    "*.{ts,js}": ["pnpm lint:fix", "pnpm type-check"],
-    "*.{json,md}": ["pnpm format"]
+    "*.{ts,js}": ["bun lint:fix", "bun type-check"],
+    "*.{json,md}": ["bun format"]
   }
 }
 ```
