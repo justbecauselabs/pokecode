@@ -6,6 +6,7 @@ export const users = pgTable(
     id: text('id').primaryKey(), // JWT sub claim
     email: text('email').notNull().unique(),
     name: text('name'),
+    passwordHash: text('password_hash'),
     refreshToken: text('refresh_token'),
     metadata: jsonb('metadata').$type<{
       preferences?: Record<string, any>;

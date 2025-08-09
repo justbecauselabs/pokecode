@@ -7,16 +7,50 @@ import {
   LogoutResponseSchema,
   RefreshRequestSchema,
   RefreshResponseSchema,
+  RegisterRequestSchema,
+  RegisterResponseSchema,
 } from '@/schemas/auth.schema';
 import { authService } from '@/services/auth.service';
 
 const authRoutes: FastifyPluginAsync = async (fastify) => {
+  // Register endpoint
+  fastify.post<{
+    Body: import('@/schemas/auth.schema').RegisterRequest;
+  }>(
+    '/register',
+    {
+      config: { rateLimit: { max: 5, timeWindow: '1 minute' } },
+      schema: {
+        body: RegisterRequestSchema,
+        response: {
+          201: RegisterResponseSchema,
+          400: ErrorResponseSchema,
+          409: ErrorResponseSchema,
+        },
+      },
+    },
+    async (request, reply) => {
+      const { email, password, name } = request.body;
+      try {
+        const result = await authService.register(email, password, name);
+        return reply.code(201).send(result);
+      } catch (error: any) {
+        const msg = error?.message || 'Registration failed';
+        const code = msg.includes('registered') ? 409 : 400;
+        return reply
+          .code(code)
+          .send({ error: msg, code: code === 409 ? 'ALREADY_REGISTERED' : 'REGISTER_FAILED' });
+      }
+    },
+  );
+
   // Login endpoint
   fastify.post<{
     Body: Static<typeof LoginRequestSchema>;
   }>(
     '/login',
     {
+      config: { rateLimit: { max: 10, timeWindow: '1 minute' } },
       schema: {
         body: LoginRequestSchema,
         response: {
@@ -46,6 +80,7 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
   }>(
     '/refresh',
     {
+      config: { rateLimit: { max: 30, timeWindow: '1 minute' } },
       schema: {
         body: RefreshRequestSchema,
         response: {

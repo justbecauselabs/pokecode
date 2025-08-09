@@ -1,4 +1,5 @@
 import crypto from 'node:crypto';
+import bcrypt from 'bcryptjs';
 import { eq } from 'drizzle-orm';
 import { db } from '@/db';
 import { users } from '@/db/schema';
@@ -6,24 +7,59 @@ import { AuthenticationError } from '@/types';
 import { jwtService } from '@/utils/jwt';
 
 export class AuthService {
-  async login(email: string, _password: string) {
-    // For demo purposes, we'll create a user if they don't exist
-    // In production, you'd verify the password against a hash
-    let user = await db.query.users.findFirst({
-      where: eq(users.email, email),
+  async register(email: string, password: string, name?: string) {
+    // Check if user exists
+    const existing = await db.query.users.findFirst({ where: eq(users.email, email) });
+    if (existing) {
+      throw new AuthenticationError('Email already registered');
+    }
+
+    const userId = crypto.randomUUID();
+    const passwordHash = await bcrypt.hash(password, 10);
+
+    const [user] = await db
+      .insert(users)
+      .values({
+        id: userId,
+        email,
+        name: name || email.split('@')[0],
+        passwordHash,
+      })
+      .returning();
+
+    const { accessToken, refreshToken } = jwtService.generateTokenPair({
+      sub: user.id,
+      email: user.email,
     });
 
-    if (!user) {
-      // Create new user
-      const userId = crypto.randomUUID();
-      [user] = await db
-        .insert(users)
-        .values({
-          id: userId,
-          email,
-          name: email.split('@')[0],
-        })
-        .returning();
+    await db
+      .update(users)
+      .set({
+        refreshToken,
+        lastLoginAt: new Date(),
+      })
+      .where(eq(users.id, user.id));
+
+    return {
+      accessToken,
+      refreshToken,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+      },
+    };
+  }
+
+  async login(email: string, _password: string) {
+    // Verify user exists and password matches
+    const user = await db.query.users.findFirst({ where: eq(users.email, email) });
+    if (!user || !user.passwordHash) {
+      throw new AuthenticationError('Invalid email or password');
+    }
+    const ok = await bcrypt.compare(_password, user.passwordHash);
+    if (!ok) {
+      throw new AuthenticationError('Invalid email or password');
     }
 
     // Generate token pair
@@ -54,7 +90,7 @@ export class AuthService {
 
   async refresh(refreshToken: string) {
     // Verify refresh token
-    let payload;
+    let payload: import('@/types').TokenPayload;
     try {
       payload = jwtService.verifyRefreshToken(refreshToken);
     } catch (_error) {

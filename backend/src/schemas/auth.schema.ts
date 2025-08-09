@@ -31,6 +31,15 @@ export const LogoutResponseSchema = Type.Object({
   success: Type.Boolean(),
 });
 
+// Register schemas
+export const RegisterRequestSchema = Type.Object({
+  email: Type.String({ format: 'email' }),
+  password: Type.String({ minLength: 6 }),
+  name: Type.Optional(Type.String()),
+});
+
+export const RegisterResponseSchema = LoginResponseSchema;
+
 // Error response schema
 export const ErrorResponseSchema = Type.Object({
   error: Type.String(),
@@ -44,4 +53,6 @@ export type LoginResponse = Static<typeof LoginResponseSchema>;
 export type RefreshRequest = Static<typeof RefreshRequestSchema>;
 export type RefreshResponse = Static<typeof RefreshResponseSchema>;
 export type LogoutResponse = Static<typeof LogoutResponseSchema>;
+export type RegisterRequest = Static<typeof RegisterRequestSchema>;
+export type RegisterResponse = Static<typeof RegisterResponseSchema>;
 export type ErrorResponse = Static<typeof ErrorResponseSchema>;

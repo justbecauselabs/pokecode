@@ -1,12 +1,19 @@
 import type { TypeBoxTypeProvider } from '@fastify/type-provider-typebox';
 import Fastify from 'fastify';
 import { app } from './app';
-import { config, serverConfig } from './config';
+import { config } from './config';
+import { logger } from './utils/logger';
 
 // Create Fastify instance with TypeBox
 const server = Fastify({
-  logger: serverConfig.logger,
-  ajv: serverConfig.ajv,
+  logger,
+  ajv: {
+    customOptions: {
+      removeAdditional: 'all' as const,
+      coerceTypes: true,
+      useDefaults: true,
+    },
+  },
   trustProxy: true,
   requestIdHeader: 'x-request-id',
   requestIdLogLabel: 'reqId',
@@ -28,7 +35,7 @@ signals.forEach((signal) => {
       server.log.info('Server closed successfully');
       process.exit(0);
     } catch (err) {
-      server.log.error('Error during shutdown:', err);
+      server.log.error(err, 'Error during shutdown');
       process.exit(1);
     }
   });
@@ -49,8 +56,8 @@ process.on('unhandledRejection', (reason, promise) => {
 const start = async () => {
   try {
     await server.listen({
-      port: serverConfig.port,
-      host: serverConfig.host,
+      port: config.PORT,
+      host: '0.0.0.0',
     });
 
     const address = server.server.address();
@@ -59,9 +66,9 @@ const start = async () => {
     server.log.info(`
 🚀 Claude Code Mobile API Server Started
 📍 Environment: ${config.NODE_ENV}
-🌐 Server: http://${serverConfig.host}:${port}
-📚 API Docs: http://${serverConfig.host}:${port}/docs
-🏥 Health: http://${serverConfig.host}:${port}/health
+🌐 Server: http://0.0.0.0:${port}
+📚 API Docs: http://0.0.0.0:${port}/docs
+🏥 Health: http://0.0.0.0:${port}/health
     `);
   } catch (err) {
     server.log.error(err);

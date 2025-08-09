@@ -133,18 +133,16 @@ fastify.get('/', {
 
 ## Error Handling
 
-Use the custom error utilities:
+Use typed API errors from `@/types`:
 
 ```typescript
-import { createError } from '@/utils/errors';
+import { NotFoundError } from '@/types';
 
 fastify.get('/:id', async (request, reply) => {
   const item = await findItem(request.params.id);
-  
   if (!item) {
-    throw createError('NOT_FOUND', 'Item not found');
+    throw new NotFoundError('Item');
   }
-  
   return item;
 });
 ```

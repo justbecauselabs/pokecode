@@ -5,6 +5,7 @@ import rateLimitPlugin from './hooks/rate-limit.hook';
 import authPlugin from './plugins/auth';
 import corsPlugin from './plugins/cors';
 import errorHandlerPlugin from './plugins/error-handler';
+import requestLoggerPlugin from './plugins/request-logger';
 import swaggerPlugin from './plugins/swagger';
 import authRoutes from './routes/auth';
 // Import routes
@@ -22,6 +23,7 @@ export const app: FastifyPluginAsync = async (fastify, _opts) => {
   // Register plugins in order
   await fastify.register(errorHandlerPlugin);
   await fastify.register(corsPlugin);
+  await fastify.register(requestLoggerPlugin);
   await fastify.register(swaggerPlugin);
   await fastify.register(authPlugin);
   await fastify.register(rateLimitPlugin);

@@ -7,27 +7,21 @@ import type { FileInfo, GetFileResponse } from '@/schemas/file.schema';
 import { AuthorizationError, ConflictError, NotFoundError, ValidationError } from '@/types';
 
 export class FileService {
-  private readonly baseDir: string;
-
-  constructor() {
-    this.baseDir = fileStorageConfig.basePath;
-  }
-
   async validatePath(sessionPath: string, requestedPath: string): Promise<string> {
-    // Normalize paths
+    // Normalize the requested path (must be relative to project root)
     const normalizedPath = path.normalize(requestedPath);
 
-    // Prevent path traversal
-    if (normalizedPath.includes('..') || normalizedPath.startsWith('/')) {
+    // Prevent path traversal or absolute requested paths
+    if (normalizedPath.includes('..') || path.isAbsolute(normalizedPath)) {
       throw new ValidationError('Invalid file path');
     }
 
-    // Resolve full path
-    const resolvedBase = path.resolve(this.baseDir, sessionPath);
+    // Resolve base (sessionPath is expected to be an absolute project path)
+    const resolvedBase = path.resolve(sessionPath);
     const resolvedPath = path.resolve(resolvedBase, normalizedPath);
 
     // Ensure requested path is within session directory
-    if (!resolvedPath.startsWith(resolvedBase)) {
+    if (!resolvedPath.startsWith(resolvedBase + path.sep) && resolvedPath !== resolvedBase) {
       throw new AuthorizationError('Path traversal attempt detected');
     }
 
@@ -56,7 +50,8 @@ export class FileService {
     }
 
     const files: FileInfo[] = [];
-    await this.scanDirectory(validPath, sessionPath, files, options);
+    const baseAbs = path.resolve(sessionPath);
+    await this.scanDirectory(validPath, baseAbs, files, options);
 
     // Log file access
     await this.logFileAccess(sessionId, dirPath, 'read');
@@ -69,7 +64,7 @@ export class FileService {
 
   private async scanDirectory(
     dirPath: string,
-    basePath: string,
+    baseAbs: string,
     files: FileInfo[],
     options: { recursive?: boolean; pattern?: string },
   ) {
@@ -77,7 +72,7 @@ export class FileService {
 
     for (const entry of entries) {
       const fullPath = path.join(dirPath, entry.name);
-      const relativePath = path.relative(path.join(this.baseDir, basePath), fullPath);
+      const relativePath = path.relative(baseAbs, fullPath);
 
       // Skip hidden files and common ignore patterns
       if (this.shouldIgnoreFile(entry.name)) {
@@ -97,7 +92,7 @@ export class FileService {
         });
 
         if (options.recursive) {
-          await this.scanDirectory(fullPath, basePath, files, options);
+          await this.scanDirectory(fullPath, baseAbs, files, options);
         }
       } else if (entry.isFile()) {
         const stats = await fs.stat(fullPath);

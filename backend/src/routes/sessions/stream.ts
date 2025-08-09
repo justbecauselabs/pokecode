@@ -62,8 +62,18 @@ const streamRoute: FastifyPluginAsync = async (fastify) => {
       // Subscribe to Redis channel
       await redis.subscribe(channel);
 
+      // Helper function for Redis cleanup
+      const cleanupRedis = async () => {
+        try {
+          await redis.unsubscribe(channel);
+          await redis.quit();
+        } catch (error) {
+          fastify.log.warn('Redis cleanup error:', error);
+        }
+      };
+
       // Handle Redis messages
-      redis.on('message', (receivedChannel, message) => {
+      redis.on('message', async (receivedChannel, message) => {
         if (receivedChannel === channel) {
           try {
             const event = JSON.parse(message);
@@ -74,20 +84,20 @@ const streamRoute: FastifyPluginAsync = async (fastify) => {
 
             // End stream on completion or error
             if (event.type === 'complete' || event.type === 'error') {
-              redis.unsubscribe(channel);
-              redis.quit();
+              await cleanupRedis();
               reply.raw.end();
             }
           } catch (error) {
             fastify.log.error('Error parsing Redis message:', error);
+            await cleanupRedis();
+            reply.raw.end();
           }
         }
       });
 
       // Handle client disconnect
-      request.raw.on('close', () => {
-        redis.unsubscribe(channel);
-        redis.quit();
+      request.raw.on('close', async () => {
+        await cleanupRedis();
 
         // Log disconnect
         fastify.log.info(`Client disconnected from stream: ${promptId}`);
@@ -108,15 +118,19 @@ const streamRoute: FastifyPluginAsync = async (fastify) => {
       });
 
       // Handle Redis errors
-      redis.on('error', (error) => {
+      redis.on('error', async (error) => {
         fastify.log.error('Redis error in stream:', error);
-        reply.raw.write(
-          `event: error\ndata: ${JSON.stringify({
-            error: 'Stream error',
-            timestamp: new Date().toISOString(),
-          })}\n\n`,
-        );
-        redis.quit();
+        try {
+          reply.raw.write(
+            `event: error\ndata: ${JSON.stringify({
+              error: 'Stream error',
+              timestamp: new Date().toISOString(),
+            })}\n\n`,
+          );
+        } catch (writeError) {
+          fastify.log.warn('Failed to write error to stream:', writeError);
+        }
+        await cleanupRedis();
         reply.raw.end();
       });
     },

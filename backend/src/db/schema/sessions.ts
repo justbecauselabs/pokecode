@@ -1,4 +1,3 @@
-import { sql } from 'drizzle-orm';
 import { index, jsonb, pgEnum, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 
 export const sessionStatusEnum = pgEnum('session_status', ['active', 'inactive', 'archived']);
@@ -20,7 +19,7 @@ export const sessions = pgTable(
     updatedAt: timestamp('updated_at')
       .defaultNow()
       .notNull()
-      .$onUpdate(() => sql`CURRENT_TIMESTAMP`),
+      .$onUpdate(() => new Date()),
     lastAccessedAt: timestamp('last_accessed_at').defaultNow().notNull(),
   },
   (table) => ({

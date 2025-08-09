@@ -20,11 +20,11 @@ export const envSchema = z.object({
   JWT_ACCESS_SECRET: z.string().min(32),
   JWT_REFRESH_SECRET: z.string().min(32),
 
-  // Claude Configuration
-  ANTHROPIC_API_KEY: z.string(),
+  // Claude Configuration - OPTIONAL
+  // If set, uses API key billing. If not set, uses local Claude Max account
+  ANTHROPIC_API_KEY: z.string().optional(),
 
-  // File Storage
-  FILE_STORAGE_BASE: z.string().default('/var/claude-code/projects'),
+  // File Storage (no base dir; paths are absolute)
 
   // Rate Limiting
   RATE_LIMIT_WINDOW: z.string().transform(Number).default('60000'),
@@ -41,6 +41,7 @@ export function validateEnv(): Env {
   const parsed = envSchema.safeParse(process.env);
 
   if (!parsed.success) {
+    // Use console for early initialization errors
     console.error('❌ Invalid environment variables:');
     console.error(JSON.stringify(parsed.error.format(), null, 2));
     process.exit(1);

@@ -1,7 +1,10 @@
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import { config } from '@/config';
+import { createChildLogger } from '@/utils/logger';
 import * as schema from './schema';
+
+const logger = createChildLogger('database');
 
 // Create optimized connection pool
 const sql = postgres({
@@ -40,7 +43,7 @@ export async function checkDatabaseHealth(): Promise<boolean> {
     await sql`SELECT 1`;
     return true;
   } catch (error) {
-    console.error('Database health check failed:', error);
+    logger.error({ error }, 'Database health check failed');
     return false;
   }
 }

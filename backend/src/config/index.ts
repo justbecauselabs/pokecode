@@ -42,7 +42,6 @@ export const rateLimitConfig = {
 
 // File storage configuration
 export const fileStorageConfig = {
-  basePath: config.FILE_STORAGE_BASE,
   maxFileSize: 10 * 1024 * 1024, // 10MB
   allowedExtensions: [
     '.js',
@@ -76,7 +75,6 @@ export const fileStorageConfig = {
     '.bash',
     '.zsh',
     '.fish',
-    '.env',
     '.gitignore',
     '.dockerignore',
     'Dockerfile',
@@ -84,27 +82,5 @@ export const fileStorageConfig = {
   ],
 };
 
-// Server configuration
-export const serverConfig = {
-  port: config.PORT,
-  host: '0.0.0.0',
-  logger: {
-    level: config.LOG_LEVEL,
-    transport: isDevelopment
-      ? {
-          target: 'pino-pretty',
-          options: {
-            translateTime: 'HH:MM:ss Z',
-            ignore: 'pid,hostname',
-          },
-        }
-      : undefined,
-  },
-  ajv: {
-    customOptions: {
-      removeAdditional: 'all' as const,
-      coerceTypes: true,
-      useDefaults: true,
-    },
-  },
-};
+// Re-export env as alias for config for compatibility
+export const env = config;

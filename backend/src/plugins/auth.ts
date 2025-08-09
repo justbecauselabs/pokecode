@@ -23,36 +23,36 @@ const authPlugin: FastifyPluginAsync = async (fastify) => {
   // Authentication hook (only if not already decorated)
   if (!fastify.hasDecorator('authenticate')) {
     fastify.decorate('authenticate', async (request: FastifyRequest, reply: FastifyReply) => {
-    try {
-      const token = jwtService.extractTokenFromHeader(request.headers.authorization);
+      try {
+        const token = jwtService.extractTokenFromHeader(request.headers.authorization);
 
-      if (!token) {
-        throw new AuthenticationError('No token provided');
-      }
+        if (!token) {
+          throw new AuthenticationError('No token provided');
+        }
 
-      // Check if token is blacklisted
-      const isBlacklisted = await jwtService.isTokenBlacklisted(token);
-      if (isBlacklisted) {
-        throw new AuthenticationError('Token has been revoked');
-      }
+        // Check if token is blacklisted
+        const isBlacklisted = await jwtService.isTokenBlacklisted(token);
+        if (isBlacklisted) {
+          throw new AuthenticationError('Token has been revoked');
+        }
 
-      // Verify token
-      const decoded = await request.jwtVerify({ complete: false });
-      request.user = decoded as any;
-    } catch (err) {
-      if (err instanceof AuthenticationError) {
-        reply.code(401).send({
-          error: err.message,
-          code: err.code,
-        });
-      } else {
-        reply.code(401).send({
-          error: 'Invalid token',
-          code: 'INVALID_TOKEN',
-        });
+        // Verify token
+        const decoded = await request.jwtVerify({ complete: false });
+        request.user = decoded as any;
+      } catch (err) {
+        if (err instanceof AuthenticationError) {
+          reply.code(401).send({
+            error: err.message,
+            code: err.code,
+          });
+        } else {
+          reply.code(401).send({
+            error: 'Invalid token',
+            code: 'INVALID_TOKEN',
+          });
+        }
       }
-    }
-  });
+    });
   }
 
   // Add auth schema

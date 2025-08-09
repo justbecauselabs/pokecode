@@ -13,16 +13,14 @@ export class SessionService {
       metadata?: any;
     },
   ) {
-    // Validate project path
-    if (!this.isValidProjectPath(data.projectPath)) {
-      throw new ValidationError('Invalid project path');
-    }
+    // Normalize and validate project path (must be absolute)
+    const projectPath = this.normalizeProjectPath(data.projectPath);
 
     const [session] = await db
       .insert(sessions)
       .values({
         userId,
-        projectPath: data.projectPath,
+        projectPath,
         context: data.context,
         metadata: data.metadata,
         status: 'active',
@@ -42,7 +40,7 @@ export class SessionService {
     }
 
     // Update last accessed timestamp
-    await db.update(sessions).set({ lastAccessedAt: sql`CURRENT_TIMESTAMP` }).where(eq(sessions.id, sessionId));
+    await db.update(sessions).set({ lastAccessedAt: new Date() }).where(eq(sessions.id, sessionId));
 
     return this.formatSession(session);
   }
@@ -105,7 +103,7 @@ export class SessionService {
 
     // Update session
     const updateData: any = {
-      updatedAt: sql`CURRENT_TIMESTAMP`,
+      updatedAt: new Date(),
     };
 
     if (data.context !== undefined) {
@@ -166,20 +164,24 @@ export class SessionService {
     };
   }
 
-  private isValidProjectPath(projectPath: string): boolean {
-    // Prevent path traversal
-    if (projectPath.includes('..')) {
-      return false;
+  private normalizeProjectPath(inputPath: string): string {
+    const raw = inputPath.trim();
+
+    // Basic character allowlist to keep things sane
+    if (!/^[a-zA-Z0-9._/-]+$/.test(raw)) {
+      throw new ValidationError('Invalid project path');
     }
 
-    // Must start with / or be relative
-    if (!projectPath.startsWith('/') && !projectPath.match(/^[a-zA-Z0-9]/)) {
-      return false;
+    const normalized = path.normalize(raw);
+
+    // Must be absolute and not contain traversal after normalization
+    if (!path.isAbsolute(normalized) || normalized.includes('..')) {
+      throw new ValidationError('Project path must be an absolute path');
     }
 
-    // Normalize and check
-    const normalized = path.normalize(projectPath);
-    return normalized === projectPath;
+    // Resolve to an absolute canonical path
+    const resolved = path.resolve(normalized);
+    return resolved;
   }
 }
 

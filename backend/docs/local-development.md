@@ -5,7 +5,7 @@ This guide covers setting up and running the Claude Code Mobile backend for loca
 ## Prerequisites
 
 - Node.js >= 20.0.0
-- bun >= 8.0.0
+- bun >= 1.0.0
 - PostgreSQL (local or Docker)
 - Redis (local or Docker)
 
@@ -19,27 +19,32 @@ bun install
 
 ### 2. Environment Configuration
 
-Create a `.env` file in the backend directory:
+Copy `.env.example` and adjust values as needed. Key variables used by the app:
 
 ```bash
 # Node environment
 NODE_ENV=development
+PORT=3001
 
-# Server
-PORT=3000
-HOST=0.0.0.0
-
-# Database
-DATABASE_URL=postgresql://username:password@localhost:5432/claude_code
+# Database (individual fields)
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=claude_code_mobile
+DB_USER=postgres
+DB_PASSWORD=
 
 # Redis
 REDIS_URL=redis://localhost:6379
 
 # JWT
-JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
+JWT_ACCESS_SECRET=your-access-secret-here
+JWT_REFRESH_SECRET=your-refresh-secret-here
 
-# Optional: Test Database
-TEST_DATABASE_URL=postgresql://username:password@localhost:5432/claude_code_test
+# File storage base (project sandbox root)
+FILE_STORAGE_BASE=/var/claude-code/projects
+
+# CORS
+CORS_ORIGIN=*
 ```
 
 ### 3. Database Setup
@@ -138,7 +143,6 @@ bun seed            # Seed database with test data
 # Testing
 bun test            # Run tests once
 bun test:watch      # Run tests in watch mode
-bun test:ui         # Open Vitest UI
 bun test:coverage   # Run tests with coverage
 
 # Code Quality
