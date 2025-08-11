@@ -1,4 +1,4 @@
-import axios, { AxiosInstance, AxiosRequestConfig } from 'axios'
+import axios, { type AxiosInstance, type AxiosRequestConfig } from 'axios'
 import { useAuthStore } from '../stores/authStore'
 
 class ApiService {
@@ -36,7 +36,7 @@ class ApiService {
           original._retry = true
 
           try {
-            const { tokens, refreshToken, logout } = useAuthStore.getState()
+            const { tokens, refreshToken } = useAuthStore.getState()
             if (tokens?.refreshToken) {
               await refreshToken()
               const newTokens = useAuthStore.getState().tokens

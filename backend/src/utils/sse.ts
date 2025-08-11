@@ -1,118 +1,132 @@
 import type { FastifyReply } from 'fastify';
 
-export class SSEStream {
-  private reply: FastifyReply;
-  private isConnected: boolean = true;
-
-  constructor(reply: FastifyReply) {
-    this.reply = reply;
-    this.setupHeaders();
-  }
-
-  private setupHeaders() {
-    this.reply.raw.writeHead(200, {
-      'Content-Type': 'text/event-stream',
-      'Cache-Control': 'no-cache, no-transform',
-      Connection: 'keep-alive',
-      'X-Accel-Buffering': 'no',
-      'Access-Control-Allow-Origin': '*',
-    });
-  }
-
-  send(event: string, data: any, id?: string) {
-    if (!this.isConnected) {
-      return;
-    }
-
-    try {
-      if (id) {
-        this.reply.raw.write(`id: ${id}\n`);
-      }
-      this.reply.raw.write(`event: ${event}\n`);
-      this.reply.raw.write(`data: ${JSON.stringify(data)}\n\n`);
-    } catch (error) {
-      this.isConnected = false;
-      throw error;
-    }
-  }
-
-  sendData(data: any, id?: string) {
-    if (!this.isConnected) {
-      return;
-    }
-
-    try {
-      if (id) {
-        this.reply.raw.write(`id: ${id}\n`);
-      }
-      this.reply.raw.write(`data: ${JSON.stringify(data)}\n\n`);
-    } catch (error) {
-      this.isConnected = false;
-      throw error;
-    }
-  }
-
-  sendComment(comment: string) {
-    if (!this.isConnected) {
-      return;
-    }
-
-    try {
-      this.reply.raw.write(`: ${comment}\n\n`);
-    } catch (error) {
-      this.isConnected = false;
-      throw error;
-    }
-  }
-
-  sendHeartbeat() {
-    this.sendComment('heartbeat');
-  }
-
-  close() {
-    if (!this.isConnected) {
-      return;
-    }
-
-    this.isConnected = false;
-    this.reply.raw.end();
-  }
-
-  get connected() {
-    return this.isConnected;
-  }
-}
-
-// Helper function to format SSE events
-export function formatSSEMessage(event: string, data: any, id?: string): string {
-  let message = '';
-
-  if (id) {
-    message += `id: ${id}\n`;
-  }
-
-  if (event) {
-    message += `event: ${event}\n`;
-  }
-
-  message += `data: ${JSON.stringify(data)}\n\n`;
-
-  return message;
-}
-
-// Helper to create a heartbeat interval
-export function createSSEHeartbeat(stream: SSEStream, interval = 30000): NodeJS.Timeout {
-  return setInterval(() => {
-    if (stream.connected) {
-      stream.sendHeartbeat();
-    }
-  }, interval);
-}
-
 // Type definitions for SSE events
 export interface SSEEvent<T = any> {
   id?: string;
   event: string;
   data: T;
   retry?: number;
+}
+
+// Enhanced SSE utilities using fastify-sse-v2 plugin
+export class EnhancedSSEStream {
+  private reply: FastifyReply;
+  private closed: boolean = false;
+
+  constructor(reply: FastifyReply) {
+    this.reply = reply;
+  }
+
+  /**
+   * Send an SSE event using the fastify-sse-v2 plugin
+   */
+  send(event: string, data: any, id?: string) {
+    if (this.closed) {
+      return;
+    }
+
+    try {
+      this.reply.sse({
+        event,
+        data: JSON.stringify(data),
+        id,
+      });
+    } catch (error) {
+      this.closed = true;
+      throw error;
+    }
+  }
+
+  /**
+   * Send data without specifying an event type
+   */
+  sendData(data: any, id?: string) {
+    if (this.closed) {
+      return;
+    }
+
+    try {
+      this.reply.sse({
+        data: JSON.stringify(data),
+        id,
+      });
+    } catch (error) {
+      this.closed = true;
+      throw error;
+    }
+  }
+
+  /**
+   * Create an async generator from Redis messages for streaming
+   */
+  static async *fromRedisChannel(redis: any, channel: string) {
+    try {
+      await redis.subscribe(channel);
+
+      while (true) {
+        const message = await new Promise<string>((resolve, reject) => {
+          redis.once('message', (receivedChannel: string, msg: string) => {
+            if (receivedChannel === channel) {
+              resolve(msg);
+            }
+          });
+
+          redis.once('error', reject);
+        });
+
+        try {
+          const event = JSON.parse(message);
+          yield {
+            id: event.id,
+            event: event.type,
+            data: JSON.stringify(event.data),
+          };
+
+          // End stream on completion or error
+          if (event.type === 'complete' || event.type === 'error') {
+            break;
+          }
+        } catch (_parseError) {
+          yield {
+            event: 'error',
+            data: JSON.stringify({ error: 'Failed to parse message' }),
+          };
+          break;
+        }
+      }
+    } finally {
+      await redis.unsubscribe(channel);
+      await redis.quit();
+    }
+  }
+
+  get isClosed() {
+    return this.closed;
+  }
+
+  close() {
+    this.closed = true;
+  }
+}
+
+/**
+ * Create a Redis-based SSE stream using fastify-sse-v2
+ */
+export async function createRedisSSEStream(
+  reply: FastifyReply,
+  redis: any,
+  channel: string,
+  initialEvent?: { event: string; data: any; id?: string },
+) {
+  // Send initial event if provided
+  if (initialEvent) {
+    reply.sse({
+      event: initialEvent.event,
+      data: JSON.stringify(initialEvent.data),
+      id: initialEvent.id,
+    });
+  }
+
+  // Stream from Redis channel
+  reply.sse(EnhancedSSEStream.fromRedisChannel(redis, channel));
 }

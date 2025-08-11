@@ -4,6 +4,8 @@ export interface ChatMessage {
   content: string
   timestamp: Date
   isStreaming?: boolean
+  promptId?: string
+  streamMessages?: StreamMessage[]
 }
 
 export interface Prompt {
@@ -23,8 +25,23 @@ export interface Prompt {
   completedAt?: string
 }
 
+export interface StreamMessage {
+  id: string
+  type: 'connected' | 'message' | 'tool_use' | 'tool_result' | 'complete' | 'error'
+  data?: unknown
+  timestamp: string
+  promptId: string
+}
+
 export interface SSEMessage {
   type: 'connected' | 'message' | 'tool_use' | 'tool_result' | 'complete' | 'error'
-  data?: any
+  data?: unknown
   timestamp?: string
+}
+
+export interface HistoryResponse {
+  prompts: Prompt[]
+  total: number
+  limit: number
+  offset: number
 }

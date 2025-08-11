@@ -1,69 +1,118 @@
-# React + TypeScript + Vite
+# Pokecode Web
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A React web application for interacting with the Claude Code backend, providing the same functionality as the CLI with an enhanced web UI.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- 🔐 **Authentication**: Secure JWT-based login and registration
+- 📁 **Session Management**: Create, manage, and organize coding sessions
+- 💬 **Real-time Chat**: Stream responses from Claude Code with SSE
+- 🎨 **Enhanced UI**: Beautiful message parsing with syntax highlighting
+- 📂 **Directory Picker**: GUI-based project path selection
+- 🛠️ **Tool Visualization**: Rich displays for tool usage, file operations, and errors
 
-## Expanding the ESLint configuration
+## Tech Stack
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+- **Framework**: React 19 + TypeScript
+- **Build Tool**: Vite
+- **Styling**: Tailwind CSS + shadcn/ui components
+- **State Management**: Zustand
+- **HTTP Client**: Axios with automatic token refresh
+- **Syntax Highlighting**: Prism.js via react-syntax-highlighter
+- **Icons**: Lucide React
 
-```js
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## Quick Start
 
-      // Remove tseslint.configs.recommended and replace with this
-      ...tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      ...tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      ...tseslint.configs.stylisticTypeChecked,
+1. **Install dependencies**:
+   ```bash
+   npm install
+   ```
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+2. **Set environment variables**:
+   ```bash
+   cp .env.example .env
+   # Edit .env to set VITE_API_URL to your backend URL (default: http://localhost:3001)
+   ```
+
+3. **Start development server**:
+   ```bash
+   npm run dev
+   ```
+
+4. **Build for production**:
+   ```bash
+   npm run build
+   ```
+
+## Environment Variables
+
+- `VITE_API_URL`: Backend API URL (default: `http://localhost:3001`)
+- `VITE_DEBUG`: Enable debug mode (default: `false`)
+
+## Project Structure
+
+```
+src/
+├── components/          # React components
+│   ├── auth/           # Authentication components
+│   ├── chat/           # Chat interface components
+│   ├── session/        # Session management
+│   └── ui/             # Reusable UI components
+├── hooks/              # Custom React hooks
+├── pages/              # Route pages
+├── services/           # API and external services
+├── stores/             # Zustand state stores
+├── types/              # TypeScript type definitions
+└── utils/              # Utility functions
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Key Components
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+### Authentication
+- Login and registration forms with validation
+- JWT token management with automatic refresh
+- Protected routes with auth guards
 
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+### Session Management
+- Create sessions with directory picker
+- List and filter existing sessions
+- Session status management
+
+### Chat Interface
+- Real-time message streaming via SSE
+- Message history with pagination
+- Rich message parsing for code blocks, tool usage, and file operations
+- Input with history navigation and keyboard shortcuts
+
+### Message Parsing
+The app intelligently parses Claude Code responses to display:
+- **Code blocks**: Syntax-highlighted with copy buttons
+- **Tool usage**: Visual indicators for tool execution
+- **File operations**: Styled displays for file create/edit/delete
+- **Errors**: Color-coded error messages
+
+## Backend Integration
+
+This web app connects to the Pokecode backend API:
+- Authentication via `/api/auth/*` endpoints
+- Session management via `/api/claude-code/sessions/*`
+- Real-time chat via SSE streams
+- File operations integration
+
+## Development
+
+```bash
+# Type checking
+npm run type-check
+
+# Linting
+npm run lint
+
+# Preview production build
+npm run preview
 ```
+
+## Browser Support
+
+- Chrome/Edge 88+ (File System Access API for directory picker)
+- Firefox/Safari (fallback directory selection)

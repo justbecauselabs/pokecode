@@ -1,5 +1,6 @@
 import helmet from '@fastify/helmet';
 import Fastify, { type FastifyPluginAsync } from 'fastify';
+import { FastifySSEPlugin } from 'fastify-sse-v2';
 import rateLimitPlugin from './hooks/rate-limit.hook';
 // Import plugins
 import authPlugin from './plugins/auth';
@@ -27,6 +28,12 @@ export const app: FastifyPluginAsync = async (fastify, _opts) => {
   await fastify.register(swaggerPlugin);
   await fastify.register(authPlugin);
   await fastify.register(rateLimitPlugin);
+
+  // Register SSE plugin
+  await fastify.register(FastifySSEPlugin, {
+    retryDelay: 3000, // 3 seconds retry delay
+    highWaterMark: 16384, // 16KB buffer
+  });
 
   // Register routes
   await fastify.register(healthRoutes, { prefix: '/health' });

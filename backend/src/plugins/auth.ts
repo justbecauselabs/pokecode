@@ -24,7 +24,16 @@ const authPlugin: FastifyPluginAsync = async (fastify) => {
   if (!fastify.hasDecorator('authenticate')) {
     fastify.decorate('authenticate', async (request: FastifyRequest, reply: FastifyReply) => {
       try {
-        const token = jwtService.extractTokenFromHeader(request.headers.authorization);
+        // Try to get token from Authorization header first
+        let token = jwtService.extractTokenFromHeader(request.headers.authorization);
+
+        // For EventSource requests, also try query parameter
+        if (!token && request.query && typeof request.query === 'object') {
+          const queryToken = (request.query as any).token;
+          if (typeof queryToken === 'string') {
+            token = queryToken;
+          }
+        }
 
         if (!token) {
           throw new AuthenticationError('No token provided');
@@ -37,7 +46,7 @@ const authPlugin: FastifyPluginAsync = async (fastify) => {
         }
 
         // Verify token
-        const decoded = await request.jwtVerify({ complete: false });
+        const decoded = jwtService.verifyAccessToken(token);
         request.user = decoded as any;
       } catch (err) {
         if (err instanceof AuthenticationError) {
