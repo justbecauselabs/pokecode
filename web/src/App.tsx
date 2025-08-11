@@ -4,7 +4,7 @@ import { LoginPage } from './pages/LoginPage'
 import { RegisterPage } from './pages/RegisterPage'
 import { ChatPage } from './pages/ChatPage'
 
-function App() {
+export function App() {
   return (
     <Router>
       <Routes>

@@ -11,6 +11,7 @@ import swaggerPlugin from './plugins/swagger';
 import authRoutes from './routes/auth';
 // Import routes
 import healthRoutes from './routes/health';
+import repositoryRoutes from './routes/repositories';
 import sessionRoutes from './routes/sessions';
 import { historyAndExportRoutes } from './routes/sessions/prompts';
 
@@ -38,6 +39,7 @@ export const app: FastifyPluginAsync = async (fastify, _opts) => {
   // Register routes
   await fastify.register(healthRoutes, { prefix: '/health' });
   await fastify.register(authRoutes, { prefix: '/api/auth' });
+  await fastify.register(repositoryRoutes, { prefix: '/api/claude-code/repositories' });
   await fastify.register(sessionRoutes, { prefix: '/api/claude-code/sessions' });
 
   // Register history and export routes at session level

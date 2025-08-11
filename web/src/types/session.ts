@@ -11,7 +11,8 @@ export interface Session {
 }
 
 export interface CreateSessionData {
-  projectPath: string
+  projectPath?: string
+  folderName?: string
   context?: string
 }
 

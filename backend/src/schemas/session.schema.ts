@@ -2,11 +2,20 @@ import { type Static, Type } from '@sinclair/typebox';
 
 // Create session schemas
 export const CreateSessionRequestSchema = Type.Object({
-  projectPath: Type.String({
-    pattern: '^[a-zA-Z0-9._/-]+$',
-    minLength: 1,
-    maxLength: 255,
-  }),
+  projectPath: Type.Optional(
+    Type.String({
+      pattern: '^[a-zA-Z0-9._/-]+$',
+      minLength: 1,
+      maxLength: 255,
+    }),
+  ),
+  folderName: Type.Optional(
+    Type.String({
+      pattern: '^[a-zA-Z0-9._-]+$',
+      minLength: 1,
+      maxLength: 100,
+    }),
+  ),
   context: Type.Optional(Type.String({ maxLength: 5000 })),
   metadata: Type.Optional(
     Type.Object({

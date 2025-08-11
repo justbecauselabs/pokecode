@@ -3,7 +3,7 @@ import { useSessionStore } from '../../stores/sessionStore'
 import { Button } from '../ui/Button'
 import { Input } from '../ui/Input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/Card'
-import { DirectoryPicker } from './DirectoryPicker'
+import { RepositorySelector } from './RepositorySelector'
 import type { CreateSessionData } from '../../types/session'
 import { X } from 'lucide-react'
 
@@ -16,7 +16,7 @@ interface CreateSessionModalProps {
 export function CreateSessionModal({ isOpen, onClose, onSuccess }: CreateSessionModalProps) {
   const { createSession, isLoading, error, clearError } = useSessionStore()
   const [formData, setFormData] = useState<CreateSessionData>({
-    projectPath: '',
+    folderName: '',
     context: '',
   })
 
@@ -24,19 +24,19 @@ export function CreateSessionModal({ isOpen, onClose, onSuccess }: CreateSession
     e.preventDefault()
     clearError()
     
-    if (!formData.projectPath.trim()) {
+    if (!formData.folderName?.trim()) {
       return
     }
     
     try {
       const session = await createSession({
-        projectPath: formData.projectPath.trim(),
+        folderName: formData.folderName.trim(),
         context: formData.context?.trim() || undefined,
       })
       onSuccess(session.id)
       onClose()
-      setFormData({ projectPath: '', context: '' })
-    } catch (error) {
+      setFormData({ folderName: '', context: '' })
+    } catch {
       // Error is handled by the store
     }
   }
@@ -44,20 +44,28 @@ export function CreateSessionModal({ isOpen, onClose, onSuccess }: CreateSession
   const handleClose = () => {
     onClose()
     clearError()
-    setFormData({ projectPath: '', context: '' })
+    setFormData({ folderName: '', context: '' })
   }
 
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <Card className="w-full max-w-lg">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+      <div 
+        className="w-full max-w-lg rounded-xl shadow-2xl"
+        style={{ 
+          backgroundColor: '#ffffff',
+          border: '1px solid #e5e7eb',
+          color: '#000000'
+        }}
+      >
+        <Card className="border-none bg-transparent shadow-none text-inherit">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
               <CardTitle>Create New Session</CardTitle>
               <CardDescription>
-                Start a new coding session with Claude Code
+                Select a repository and start coding with Claude
               </CardDescription>
             </div>
             <Button
@@ -73,12 +81,12 @@ export function CreateSessionModal({ isOpen, onClose, onSuccess }: CreateSession
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <label htmlFor="projectPath" className="text-sm font-medium">
-                Project Path *
+              <label className="text-sm font-medium">
+                Select Repository *
               </label>
-              <DirectoryPicker
-                value={formData.projectPath}
-                onChange={(path) => setFormData(prev => ({ ...prev, projectPath: path }))}
+              <RepositorySelector
+                value={formData.folderName || ''}
+                onChange={(folderName) => setFormData(prev => ({ ...prev, folderName }))}
                 disabled={isLoading}
               />
             </div>
@@ -97,7 +105,7 @@ export function CreateSessionModal({ isOpen, onClose, onSuccess }: CreateSession
                 maxLength={500}
               />
               <p className="text-xs text-muted-foreground">
-                Add context to help Claude understand your project better
+                Add context to help Claude understand what you're working on
               </p>
             </div>
             {error && (
@@ -117,7 +125,7 @@ export function CreateSessionModal({ isOpen, onClose, onSuccess }: CreateSession
               </Button>
               <Button
                 type="submit"
-                disabled={isLoading || !formData.projectPath.trim()}
+                disabled={isLoading || !formData.folderName?.trim()}
                 className="flex-1"
               >
                 {isLoading ? 'Creating...' : 'Create Session'}
@@ -125,7 +133,8 @@ export function CreateSessionModal({ isOpen, onClose, onSuccess }: CreateSession
             </div>
           </form>
         </CardContent>
-      </Card>
+        </Card>
+      </div>
     </div>
   )
 }

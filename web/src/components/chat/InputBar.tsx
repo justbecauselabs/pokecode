@@ -83,24 +83,29 @@ export function InputBar({ sessionId, onMessageSent, disabled }: InputBarProps) 
   }
 
   return (
-    <div className="border-t bg-background p-4">
+    <div className="border-t border-border bg-background p-4">
       {error && (
-        <div className="mb-3 text-sm text-destructive">
+        <div className="mb-3 text-sm text-destructive font-medium border border-destructive/20 bg-destructive/5 px-3 py-2 rounded-sm">
           {error}
         </div>
       )}
       
-      <Card className="overflow-hidden">
-        <form onSubmit={handleSubmit} className="flex items-end gap-2 p-3">
+      <Card className="overflow-hidden bg-card border-border">
+        <form onSubmit={handleSubmit} className="flex items-end gap-3 p-3">
+          {/* Terminal prompt indicator */}
+          <div className="flex items-end pb-1">
+            <span className="text-accent font-bold text-sm terminal-text">$</span>
+          </div>
+          
           <div className="flex-1 min-h-0">
             <textarea
               ref={textareaRef}
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Message Claude Code..."
+              placeholder="Enter command..."
               className={cn(
-                'w-full resize-none border-0 bg-transparent text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-0',
+                'w-full resize-none border-0 bg-transparent text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-0 terminal-text',
                 'min-h-[20px] max-h-[200px] overflow-y-auto'
               )}
               rows={1}
@@ -138,10 +143,19 @@ export function InputBar({ sessionId, onMessageSent, disabled }: InputBarProps) 
         </form>
       </Card>
       
-      <div className="mt-2 text-xs text-muted-foreground">
-        Press <kbd className="px-1 py-0.5 rounded bg-muted text-muted-foreground">Enter</kbd> to send, 
-        <kbd className="px-1 py-0.5 rounded bg-muted text-muted-foreground ml-1">Shift+Enter</kbd> for new line, 
-        <kbd className="px-1 py-0.5 rounded bg-muted text-muted-foreground ml-1">↑↓</kbd> for history
+      <div className="mt-3 text-xs text-muted-foreground terminal-text flex items-center gap-4">
+        <span className="flex items-center gap-1">
+          <kbd className="px-2 py-1 rounded-sm bg-secondary border border-border text-secondary-foreground font-mono">Enter</kbd>
+          <span>run</span>
+        </span>
+        <span className="flex items-center gap-1">
+          <kbd className="px-2 py-1 rounded-sm bg-secondary border border-border text-secondary-foreground font-mono">Shift+↵</kbd>
+          <span>newline</span>
+        </span>
+        <span className="flex items-center gap-1">
+          <kbd className="px-2 py-1 rounded-sm bg-secondary border border-border text-secondary-foreground font-mono">↑↓</kbd>
+          <span>history</span>
+        </span>
       </div>
     </div>
   )

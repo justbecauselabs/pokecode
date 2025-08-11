@@ -26,6 +26,9 @@ export const envSchema = z.object({
 
   // File Storage (no base dir; paths are absolute)
 
+  // GitHub Repositories Directory (required)
+  GITHUB_REPOS_DIRECTORY: z.string().min(1),
+
   // Rate Limiting
   RATE_LIMIT_WINDOW: z.string().transform(Number).default('60000'),
   RATE_LIMIT_MAX: z.string().transform(Number).default('100'),

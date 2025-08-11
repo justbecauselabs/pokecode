@@ -14,6 +14,23 @@ export interface ClaudeCodeOptions {
   projectPath: string;
 }
 
+// Enhanced streaming state
+interface StreamingState {
+  activeBlocks: Map<
+    number,
+    {
+      type: string;
+      content: string;
+      citations?: any[];
+      thinking?: string;
+      signature?: string;
+    }
+  >;
+  messageId?: string;
+  totalTokens: number;
+  stopReason?: string;
+}
+
 export type ClaudeCodeResult =
   | {
       success: true;
@@ -21,12 +38,16 @@ export type ClaudeCodeResult =
       duration: number;
       toolCallCount: number;
       messages: ClaudeCodeMessage[];
+      stopReason?: string;
+      totalTokens?: number;
     }
   | {
       success: false;
       error: string;
       duration: number;
       messages: ClaudeCodeMessage[];
+      stopReason?: string;
+      totalTokens?: number;
     };
 
 /**
@@ -42,6 +63,10 @@ export class ClaudeCodeSDKService extends EventEmitter {
   private isProcessing = false;
   private currentQuery: any = null;
   private pathToClaudeCodeExecutable: string;
+  private streamingState: StreamingState = {
+    activeBlocks: new Map(),
+    totalTokens: 0,
+  };
 
   constructor(private options: ClaudeCodeOptions) {
     super();
@@ -66,6 +91,10 @@ export class ClaudeCodeSDKService extends EventEmitter {
     this.messages = [];
     this.assistantMessages = [];
     this.toolCallCount = 0;
+    this.streamingState = {
+      activeBlocks: new Map(),
+      totalTokens: 0,
+    };
 
     try {
       logger.info(
@@ -140,6 +169,8 @@ export class ClaudeCodeSDKService extends EventEmitter {
         duration,
         toolCallCount: this.toolCallCount,
         messages: this.messages,
+        stopReason: this.streamingState.stopReason,
+        totalTokens: this.streamingState.totalTokens,
       };
 
       logger.info(

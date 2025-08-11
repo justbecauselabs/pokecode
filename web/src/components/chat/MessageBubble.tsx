@@ -5,6 +5,8 @@ import { CodeBlock } from '../ui/CodeBlock'
 import { ToolDisplay } from '../ui/ToolDisplay'
 import { ErrorDisplay } from '../ui/ErrorDisplay'
 import { FileOperationDisplay } from '../ui/FileOperationDisplay'
+import { ThinkingDisplay } from './ThinkingDisplay'
+import { CitationDisplay, parseTextWithCitations } from './CitationDisplay'
 import { useMessageParser } from '../../hooks/useMessageParser'
 import { cn } from '../../lib/utils'
 import { formatDistanceToNow } from 'date-fns'
@@ -106,7 +108,13 @@ export function MessageBubble({ message, onShowStream }: MessageBubbleProps) {
         )}>
           <CardContent className="p-3">
             <div className="prose prose-sm max-w-none dark:prose-invert">
-              <MessageContent content={message.content} />
+              <MessageContent 
+                content={message.content}
+                thinking={message.thinking}
+                signature={message.signature}
+                citations={message.citations}
+                isStreaming={message.isStreaming}
+              />
             </div>
             
             <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -144,12 +152,30 @@ export function MessageBubble({ message, onShowStream }: MessageBubbleProps) {
   )
 }
 
-function MessageContent({ content }: { content: string }) {
+interface MessageContentProps {
+  content: string
+  thinking?: string
+  signature?: string
+  citations?: any[]
+  isStreaming?: boolean
+}
+
+function MessageContent({ content, thinking, signature, citations, isStreaming }: MessageContentProps) {
   const { parseMessageContent } = useMessageParser()
   const blocks = parseMessageContent(content)
 
   return (
     <div className="space-y-3">
+      {/* Thinking content (if available) */}
+      {thinking && (
+        <ThinkingDisplay 
+          thinking={thinking}
+          signature={signature}
+          isStreaming={isStreaming}
+        />
+      )}
+      
+      {/* Main content blocks */}
       {blocks.map((block, index) => {
         switch (block.type) {
           case 'code':
@@ -189,11 +215,20 @@ function MessageContent({ content }: { content: string }) {
           default:
             return (
               <div key={index} className="whitespace-pre-wrap break-words">
-                {block.content}
+                {citations && citations.length > 0 ? (
+                  <div>{parseTextWithCitations(block.content, citations)}</div>
+                ) : (
+                  block.content
+                )}
               </div>
             )
         }
       })}
+      
+      {/* Citations (if available) */}
+      {citations && citations.length > 0 && (
+        <CitationDisplay citations={citations} />
+      )}
     </div>
   )
 }

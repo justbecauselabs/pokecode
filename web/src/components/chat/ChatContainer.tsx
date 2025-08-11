@@ -9,16 +9,23 @@ import { StatusBar } from './StatusBar'
 import { StreamSidebar } from './StreamSidebar'
 import { Button } from '../ui/Button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/Card'
-import { ArrowLeft, AlertCircle } from 'lucide-react'
+import { ArrowLeft, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react'
 
 export function ChatContainer() {
   const { sessionId } = useParams<{ sessionId: string }>()
   const navigate = useNavigate()
   
   const { currentSession, selectSession, sessions } = useSessionStore()
-  const { currentPrompt, clearMessages, streamMessages } = useChatStore()
+  const { 
+    currentPrompt, 
+    clearMessages, 
+    streamMessages, 
+    isStreaming, 
+    setStreamingSidebarPromptId,
+    streamingSidebarPromptId 
+  } = useChatStore()
   
-  const [selectedStreamPromptId, setSelectedStreamPromptId] = useState<string | null>(null)
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
   
   const { disconnect } = useSSE({
     sessionId: sessionId || '',
@@ -57,6 +64,8 @@ export function ChatContainer() {
   const handleMessageSent = () => {
     // SSE connection will be established automatically via the useSSE hook
     // when currentPrompt is updated
+    // Automatically show sidebar for new streaming messages
+    setIsSidebarCollapsed(false)
   }
 
   const handleBackToSessions = () => {
@@ -65,16 +74,21 @@ export function ChatContainer() {
   }
 
   const handleShowStream = (promptId: string) => {
-    setSelectedStreamPromptId(promptId)
+    setStreamingSidebarPromptId(promptId)
+    setIsSidebarCollapsed(false)
   }
 
-  const handleCloseSidebar = () => {
-    setSelectedStreamPromptId(null)
+  const handleToggleSidebar = () => {
+    setIsSidebarCollapsed(!isSidebarCollapsed)
   }
 
-  const selectedStreamMessages = selectedStreamPromptId 
-    ? streamMessages.get(selectedStreamPromptId) || []
+  // Use the current streaming prompt or the explicitly selected one
+  const activePromptId = streamingSidebarPromptId || (isStreaming ? currentPrompt?.id : null)
+  const selectedStreamMessages = activePromptId 
+    ? streamMessages.get(activePromptId) || []
     : []
+  
+  const showSidebar = Boolean(activePromptId && !isSidebarCollapsed)
 
   if (!sessionId) {
     return (
@@ -127,7 +141,11 @@ export function ChatContainer() {
   return (
     <div className="h-screen flex bg-background">
       {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col">
+      <div className={`flex flex-col transition-all duration-300 ${
+        showSidebar 
+          ? 'w-full md:w-1/2' // Full width on mobile, half on desktop when sidebar is shown
+          : 'w-full'
+      }`}>
         <StatusBar />
         
         {/* Header */}
@@ -150,6 +168,27 @@ export function ChatContainer() {
               </p>
             )}
           </div>
+          {/* Sidebar Toggle Button */}
+          {activePromptId && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleToggleSidebar}
+              className="ml-2"
+            >
+              {isSidebarCollapsed ? (
+                <>
+                  <ChevronLeft className="h-4 w-4 mr-1" />
+                  Show Stream
+                </>
+              ) : (
+                <>
+                  <ChevronRight className="h-4 w-4 mr-1" />
+                  Hide Stream
+                </>
+              )}
+            </Button>
+          )}
         </div>
 
         {/* Chat Messages */}
@@ -163,13 +202,22 @@ export function ChatContainer() {
         />
       </div>
       
-      {/* Stream Sidebar */}
-      {selectedStreamPromptId && (
-        <StreamSidebar
-          promptId={selectedStreamPromptId}
-          streamMessages={selectedStreamMessages}
-          onClose={handleCloseSidebar}
-        />
+      {/* Persistent Stream Sidebar */}
+      {showSidebar && (
+        <div className="fixed inset-0 z-50 md:relative md:inset-auto md:z-auto md:w-1/2 md:flex md:flex-col">
+          {/* Mobile backdrop */}
+          <div 
+            className="absolute inset-0 bg-black/50 md:hidden" 
+            onClick={handleToggleSidebar}
+          />
+          <StreamSidebar
+            promptId={activePromptId!}
+            streamMessages={selectedStreamMessages}
+            onToggle={handleToggleSidebar}
+            isStreaming={isStreaming}
+            isCollapsed={false}
+          />
+        </div>
       )}
     </div>
   )

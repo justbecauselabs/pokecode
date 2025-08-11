@@ -81,6 +81,11 @@ class ApiService {
     const response = await this.api.delete(url, config)
     return response.data
   }
+
+  // Repository-specific endpoints
+  async listRepositories() {
+    return this.get<{ repositories: Array<{ folderName: string; path: string; isGitRepository: boolean }>; total: number; githubReposDirectory: string }>('/api/claude-code/repositories')
+  }
 }
 
 export const apiService = new ApiService()

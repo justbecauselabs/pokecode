@@ -117,12 +117,86 @@ export class ClaudeCodeWorker {
   ): void {
     let messageCount = 0;
     let toolCount = 0;
+    let blockCount = 0;
 
-    // Forward assistant messages
+    // Forward streaming events
+    sdkService.on('message_start', async (data) => {
+      await this.publishEvent(channel, {
+        type: 'message_start',
+        data,
+      });
+    });
+
+    sdkService.on('content_block_start', async (data) => {
+      blockCount++;
+      await this.publishEvent(channel, {
+        type: 'content_block_start',
+        data,
+      });
+    });
+
+    sdkService.on('text_delta', async (data) => {
+      await this.publishEvent(channel, {
+        type: 'text_delta',
+        data,
+      });
+    });
+
+    sdkService.on('thinking_delta', async (data) => {
+      await this.publishEvent(channel, {
+        type: 'thinking_delta',
+        data,
+      });
+    });
+
+    sdkService.on('citations_delta', async (data) => {
+      await this.publishEvent(channel, {
+        type: 'citations_delta',
+        data,
+      });
+    });
+
+    sdkService.on('content_block_delta', async (data) => {
+      await this.publishEvent(channel, {
+        type: 'content_block_delta',
+        data,
+      });
+    });
+
+    sdkService.on('content_block_stop', async (data) => {
+      await this.publishEvent(channel, {
+        type: 'content_block_stop',
+        data,
+      });
+    });
+
+    sdkService.on('message_delta', async (data) => {
+      await this.publishEvent(channel, {
+        type: 'message_delta',
+        data,
+      });
+    });
+
+    sdkService.on('message_stop', async (data) => {
+      await this.publishEvent(channel, {
+        type: 'message_stop',
+        data,
+      });
+    });
+
+    // Forward assistant messages (legacy compatibility)
     sdkService.on('assistant', async (data) => {
       messageCount++;
       await this.publishEvent(channel, {
         type: 'message',
+        data,
+      });
+    });
+
+    // Forward thinking content
+    sdkService.on('thinking', async (data) => {
+      await this.publishEvent(channel, {
+        type: 'thinking',
         data,
       });
     });
@@ -139,6 +213,16 @@ export class ClaudeCodeWorker {
       await job.updateProgress({
         messagesProcessed: messageCount,
         toolCallCount: toolCount,
+        blockCount,
+      });
+    });
+
+    // Forward server tool use events
+    sdkService.on('server_tool_use', async (data) => {
+      toolCount++;
+      await this.publishEvent(channel, {
+        type: 'server_tool_use',
+        data,
       });
     });
 
@@ -146,6 +230,14 @@ export class ClaudeCodeWorker {
     sdkService.on('tool_result', async (data) => {
       await this.publishEvent(channel, {
         type: 'tool_result',
+        data,
+      });
+    });
+
+    // Forward web search results
+    sdkService.on('web_search_result', async (data) => {
+      await this.publishEvent(channel, {
+        type: 'web_search_result',
         data,
       });
     });
@@ -162,6 +254,22 @@ export class ClaudeCodeWorker {
     sdkService.on('usage', async (data) => {
       await this.publishEvent(channel, {
         type: 'usage',
+        data,
+      });
+    });
+
+    // Forward system events
+    sdkService.on('system', async (data) => {
+      await this.publishEvent(channel, {
+        type: 'system',
+        data,
+      });
+    });
+
+    // Forward final result
+    sdkService.on('result', async (data) => {
+      await this.publishEvent(channel, {
+        type: 'result',
         data,
       });
     });
@@ -209,16 +317,29 @@ export class ClaudeCodeWorker {
       duration: number;
       toolCallCount: number;
       messages: any[];
+      stopReason?: any;
+      totalTokens?: number;
     },
   ): Promise<void> {
     // Extract tool calls from messages
     const toolCalls: any[] = [];
+    let thinking: string | undefined;
+    const citations: any[] = [];
+
     for (const msg of result.messages) {
       if (msg.type === 'tool_use') {
         toolCalls.push({
           tool: msg.name || msg.tool,
           params: msg.input || msg.params,
         });
+      } else if (msg.type === 'thinking') {
+        if (msg.data?.thinking) {
+          thinking = msg.data.thinking;
+        }
+      } else if (msg.type === 'citations_delta') {
+        if (msg.data?.citation) {
+          citations.push(msg.data.citation);
+        }
       }
     }
 
@@ -229,6 +350,10 @@ export class ClaudeCodeWorker {
         toolCalls,
         duration: result.duration,
         toolCallCount: result.toolCallCount,
+        tokenCount: result.totalTokens,
+        stopReason: result.stopReason,
+        thinking,
+        citations: citations.length > 0 ? citations : undefined,
       },
     });
   }
@@ -293,13 +418,74 @@ export class ClaudeCodeWorker {
    */
   private async publishEvent(channel: string, event: any): Promise<void> {
     try {
-      await this.redis.publish(channel, JSON.stringify(event));
+      // Safely serialize the event with circular reference handling
+      const serializedEvent = this.safeJsonStringify(event);
+      if (serializedEvent) {
+        await this.redis.publish(channel, serializedEvent);
+      } else {
+        logger.warn(
+          { channel, eventType: event?.type },
+          'Failed to serialize event - skipping publish',
+        );
+      }
     } catch (error) {
       // Log error but don't throw - stream may have already disconnected
       logger.warn(
-        { channel, error, eventType: event.type },
+        { channel, error, eventType: event?.type },
         'Failed to publish event (client may have disconnected)',
       );
+    }
+  }
+
+  /**
+   * Safely stringify JSON with circular reference handling and size limits
+   */
+  private safeJsonStringify(obj: any, maxSize: number = 100000): string | null {
+    try {
+      // Handle circular references
+      const seen = new WeakSet();
+      const result = JSON.stringify(obj, (_key, value) => {
+        if (typeof value === 'object' && value !== null) {
+          if (seen.has(value)) {
+            return '[Circular]';
+          }
+          seen.add(value);
+        }
+
+        // Truncate very long strings to prevent message size issues
+        if (typeof value === 'string' && value.length > 10000) {
+          return `${value.substring(0, 10000)}...[truncated]`;
+        }
+
+        return value;
+      });
+
+      // Check message size and truncate if necessary
+      if (result.length > maxSize) {
+        logger.warn(`Event too large (${result.length} chars), truncating...`);
+        const truncated = {
+          ...obj,
+          data:
+            typeof obj.data === 'string'
+              ? `${obj.data.substring(0, maxSize / 2)}...[truncated]`
+              : '[Data too large - truncated]',
+        };
+        return JSON.stringify(truncated);
+      }
+
+      return result;
+    } catch (error) {
+      logger.error(`Failed to stringify event: ${error}`);
+      // Return a safe fallback event
+      return JSON.stringify({
+        type: obj?.type || 'error',
+        data: {
+          type: 'error',
+          error: 'Failed to serialize message',
+          timestamp: new Date().toISOString(),
+        },
+        timestamp: new Date().toISOString(),
+      });
     }
   }
 

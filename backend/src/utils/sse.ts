@@ -75,11 +75,23 @@ export class EnhancedSSEStream {
         });
 
         try {
+          // Validate message is not empty
+          if (!message || message.trim() === '') {
+            continue;
+          }
+
           const event = JSON.parse(message);
+
+          // Validate event has required properties
+          if (!event || typeof event.type !== 'string') {
+            console.warn('Invalid event format from Redis:', event);
+            continue;
+          }
+
           yield {
-            id: event.id,
+            id: event.id || undefined,
             event: event.type,
-            data: JSON.stringify(event.data),
+            data: JSON.stringify(event.data || null),
           };
 
           // End stream on completion or error

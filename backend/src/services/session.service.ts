@@ -2,19 +2,51 @@ import path from 'node:path';
 import { and, desc, eq, sql } from 'drizzle-orm';
 import { db } from '@/db';
 import { sessions } from '@/db/schema';
+import { repositoryService } from '@/services/repository.service';
 import { NotFoundError, ValidationError } from '@/types';
 
 export class SessionService {
   async createSession(
     userId: string,
     data: {
-      projectPath: string;
+      projectPath?: string;
+      folderName?: string;
       context?: string;
       metadata?: any;
     },
   ) {
-    // Normalize and validate project path (must be absolute)
-    const projectPath = this.normalizeProjectPath(data.projectPath);
+    // Validate that either projectPath or folderName is provided
+    if (!data.projectPath && !data.folderName) {
+      throw new ValidationError('Either projectPath or folderName must be provided');
+    }
+
+    // Validate that both are not provided
+    if (data.projectPath && data.folderName) {
+      throw new ValidationError('Cannot provide both projectPath and folderName');
+    }
+
+    let projectPath: string;
+
+    if (data.folderName) {
+      // Use repository service to resolve folder name to absolute path
+      try {
+        projectPath = repositoryService.resolveFolderPath(data.folderName);
+
+        // Validate that the repository exists
+        const validation = await repositoryService.validateRepository(data.folderName);
+        if (!validation.exists) {
+          throw new ValidationError(`Repository folder '${data.folderName}' does not exist`);
+        }
+      } catch (error: any) {
+        throw new ValidationError(`Invalid repository folder: ${error.message}`);
+      }
+    } else if (data.projectPath) {
+      // Use existing projectPath validation
+      projectPath = this.normalizeProjectPath(data.projectPath);
+    } else {
+      // This should never happen due to validation above, but TypeScript doesn't know that
+      throw new ValidationError('Either projectPath or folderName must be provided');
+    }
 
     const [session] = await db
       .insert(sessions)
