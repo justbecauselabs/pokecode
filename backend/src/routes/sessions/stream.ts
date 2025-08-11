@@ -13,7 +13,6 @@ const streamRoute: FastifyPluginAsync = async (fastify) => {
   }>(
     '/stream',
     {
-      preHandler: fastify.authenticate,
       schema: {
         params: Type.Object({
           sessionId: Type.String({ format: 'uuid' }),
@@ -25,13 +24,12 @@ const streamRoute: FastifyPluginAsync = async (fastify) => {
       },
     },
     async (request, reply) => {
-      const userId = (request.user as any).sub;
       const { sessionId, promptId } = request.params;
 
       // Verify access
       try {
-        await sessionService.getSession(sessionId, userId);
-        await promptService.getPrompt(promptId, sessionId, userId);
+        await sessionService.getSession(sessionId);
+        await promptService.getPrompt(promptId, sessionId);
       } catch (error: any) {
         if (error.name === 'NotFoundError') {
           return reply.code(404).send({

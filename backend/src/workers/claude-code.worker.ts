@@ -1,6 +1,9 @@
 import { type Job, Worker } from 'bullmq';
+import { eq } from 'drizzle-orm';
 import { Redis } from 'ioredis';
 import { config } from '@/config';
+import { db } from '@/db';
+import { sessions } from '@/db/schema';
 import { ClaudeCodeSDKService } from '@/services/claude-code-sdk.service';
 import { promptService } from '@/services/prompt.service';
 import type { PromptJobData } from '@/types';
@@ -84,7 +87,28 @@ export class ClaudeCodeWorker {
       // Set up event forwarding to Redis
       this.setupEventForwarding(sdkService, channel, job);
 
+      // Handle Claude Code session ID capture for database backfill
+      sdkService.on(
+        'claude_session_captured',
+        async (data: { databaseSessionId: string; claudeCodeSessionId: string }) => {
+          try {
+            await this.backfillClaudeSessionId(data.databaseSessionId, data.claudeCodeSessionId);
+          } catch (error) {
+            logger.warn(
+              {
+                databaseSessionId: data.databaseSessionId,
+                claudeCodeSessionId: data.claudeCodeSessionId,
+                error: error instanceof Error ? error.message : String(error),
+              },
+              'Failed to backfill Claude session ID',
+            );
+          }
+        },
+      );
+
       // Execute the prompt
+      // Note: Claude Code SDK automatically stores conversation data in ~/.claude directory
+      // We only need to track job metadata in our database
       const result = await sdkService.execute(prompt);
 
       // Clean up
@@ -281,15 +305,12 @@ export class ClaudeCodeWorker {
   }
 
   /**
-   * Updates prompt status to processing
+   * Updates prompt status to processing (placeholder - prompts now in Claude directory)
    */
   private async markPromptAsProcessing(promptId: string): Promise<void> {
-    // Update the prompt status directly in the database
-    const { db } = await import('@/db');
-    const { prompts } = await import('@/db/schema');
-    const { eq } = await import('drizzle-orm');
-
-    await db.update(prompts).set({ status: 'processing' }).where(eq(prompts.id, promptId));
+    // Note: Prompts are now stored in Claude directory, not database
+    // Status tracking is handled via job status
+    logger.info({ promptId }, 'Marking prompt as processing');
   }
 
   /**
@@ -308,6 +329,7 @@ export class ClaudeCodeWorker {
 
   /**
    * Saves the prompt result to the database
+   * Note: Actual response content is stored by Claude Code SDK in ~/.claude directory
    */
   private async savePromptResult(
     promptId: string,
@@ -343,8 +365,8 @@ export class ClaudeCodeWorker {
       }
     }
 
+    // Save job completion metadata only - actual content stored in Claude directory
     await promptService.updatePromptResult(promptId, {
-      response: result.response,
       status: 'completed' as const,
       metadata: {
         toolCalls,
@@ -354,6 +376,12 @@ export class ClaudeCodeWorker {
         stopReason: result.stopReason,
         thinking,
         citations: citations.length > 0 ? citations : undefined,
+        // Reference to Claude directory - actual content stored there
+        hasClaudeDirectoryContent: true,
+        responseSummary:
+          result.response.length > 200
+            ? `${result.response.substring(0, 200)}...`
+            : result.response,
       },
     });
   }
@@ -399,8 +427,13 @@ export class ClaudeCodeWorker {
     await promptService.updatePromptResult(promptId, {
       error: error.message,
       status: 'failed' as const,
-      response: undefined,
-      metadata: undefined,
+      metadata: {
+        errorDetails: {
+          message: error.message,
+          stack: error.stack,
+          timestamp: new Date().toISOString(),
+        },
+      },
     });
 
     await this.publishEvent(channel, {
@@ -487,6 +520,38 @@ export class ClaudeCodeWorker {
         timestamp: new Date().toISOString(),
       });
     }
+  }
+
+  /**
+   * Backfill the Claude Code session ID in the database
+   */
+  private async backfillClaudeSessionId(
+    databaseSessionId: string,
+    claudeCodeSessionId: string,
+  ): Promise<void> {
+    logger.info(
+      {
+        databaseSessionId,
+        claudeCodeSessionId,
+      },
+      'Backfilling Claude Code session ID in database',
+    );
+
+    await db
+      .update(sessions)
+      .set({
+        claudeCodeSessionId,
+        updatedAt: new Date(),
+      })
+      .where(eq(sessions.id, databaseSessionId));
+
+    logger.info(
+      {
+        databaseSessionId,
+        claudeCodeSessionId,
+      },
+      'Successfully backfilled Claude Code session ID',
+    );
   }
 
   /**

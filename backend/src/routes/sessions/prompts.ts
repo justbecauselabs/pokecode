@@ -1,7 +1,6 @@
 import { type Static, Type } from '@sinclair/typebox';
 import type { FastifyPluginAsync } from 'fastify';
 import { rateLimitConfig } from '@/config';
-import { ErrorResponseSchema } from '@/schemas/auth.schema';
 import {
   CreatePromptRequestSchema,
   ExportQuerySchema,
@@ -12,6 +11,7 @@ import {
   PromptResponseSchema,
 } from '@/schemas/prompt.schema';
 import { promptService } from '@/services/prompt.service';
+import { logger } from '@/utils/logger';
 
 const promptRoutes: FastifyPluginAsync = async (fastify) => {
   // Create prompt
@@ -21,29 +21,38 @@ const promptRoutes: FastifyPluginAsync = async (fastify) => {
   }>(
     '/',
     {
-      preHandler: [fastify.authenticate],
       config: {
         rateLimit: rateLimitConfig.prompt,
       },
       schema: {
-        headers: { $ref: 'authHeaders#' },
         params: Type.Object({ sessionId: Type.String({ format: 'uuid' }) }),
         body: CreatePromptRequestSchema,
         response: {
           201: PromptResponseSchema,
-          400: ErrorResponseSchema,
-          401: ErrorResponseSchema,
-          404: ErrorResponseSchema,
-          429: ErrorResponseSchema,
+          400: Type.Object({
+            error: Type.String(),
+            code: Type.Optional(Type.String()),
+          }),
+          404: Type.Object({
+            error: Type.String(),
+            code: Type.Optional(Type.String()),
+          }),
+          409: Type.Object({
+            error: Type.String(),
+            code: Type.Optional(Type.String()),
+          }),
+          429: Type.Object({
+            error: Type.String(),
+            code: Type.Optional(Type.String()),
+          }),
         },
       },
     },
     async (request, reply) => {
-      const userId = (request.user as any).sub;
       const { sessionId } = request.params;
 
       try {
-        const prompt = await promptService.createPrompt(sessionId, userId, request.body);
+        const prompt = await promptService.createPrompt(sessionId, request.body);
 
         // Track metrics
         if (fastify.metrics) {
@@ -75,23 +84,22 @@ const promptRoutes: FastifyPluginAsync = async (fastify) => {
   }>(
     '/:promptId',
     {
-      preHandler: fastify.authenticate,
       schema: {
-        headers: { $ref: 'authHeaders#' },
         params: PromptParamsSchema,
         response: {
           200: PromptDetailResponseSchema,
-          401: ErrorResponseSchema,
-          404: ErrorResponseSchema,
+          404: Type.Object({
+            error: Type.String(),
+            code: Type.Optional(Type.String()),
+          }),
         },
       },
     },
     async (request, reply) => {
-      const userId = (request.user as any).sub;
       const { sessionId, promptId } = request.params;
 
       try {
-        const prompt = await promptService.getPrompt(promptId, sessionId, userId);
+        const prompt = await promptService.getPrompt(promptId, sessionId);
         return reply.send(prompt);
       } catch (error: any) {
         if (error.name === 'NotFoundError') {
@@ -111,24 +119,26 @@ const promptRoutes: FastifyPluginAsync = async (fastify) => {
   }>(
     '/:promptId',
     {
-      preHandler: fastify.authenticate,
       schema: {
-        headers: { $ref: 'authHeaders#' },
         params: PromptParamsSchema,
         response: {
           200: Type.Object({ success: Type.Boolean() }),
-          401: ErrorResponseSchema,
-          404: ErrorResponseSchema,
-          409: ErrorResponseSchema,
+          404: Type.Object({
+            error: Type.String(),
+            code: Type.Optional(Type.String()),
+          }),
+          409: Type.Object({
+            error: Type.String(),
+            code: Type.Optional(Type.String()),
+          }),
         },
       },
     },
     async (request, reply) => {
-      const userId = (request.user as any).sub;
       const { sessionId, promptId } = request.params;
 
       try {
-        const result = await promptService.cancelPrompt(promptId, sessionId, userId);
+        const result = await promptService.cancelPrompt(promptId, sessionId);
 
         // Track metrics
         if (fastify.metrics) {
@@ -167,29 +177,132 @@ export const historyAndExportRoutes: FastifyPluginAsync = async (fastify) => {
   }>(
     '/history',
     {
-      preHandler: fastify.authenticate,
       config: {
         rateLimit: rateLimitConfig.read,
       },
       schema: {
-        headers: { $ref: 'authHeaders#' },
         params: Type.Object({ sessionId: Type.String({ format: 'uuid' }) }),
         querystring: HistoryQuerySchema,
         response: {
           200: HistoryResponseSchema,
-          401: ErrorResponseSchema,
-          404: ErrorResponseSchema,
+          404: Type.Object({
+            error: Type.String(),
+            code: Type.Optional(Type.String()),
+          }),
         },
       },
     },
     async (request, reply) => {
-      const userId = (request.user as any).sub;
       const { sessionId } = request.params;
 
+      logger.debug(
+        {
+          sessionId,
+          query: request.query,
+        },
+        'History route called',
+      );
+
       try {
-        const history = await promptService.getHistory(sessionId, userId, request.query);
+        const history = await promptService.getHistory(sessionId, request.query);
+
+        logger.debug(
+          {
+            sessionId,
+            promptCount: Array.isArray(history.prompts) ? history.prompts.length : 0,
+            hasPrompts: !!(history.prompts && history.prompts.length > 0),
+          },
+          'History route response',
+        );
+
         return reply.send(history);
       } catch (error: any) {
+        logger.error(
+          {
+            sessionId,
+            errorName: error.name,
+            errorMessage: error.message,
+            errorStack: error.stack,
+          },
+          'History route error',
+        );
+
+        if (error.name === 'NotFoundError') {
+          return reply.code(404).send({
+            error: error.message,
+            code: error.code,
+          });
+        }
+        throw error;
+      }
+    },
+  );
+
+  // Get intermediate messages for a conversation thread
+  fastify.get<{
+    Params: { sessionId: string; threadId: string };
+  }>(
+    '/threads/:threadId/intermediate',
+    {
+      config: {
+        rateLimit: rateLimitConfig.read,
+      },
+      schema: {
+        params: Type.Object({ 
+          sessionId: Type.String({ format: 'uuid' }),
+          threadId: Type.String()
+        }),
+        response: {
+          200: Type.Object({
+            messages: Type.Array(Type.Any()),
+            count: Type.Number()
+          }),
+          404: Type.Object({
+            error: Type.String(),
+            code: Type.Optional(Type.String()),
+          }),
+        },
+      },
+    },
+    async (request, reply) => {
+      const { sessionId, threadId } = request.params;
+
+      logger.debug(
+        {
+          sessionId,
+          threadId,
+        },
+        'Intermediate messages route called',
+      );
+
+      try {
+        const messages = await promptService.getIntermediateMessages(sessionId, threadId);
+
+        logger.debug(
+          {
+            sessionId,
+            threadId,
+            messageCount: messages.length,
+          },
+          'Intermediate messages route response',
+        );
+
+        return reply.send({
+          messages,
+          count: messages.length
+        });
+      } catch (error: any) {
+        logger.error(
+          {
+            sessionId,
+            threadId,
+            errorName: error.name,
+            errorMessage: error.message,
+            errorStack: error.stack,
+          },
+          'Intermediate messages route error',
+        );
+
         if (error.name === 'NotFoundError') {
           return reply.code(404).send({
             error: error.message,
@@ -208,9 +321,7 @@ export const historyAndExportRoutes: FastifyPluginAsync = async (fastify) => {
   }>(
     '/export',
     {
-      preHandler: fastify.authenticate,
       schema: {
-        headers: { $ref: 'authHeaders#' },
         params: Type.Object({ sessionId: Type.String({ format: 'uuid' }) }),
         querystring: ExportQuerySchema,
         response: {
@@ -221,18 +332,19 @@ export const historyAndExportRoutes: FastifyPluginAsync = async (fastify) => {
               prompts: Type.Array(Type.Any()),
             }),
           ]),
-          401: ErrorResponseSchema,
-          404: ErrorResponseSchema,
+          404: Type.Object({
+            error: Type.String(),
+            code: Type.Optional(Type.String()),
+          }),
         },
       },
     },
     async (request, reply) => {
-      const userId = (request.user as any).sub;
       const { sessionId } = request.params;
       const { format } = request.query;
 
       try {
-        const result = await promptService.exportSession(sessionId, userId, format);
+        const result = await promptService.exportSession(sessionId, format);
 
         if (format === 'markdown') {
           reply.type('text/markdown');

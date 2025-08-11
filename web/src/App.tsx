@@ -1,21 +1,31 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
-import { HomePage } from './pages/HomePage'
-import { LoginPage } from './pages/LoginPage'
-import { RegisterPage } from './pages/RegisterPage'
-import { ChatPage } from './pages/ChatPage'
+import { useEffect } from "react";
+import {
+	Navigate,
+	Route,
+	BrowserRouter as Router,
+	Routes,
+} from "react-router-dom";
+import { ChatPage } from "./pages/ChatPage";
+import { HomePage } from "./pages/HomePage";
+import { useSessionStore } from "./stores/sessionStore";
 
 export function App() {
-  return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
-        <Route path="/chat/:sessionId" element={<ChatPage />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </Router>
-  )
+	const { loadSessions } = useSessionStore();
+
+	// Load sessions on app initialization to support direct navigation to chat URLs
+	useEffect(() => {
+		loadSessions();
+	}, [loadSessions]);
+
+	return (
+		<Router>
+			<Routes>
+				<Route path="/" element={<HomePage />} />
+				<Route path="/chat/:sessionId" element={<ChatPage />} />
+				<Route path="*" element={<Navigate to="/" replace />} />
+			</Routes>
+		</Router>
+	);
 }
 
-export default App
+export default App;

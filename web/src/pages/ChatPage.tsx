@@ -1,10 +1,5 @@
-import { ChatContainer } from '../components/chat/ChatContainer'
-import { AuthGuard } from '../components/auth/AuthGuard'
+import { ChatContainer } from "../components/chat/ChatContainer";
 
 export function ChatPage() {
-  return (
-    <AuthGuard>
-      <ChatContainer />
-    </AuthGuard>
-  )
+	return <ChatContainer />;
 }

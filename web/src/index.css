@@ -1,141 +1,153 @@
 @import "tailwindcss";
 
 @layer base {
-  :root {
-    /* One Dark Pro Light Mode (for fallback) */
-    --background: 0 0% 98%;
-    --foreground: 214 100% 17%;
-    --card: 0 0% 100%;
-    --card-foreground: 214 100% 17%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 214 100% 17%;
-    --primary: 221 83% 53%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 220 13% 91%;
-    --secondary-foreground: 220 8.9% 46.1%;
-    --muted: 220 13% 91%;
-    --muted-foreground: 220 8.9% 46.1%;
-    --accent: 27 98% 54%;
-    --accent-foreground: 0 0% 100%;
-    --destructive: 0 72% 51%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
-    --ring: 221 83% 53%;
-    --radius: 0.25rem;
-  }
+	:root {
+		/* One Dark Pro Light Mode (for fallback) */
+		--background: 0 0% 98%;
+		--foreground: 214 100% 17%;
+		--card: 0 0% 100%;
+		--card-foreground: 214 100% 17%;
+		--popover: 0 0% 100%;
+		--popover-foreground: 214 100% 17%;
+		--primary: 221 83% 53%;
+		--primary-foreground: 0 0% 100%;
+		--secondary: 220 13% 91%;
+		--secondary-foreground: 220 8.9% 46.1%;
+		--muted: 220 13% 91%;
+		--muted-foreground: 220 8.9% 46.1%;
+		--accent: 27 98% 54%;
+		--accent-foreground: 0 0% 100%;
+		--destructive: 0 72% 51%;
+		--destructive-foreground: 0 0% 98%;
+		--border: 220 13% 91%;
+		--input: 220 13% 91%;
+		--ring: 221 83% 53%;
+		--radius: 0.25rem;
+	}
 
-  /* One Dark Pro Terminal Theme - Default for terminal feel */
-  :root,
-  .dark {
-    /* One Dark Pro Core Colors */
-    --background: 220 13% 20%; /* #282c34 */
-    --foreground: 218 14% 71%; /* #abb2bf */
-    --card: 219 28% 16%; /* #21252b */
-    --card-foreground: 218 14% 71%; /* #abb2bf */
-    --popover: 219 28% 16%; /* #21252b */
-    --popover-foreground: 218 14% 71%; /* #abb2bf */
-    
-    /* Terminal-inspired colors */
-    --primary: 221 83% 53%; /* #528bff - One Dark accent blue */
-    --primary-foreground: 220 13% 20%;
-    --secondary: 220 28% 25%; /* #3e4451 - darker secondary */
-    --secondary-foreground: 218 14% 71%;
-    --muted: 219 28% 16%; /* #21252b - subtle backgrounds */
-    --muted-foreground: 218 11% 65%; /* #9da5b4 - muted text */
-    --accent: 95 38% 62%; /* #98c379 - terminal green */
-    --accent-foreground: 220 13% 20%;
-    
-    /* Terminal status colors */
-    --destructive: 355 65% 65%; /* #e06c75 - One Dark red */
-    --destructive-foreground: 218 14% 71%;
-    --warning: 29 54% 61%; /* #d19a66 - One Dark orange */
-    --success: 95 38% 62%; /* #98c379 - One Dark green */
-    --info: 187 47% 55%; /* #56b6c2 - One Dark cyan */
-    
-    /* Terminal UI elements */
-    --border: 220 28% 25%; /* #3e4451 - subtle borders */
-    --input: 219 28% 16%; /* #21252b - input backgrounds */
-    --ring: 221 83% 53%; /* #528bff - focus rings */
-    --radius: 0.25rem; /* Sharp terminal-like corners */
-    
-    /* Terminal-specific variables */
-    --terminal-cursor: 221 83% 53%; /* #528bff */
-    --terminal-selection: 218 14% 71% / 0.2; /* Selection highlight */
-    --terminal-prompt: 95 38% 62%; /* #98c379 - green prompt */
-    --terminal-error: 355 65% 65%; /* #e06c75 - error text */
-    --terminal-warning: 29 54% 61%; /* #d19a66 - warning text */
-    --terminal-info: 187 47% 55%; /* #56b6c2 - info text */
-    --terminal-string: 95 38% 62%; /* #98c379 - string color */
-    --terminal-number: 29 54% 61%; /* #d19a66 - number color */
-    --terminal-keyword: 286 60% 67%; /* #c678dd - keyword color */
-  }
+	/* One Dark Pro Terminal Theme - Default for terminal feel */
+	:root,
+	.dark {
+		/* One Dark Pro Core Colors */
+		--background: 220 13% 20%; /* #282c34 */
+		--foreground: 218 14% 71%; /* #abb2bf */
+		--card: 219 28% 16%; /* #21252b */
+		--card-foreground: 218 14% 71%; /* #abb2bf */
+		--popover: 219 28% 16%; /* #21252b */
+		--popover-foreground: 218 14% 71%; /* #abb2bf */
+
+		/* Terminal-inspired colors */
+		--primary: 221 83% 53%; /* #528bff - One Dark accent blue */
+		--primary-foreground: 220 13% 20%;
+		--secondary: 220 28% 25%; /* #3e4451 - darker secondary */
+		--secondary-foreground: 218 14% 71%;
+		--muted: 219 28% 16%; /* #21252b - subtle backgrounds */
+		--muted-foreground: 218 11% 65%; /* #9da5b4 - muted text */
+		--accent: 95 38% 62%; /* #98c379 - terminal green */
+		--accent-foreground: 220 13% 20%;
+
+		/* Terminal status colors */
+		--destructive: 355 65% 65%; /* #e06c75 - One Dark red */
+		--destructive-foreground: 218 14% 71%;
+		--warning: 29 54% 61%; /* #d19a66 - One Dark orange */
+		--success: 95 38% 62%; /* #98c379 - One Dark green */
+		--info: 187 47% 55%; /* #56b6c2 - One Dark cyan */
+
+		/* Terminal UI elements */
+		--border: 220 28% 25%; /* #3e4451 - subtle borders */
+		--input: 219 28% 16%; /* #21252b - input backgrounds */
+		--ring: 221 83% 53%; /* #528bff - focus rings */
+		--radius: 0.25rem; /* Sharp terminal-like corners */
+
+		/* Terminal-specific variables */
+		--terminal-cursor: 221 83% 53%; /* #528bff */
+		--terminal-selection: 218 14% 71% / 0.2; /* Selection highlight */
+		--terminal-prompt: 95 38% 62%; /* #98c379 - green prompt */
+		--terminal-error: 355 65% 65%; /* #e06c75 - error text */
+		--terminal-warning: 29 54% 61%; /* #d19a66 - warning text */
+		--terminal-info: 187 47% 55%; /* #56b6c2 - info text */
+		--terminal-string: 95 38% 62%; /* #98c379 - string color */
+		--terminal-number: 29 54% 61%; /* #d19a66 - number color */
+		--terminal-keyword: 286 60% 67%; /* #c678dd - keyword color */
+	}
 }
 
 @layer base {
-  * {
-    border-color: hsl(var(--border));
-  }
-  
-  body {
-    background-color: hsl(var(--background));
-    color: hsl(var(--foreground));
-    /* Terminal-style font stack */
-    font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Source Code Pro', 'Ubuntu Mono', monospace;
-    font-variant-ligatures: common-ligatures;
-    font-feature-settings: 'liga' 1, 'calt' 1;
-    line-height: 1.5;
-    letter-spacing: 0.025em;
-  }
-  
-  /* Terminal-specific typography */
-  .terminal-text {
-    font-family: inherit;
-    font-variant-ligatures: common-ligatures;
-    font-feature-settings: 'liga' 1, 'calt' 1;
-  }
-  
-  /* Terminal prompt styling */
-  .terminal-prompt {
-    color: hsl(var(--terminal-prompt));
-  }
-  
-  .terminal-cursor {
-    background-color: hsl(var(--terminal-cursor));
-    animation: blink 1s infinite;
-  }
-  
-  @keyframes blink {
-    0%, 50% { opacity: 1; }
-    51%, 100% { opacity: 0; }
-  }
-  
-  /* Terminal selection styling */
-  ::selection {
-    background-color: hsl(var(--terminal-selection));
-  }
-  
-  /* Scrollbar styling for terminal feel */
-  ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-  }
-  
-  ::-webkit-scrollbar-track {
-    background: hsl(var(--background));
-  }
-  
-  ::-webkit-scrollbar-thumb {
-    background: hsl(var(--border));
-    border-radius: 4px;
-  }
-  
-  ::-webkit-scrollbar-thumb:hover {
-    background: hsl(var(--muted-foreground));
-  }
-  
-  /* Terminal-style focus rings */
-  .focus\:ring-terminal:focus {
-    --tw-ring-color: hsl(var(--terminal-cursor));
-  }
+	* {
+		border-color: hsl(var(--border));
+	}
+
+	body {
+		background-color: hsl(var(--background));
+		color: hsl(var(--foreground));
+		/* Terminal-style font stack */
+		font-family:
+			"JetBrains Mono", "Fira Code", "Cascadia Code", "SF Mono", "Monaco",
+			"Inconsolata", "Roboto Mono", "Source Code Pro", "Ubuntu Mono", monospace;
+		font-variant-ligatures: common-ligatures;
+		font-feature-settings:
+			"liga" 1,
+			"calt" 1;
+		line-height: 1.5;
+		letter-spacing: 0.025em;
+	}
+
+	/* Terminal-specific typography */
+	.terminal-text {
+		font-family: inherit;
+		font-variant-ligatures: common-ligatures;
+		font-feature-settings:
+			"liga" 1,
+			"calt" 1;
+	}
+
+	/* Terminal prompt styling */
+	.terminal-prompt {
+		color: hsl(var(--terminal-prompt));
+	}
+
+	.terminal-cursor {
+		background-color: hsl(var(--terminal-cursor));
+		animation: blink 1s infinite;
+	}
+
+	@keyframes blink {
+		0%,
+		50% {
+			opacity: 1;
+		}
+		51%,
+		100% {
+			opacity: 0;
+		}
+	}
+
+	/* Terminal selection styling */
+	::selection {
+		background-color: hsl(var(--terminal-selection));
+	}
+
+	/* Scrollbar styling for terminal feel */
+	::-webkit-scrollbar {
+		width: 8px;
+		height: 8px;
+	}
+
+	::-webkit-scrollbar-track {
+		background: hsl(var(--background));
+	}
+
+	::-webkit-scrollbar-thumb {
+		background: hsl(var(--border));
+		border-radius: 4px;
+	}
+
+	::-webkit-scrollbar-thumb:hover {
+		background: hsl(var(--muted-foreground));
+	}
+
+	/* Terminal-style focus rings */
+	.focus\:ring-terminal:focus {
+		--tw-ring-color: hsl(var(--terminal-cursor));
+	}
 }

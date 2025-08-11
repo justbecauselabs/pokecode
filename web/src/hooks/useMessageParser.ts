@@ -1,11 +1,17 @@
-import { useMemo } from 'react'
-import { parseMessageContent, detectCodeLanguage } from '../utils/messageParser'
+import { useMemo } from "react";
+import {
+	detectCodeLanguage,
+	parseMessageContent,
+} from "../utils/messageParser";
 
 export function useMessageParser() {
-  const parser = useMemo(() => ({
-    parseMessageContent,
-    detectCodeLanguage,
-  }), [])
+	const parser = useMemo(
+		() => ({
+			parseMessageContent,
+			detectCodeLanguage,
+		}),
+		[],
+	);
 
-  return parser
+	return parser;
 }

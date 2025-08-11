@@ -65,13 +65,24 @@ export class EnhancedSSEStream {
 
       while (true) {
         const message = await new Promise<string>((resolve, reject) => {
+          const timeout = setTimeout(() => {
+            reject(new Error('Redis message timeout'));
+          }, 30000); // 30 second timeout
+
           redis.once('message', (receivedChannel: string, msg: string) => {
+            clearTimeout(timeout);
             if (receivedChannel === channel) {
               resolve(msg);
             }
           });
 
-          redis.once('error', reject);
+          redis.once('error', (error: Error) => {
+            clearTimeout(timeout);
+            reject(error);
+          });
+        }).catch((error) => {
+          console.warn('Redis subscription error:', error.message);
+          throw error; // Re-throw to break the loop
         });
 
         try {
@@ -107,8 +118,12 @@ export class EnhancedSSEStream {
         }
       }
     } finally {
-      await redis.unsubscribe(channel);
-      await redis.quit();
+      try {
+        await redis.unsubscribe(channel);
+        await redis.quit();
+      } catch (cleanupError) {
+        console.warn('Redis cleanup error:', cleanupError);
+      }
     }
   }
 

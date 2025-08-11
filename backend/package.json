@@ -19,10 +19,12 @@
     "lint:fix": "bunx @biomejs/biome check --write .",
     "format": "bunx @biomejs/biome format --write .",
     "type-check": "bunx tsc --noEmit",
-    "migrate": "bun run scripts/migrate.ts",
+    "migrate": "bunx drizzle-kit push",
     "migrate:generate": "bunx drizzle-kit generate",
-    "migrate:push": "bunx drizzle-kit push",
+    "migrate:push": "bunx drizzle-kit push", 
     "migrate:studio": "bunx drizzle-kit studio",
+    "migrate:check": "bunx drizzle-kit check",
+    "migrate:drop": "bunx drizzle-kit drop",
     "seed": "bun run scripts/seed.ts"
   },
   "dependencies": {

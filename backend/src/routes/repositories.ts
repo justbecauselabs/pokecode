@@ -1,5 +1,4 @@
 import type { FastifyPluginAsync } from 'fastify';
-import { ErrorResponseSchema } from '@/schemas/auth.schema';
 import { ListRepositoriesResponseSchema } from '@/schemas/repository.schema';
 import { repositoryService } from '@/services/repository.service';
 
@@ -8,13 +7,17 @@ const repositoryRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.get(
     '/',
     {
-      preHandler: fastify.authenticate,
       schema: {
-        headers: { $ref: 'authHeaders#' },
         response: {
           200: ListRepositoriesResponseSchema,
-          401: ErrorResponseSchema,
-          500: ErrorResponseSchema,
+          500: {
+            type: 'object',
+            properties: {
+              error: { type: 'string' },
+              code: { type: 'string' },
+            },
+            required: ['error'],
+          },
         },
       },
     },

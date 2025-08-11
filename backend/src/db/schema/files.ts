@@ -1,5 +1,4 @@
 import { index, jsonb, pgEnum, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
-import { prompts } from './prompts';
 import { sessions } from './sessions';
 
 export const fileAccessEnum = pgEnum('file_access_type', ['read', 'write', 'create', 'delete']);
@@ -11,7 +10,7 @@ export const fileAccess = pgTable(
     sessionId: uuid('session_id')
       .notNull()
       .references(() => sessions.id, { onDelete: 'cascade' }),
-    promptId: uuid('prompt_id').references(() => prompts.id, { onDelete: 'cascade' }),
+    // promptId removed - file access now tracked at session level only
     filePath: text('file_path').notNull(),
     accessType: fileAccessEnum('access_type').notNull(),
     content: text('content'), // For write operations
@@ -24,7 +23,6 @@ export const fileAccess = pgTable(
   },
   (table) => ({
     sessionIdIdx: index('idx_file_access_session_id').on(table.sessionId),
-    promptIdIdx: index('idx_file_access_prompt_id').on(table.promptId),
     filePathIdx: index('idx_file_access_file_path').on(table.filePath),
   }),
 );

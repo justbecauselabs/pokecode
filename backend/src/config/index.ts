@@ -12,18 +12,6 @@ export const getDatabaseUrl = () => {
   return `postgres://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}`;
 };
 
-// JWT configuration
-export const jwtConfig = {
-  access: {
-    secret: config.JWT_ACCESS_SECRET,
-    expiresIn: '15m',
-  },
-  refresh: {
-    secret: config.JWT_REFRESH_SECRET,
-    expiresIn: '7d',
-  },
-};
-
 // Rate limit configurations
 export const rateLimitConfig = {
   prompt: {

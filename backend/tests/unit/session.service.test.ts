@@ -14,8 +14,8 @@ describe('SessionService', () => {
             returning: mock(() => [
               {
                 id: 'test-session-id',
-                userId: 'test-user',
                 projectPath: data.projectPath, // Use the actual projectPath from input
+                claudeDirectoryPath: data.claudeDirectoryPath, // New field for Claude directory path
                 context: data.context || null,
                 metadata: data.metadata || null,
                 status: 'active',
@@ -48,16 +48,17 @@ describe('SessionService', () => {
 
   describe('createSession', () => {
     it('should create session with projectPath', async () => {
-      const result = await service.createSession('test-user', {
+      const result = await service.createSession({
         projectPath: '/absolute/path',
       });
 
       expect(result).toBeDefined();
       expect(result.projectPath).toBe('/absolute/path');
+      expect(result.claudeDirectoryPath).toBeDefined();
     });
 
     it('should create session with folderName', async () => {
-      const result = await service.createSession('test-user', {
+      const result = await service.createSession({
         folderName: 'test-repo',
       });
 
@@ -66,21 +67,21 @@ describe('SessionService', () => {
     });
 
     it('should throw error when neither projectPath nor folderName provided', async () => {
-      await expect(service.createSession('test-user', {})).rejects.toBeInstanceOf(
+      await expect(service.createSession({})).rejects.toBeInstanceOf(
         ValidationError
       );
-      await expect(service.createSession('test-user', {})).rejects.toThrow(
+      await expect(service.createSession({})).rejects.toThrow(
         'Either projectPath or folderName must be provided'
       );
     });
 
     it('should throw error when both projectPath and folderName provided', async () => {
-      await expect(service.createSession('test-user', {
+      await expect(service.createSession({
         projectPath: '/absolute/path',
         folderName: 'test-repo',
       })).rejects.toBeInstanceOf(ValidationError);
       
-      await expect(service.createSession('test-user', {
+      await expect(service.createSession({
         projectPath: '/absolute/path',
         folderName: 'test-repo',
       })).rejects.toThrow('Cannot provide both projectPath and folderName');
@@ -93,17 +94,17 @@ describe('SessionService', () => {
         Promise.resolve({ exists: false, isGitRepository: false })
       );
 
-      await expect(service.createSession('test-user', {
+      await expect(service.createSession({
         folderName: 'non-existent',
       })).rejects.toBeInstanceOf(ValidationError);
 
-      await expect(service.createSession('test-user', {
+      await expect(service.createSession({
         folderName: 'non-existent',
       })).rejects.toThrow("Repository folder 'non-existent' does not exist");
     });
 
     it('should throw error for invalid projectPath', async () => {
-      await expect(service.createSession('test-user', {
+      await expect(service.createSession({
         projectPath: '../relative/path',
       })).rejects.toBeInstanceOf(ValidationError);
     });
@@ -117,11 +118,11 @@ describe('SessionService', () => {
         throw new Error('Invalid folder name: cannot contain path separators or traversal');
       });
 
-      await expect(service.createSession('test-user', {
+      await expect(service.createSession({
         folderName: '../invalid',
       })).rejects.toBeInstanceOf(ValidationError);
 
-      await expect(service.createSession('test-user', {
+      await expect(service.createSession({
         folderName: '../invalid',
       })).rejects.toThrow('Invalid repository folder');
       
@@ -138,7 +139,7 @@ describe('SessionService', () => {
         Promise.resolve({ exists: true, isGitRepository: true })
       );
 
-      const result = await service.createSession('test-user', {
+      const result = await service.createSession({
         folderName: 'test-repo',
         context: 'Test context',
         metadata: { branch: 'main' },
@@ -150,6 +151,17 @@ describe('SessionService', () => {
       
       // Restore the original mock
       repositoryService.validateRepository = originalValidateRepository;
+    });
+
+    it('should generate correct Claude directory path for project', async () => {
+      const result = await service.createSession({
+        projectPath: '/Users/test/workspace/myproject',
+      });
+
+      expect(result).toBeDefined();
+      expect(result.projectPath).toBe('/Users/test/workspace/myproject');
+      expect(result.claudeDirectoryPath).toBeDefined();
+      // Claude directory path should be generated based on the project path
     });
   });
 });

@@ -6,10 +6,11 @@ export const sessions = pgTable(
   'claude_code_sessions',
   {
     id: uuid('id').primaryKey().defaultRandom(),
-    userId: text('user_id').notNull(),
     projectPath: text('project_path').notNull(),
     context: text('context'),
     status: sessionStatusEnum('status').default('active').notNull(),
+    claudeDirectoryPath: text('claude_directory_path'), // Path to ~/.claude directory for this session
+    claudeCodeSessionId: text('claude_code_session_id'), // Actual Claude Code CLI session ID (captured after first prompt)
     metadata: jsonb('metadata').$type<{
       repository?: string;
       branch?: string;
@@ -23,7 +24,6 @@ export const sessions = pgTable(
     lastAccessedAt: timestamp('last_accessed_at').defaultNow().notNull(),
   },
   (table) => ({
-    userIdIdx: index('idx_sessions_user_id').on(table.userId),
     statusIdx: index('idx_sessions_status').on(table.status),
     lastAccessedIdx: index('idx_sessions_last_accessed').on(table.lastAccessedAt),
   }),

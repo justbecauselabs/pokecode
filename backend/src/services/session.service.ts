@@ -1,20 +1,18 @@
 import path from 'node:path';
-import { and, desc, eq, sql } from 'drizzle-orm';
+import { desc, eq, sql } from 'drizzle-orm';
 import { db } from '@/db';
 import { sessions } from '@/db/schema';
+import ClaudeDirectoryService from '@/services/claude-directory.service';
 import { repositoryService } from '@/services/repository.service';
 import { NotFoundError, ValidationError } from '@/types';
 
 export class SessionService {
-  async createSession(
-    userId: string,
-    data: {
-      projectPath?: string;
-      folderName?: string;
-      context?: string;
-      metadata?: any;
-    },
-  ) {
+  async createSession(data: {
+    projectPath?: string;
+    folderName?: string;
+    context?: string;
+    metadata?: any;
+  }) {
     // Validate that either projectPath or folderName is provided
     if (!data.projectPath && !data.folderName) {
       throw new ValidationError('Either projectPath or folderName must be provided');
@@ -48,11 +46,14 @@ export class SessionService {
       throw new ValidationError('Either projectPath or folderName must be provided');
     }
 
+    // Generate Claude directory path for this session
+    const claudeDirectoryPath = ClaudeDirectoryService.getClaudeDirectoryPath(projectPath);
+
     const [session] = await db
       .insert(sessions)
       .values({
-        userId,
         projectPath,
+        claudeDirectoryPath,
         context: data.context,
         metadata: data.metadata,
         status: 'active',
@@ -62,9 +63,9 @@ export class SessionService {
     return this.formatSession(session);
   }
 
-  async getSession(sessionId: string, userId: string) {
+  async getSession(sessionId: string) {
     const session = await db.query.sessions.findFirst({
-      where: and(eq(sessions.id, sessionId), eq(sessions.userId, userId)),
+      where: eq(sessions.id, sessionId),
     });
 
     if (!session) {
@@ -78,30 +79,26 @@ export class SessionService {
   }
 
   async listSessions(
-    userId: string,
-    options: {
-      status?: 'active' | 'inactive' | 'archived';
-      limit?: number;
-      offset?: number;
-    },
+    options: { status?: 'active' | 'inactive' | 'archived'; limit?: number; offset?: number } = {},
   ) {
     const { status, limit = 20, offset = 0 } = options;
 
-    // Build where clause
-    const whereConditions = [eq(sessions.userId, userId)];
+    // Build where clause - only show sessions that have Claude Code session IDs
+    let whereClause = sql`${sessions.claudeCodeSessionId} IS NOT NULL`;
+
     if (status) {
-      whereConditions.push(eq(sessions.status, status));
+      whereClause = sql`${whereClause} AND ${eq(sessions.status, status)}`;
     }
 
     // Get total count
     const [{ count }] = await db
       .select({ count: sql<number>`count(*)` })
       .from(sessions)
-      .where(and(...whereConditions));
+      .where(whereClause);
 
     // Get sessions
     const results = await db.query.sessions.findMany({
-      where: and(...whereConditions),
+      where: whereClause,
       orderBy: [desc(sessions.lastAccessedAt)],
       limit,
       offset,
@@ -117,16 +114,15 @@ export class SessionService {
 
   async updateSession(
     sessionId: string,
-    userId: string,
     data: {
       context?: string;
       status?: 'active' | 'inactive' | 'archived';
       metadata?: any;
     },
   ) {
-    // Verify ownership
+    // Verify session exists
     const session = await db.query.sessions.findFirst({
-      where: and(eq(sessions.id, sessionId), eq(sessions.userId, userId)),
+      where: eq(sessions.id, sessionId),
     });
 
     if (!session) {
@@ -157,10 +153,10 @@ export class SessionService {
     return this.formatSession(updated);
   }
 
-  async deleteSession(sessionId: string, userId: string) {
-    // Verify ownership
+  async deleteSession(sessionId: string) {
+    // Verify session exists
     const session = await db.query.sessions.findFirst({
-      where: and(eq(sessions.id, sessionId), eq(sessions.userId, userId)),
+      where: eq(sessions.id, sessionId),
     });
 
     if (!session) {
@@ -173,20 +169,59 @@ export class SessionService {
     return { success: true };
   }
 
-  async getActiveSessionCount(userId: string): Promise<number> {
+  async getActiveSessionCount(): Promise<number> {
     const [{ count }] = await db
       .select({ count: sql<number>`count(*)` })
       .from(sessions)
-      .where(and(eq(sessions.userId, userId), eq(sessions.status, 'active')));
+      .where(eq(sessions.status, 'active'));
 
     return Number(count);
+  }
+
+  /**
+   * Get conversation history from Claude directory for a session
+   */
+  async getSessionConversations(sessionId: string) {
+    const session = await this.getSession(sessionId);
+
+    if (!session.claudeDirectoryPath) {
+      throw new ValidationError('Session does not have Claude directory path configured');
+    }
+
+    const claudeService = new ClaudeDirectoryService();
+    return claudeService.getProjectConversations(session.projectPath);
+  }
+
+  /**
+   * Get the most recent conversation for a session
+   */
+  async getMostRecentConversation(sessionId: string) {
+    const session = await this.getSession(sessionId);
+
+    const claudeService = new ClaudeDirectoryService();
+    return claudeService.getMostRecentConversation(session.projectPath);
+  }
+
+  /**
+   * Check if Claude directory is available for a session
+   */
+  async isClaudeDirectoryAvailable(sessionId: string): Promise<boolean> {
+    const session = await this.getSession(sessionId);
+
+    if (!session.claudeDirectoryPath) {
+      return false;
+    }
+
+    const claudeService = new ClaudeDirectoryService();
+    return claudeService.isInitialized();
   }
 
   private formatSession(session: any) {
     return {
       id: session.id,
-      userId: session.userId,
       projectPath: session.projectPath,
+      claudeDirectoryPath: session.claudeDirectoryPath,
+      claudeCodeSessionId: session.claudeCodeSessionId,
       context: session.context,
       status: session.status,
       metadata: session.metadata,

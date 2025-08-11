@@ -16,13 +16,12 @@ export const envSchema = z.object({
   // Redis Configuration
   REDIS_URL: z.string().url(),
 
-  // JWT Configuration
-  JWT_ACCESS_SECRET: z.string().min(32),
-  JWT_REFRESH_SECRET: z.string().min(32),
-
   // Claude Configuration - OPTIONAL
   // If set, uses API key billing. If not set, uses local Claude Max account
   ANTHROPIC_API_KEY: z.string().optional(),
+
+  // Claude Code CLI Path - REQUIRED for worker functionality
+  CLAUDE_CODE_PATH: z.string().min(1),
 
   // File Storage (no base dir; paths are absolute)
 

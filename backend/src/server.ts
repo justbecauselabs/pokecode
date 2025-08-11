@@ -48,8 +48,15 @@ process.on('uncaughtException', (error) => {
 });
 
 process.on('unhandledRejection', (reason, promise) => {
-  server.log.fatal({ reason, promise }, 'Unhandled Rejection');
-  process.exit(1);
+  // Log the error but don't exit the process to maintain server availability
+  // Worker failures should not bring down the entire server
+  server.log.error({ reason, promise }, 'Unhandled Rejection - continuing server operation');
+
+  // Only exit if this is a critical server error, not a worker error
+  if (reason instanceof Error && reason.message.includes('EADDRINUSE')) {
+    server.log.fatal({ reason, promise }, 'Critical server error - shutting down');
+    process.exit(1);
+  }
 });
 
 // Start server

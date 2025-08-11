@@ -1,7 +1,5 @@
 import { type Static, Type } from '@sinclair/typebox';
 import type { FastifyPluginAsync } from 'fastify';
-import { rateLimitConfig } from '@/config';
-import { ErrorResponseSchema } from '@/schemas/auth.schema';
 import {
   CreateFileRequestSchema,
   FileOperationSuccessSchema,
@@ -15,8 +13,8 @@ import { sessionService } from '@/services/session.service';
 
 const fileRoutes: FastifyPluginAsync = async (fastify) => {
   // Helper to verify session access
-  async function verifySessionAccess(sessionId: string, userId: string) {
-    const session = await sessionService.getSession(sessionId, userId);
+  async function verifySessionAccess(sessionId: string) {
+    const session = await sessionService.getSession(sessionId);
     return session.projectPath;
   }
 
@@ -27,30 +25,23 @@ const fileRoutes: FastifyPluginAsync = async (fastify) => {
   }>(
     '/',
     {
-      preHandler: fastify.authenticate,
-      config: {
-        rateLimit: rateLimitConfig.read,
-      },
       schema: {
-        headers: { $ref: 'authHeaders#' },
         params: Type.Object({ sessionId: Type.String({ format: 'uuid' }) }),
         querystring: ListFilesQuerySchema,
         response: {
           200: ListFilesResponseSchema,
-          400: ErrorResponseSchema,
-          401: ErrorResponseSchema,
-          403: ErrorResponseSchema,
-          404: ErrorResponseSchema,
+          400: Type.Object({ error: Type.String(), code: Type.Optional(Type.String()) }),
+          403: Type.Object({ error: Type.String(), code: Type.Optional(Type.String()) }),
+          404: Type.Object({ error: Type.String(), code: Type.Optional(Type.String()) }),
         },
       },
     },
     async (request, reply) => {
-      const userId = (request.user as any).sub;
       const { sessionId } = request.params;
       const { path, recursive, pattern } = request.query;
 
       try {
-        const projectPath = await verifySessionAccess(sessionId, userId);
+        const projectPath = await verifySessionAccess(sessionId);
         const result = await fileService.listFiles(sessionId, projectPath, path, {
           recursive,
           pattern,
@@ -86,32 +77,25 @@ const fileRoutes: FastifyPluginAsync = async (fastify) => {
   }>(
     '/*',
     {
-      preHandler: fastify.authenticate,
-      config: {
-        rateLimit: rateLimitConfig.read,
-      },
       schema: {
-        headers: { $ref: 'authHeaders#' },
         params: Type.Object({
           sessionId: Type.String({ format: 'uuid' }),
           '*': Type.String(),
         }),
         response: {
           200: GetFileResponseSchema,
-          400: ErrorResponseSchema,
-          401: ErrorResponseSchema,
-          403: ErrorResponseSchema,
-          404: ErrorResponseSchema,
+          400: Type.Object({ error: Type.String(), code: Type.Optional(Type.String()) }),
+          403: Type.Object({ error: Type.String(), code: Type.Optional(Type.String()) }),
+          404: Type.Object({ error: Type.String(), code: Type.Optional(Type.String()) }),
         },
       },
     },
     async (request, reply) => {
-      const userId = (request.user as any).sub;
       const { sessionId } = request.params;
       const filePath = request.params['*'];
 
       try {
-        const projectPath = await verifySessionAccess(sessionId, userId);
+        const projectPath = await verifySessionAccess(sessionId);
         const file = await fileService.readFile(sessionId, projectPath, filePath);
         return reply.send(file);
       } catch (error: any) {
@@ -145,12 +129,7 @@ const fileRoutes: FastifyPluginAsync = async (fastify) => {
   }>(
     '/*',
     {
-      preHandler: fastify.authenticate,
-      config: {
-        rateLimit: rateLimitConfig.file,
-      },
       schema: {
-        headers: { $ref: 'authHeaders#' },
         params: Type.Object({
           sessionId: Type.String({ format: 'uuid' }),
           '*': Type.String(),
@@ -158,21 +137,19 @@ const fileRoutes: FastifyPluginAsync = async (fastify) => {
         body: CreateFileRequestSchema,
         response: {
           201: FileOperationSuccessSchema,
-          400: ErrorResponseSchema,
-          401: ErrorResponseSchema,
-          403: ErrorResponseSchema,
-          409: ErrorResponseSchema,
+          400: Type.Object({ error: Type.String(), code: Type.Optional(Type.String()) }),
+          403: Type.Object({ error: Type.String(), code: Type.Optional(Type.String()) }),
+          409: Type.Object({ error: Type.String(), code: Type.Optional(Type.String()) }),
         },
       },
     },
     async (request, reply) => {
-      const userId = (request.user as any).sub;
       const { sessionId } = request.params;
       const filePath = request.params['*'];
       const { content, encoding } = request.body;
 
       try {
-        const projectPath = await verifySessionAccess(sessionId, userId);
+        const projectPath = await verifySessionAccess(sessionId);
         const result = await fileService.createFile(
           sessionId,
           projectPath,
@@ -212,12 +189,7 @@ const fileRoutes: FastifyPluginAsync = async (fastify) => {
   }>(
     '/*',
     {
-      preHandler: fastify.authenticate,
-      config: {
-        rateLimit: rateLimitConfig.file,
-      },
       schema: {
-        headers: { $ref: 'authHeaders#' },
         params: Type.Object({
           sessionId: Type.String({ format: 'uuid' }),
           '*': Type.String(),
@@ -225,21 +197,19 @@ const fileRoutes: FastifyPluginAsync = async (fastify) => {
         body: UpdateFileRequestSchema,
         response: {
           200: FileOperationSuccessSchema,
-          400: ErrorResponseSchema,
-          401: ErrorResponseSchema,
-          403: ErrorResponseSchema,
-          404: ErrorResponseSchema,
+          400: Type.Object({ error: Type.String(), code: Type.Optional(Type.String()) }),
+          403: Type.Object({ error: Type.String(), code: Type.Optional(Type.String()) }),
+          404: Type.Object({ error: Type.String(), code: Type.Optional(Type.String()) }),
         },
       },
     },
     async (request, reply) => {
-      const userId = (request.user as any).sub;
       const { sessionId } = request.params;
       const filePath = request.params['*'];
       const { content, encoding } = request.body;
 
       try {
-        const projectPath = await verifySessionAccess(sessionId, userId);
+        const projectPath = await verifySessionAccess(sessionId);
         const result = await fileService.updateFile(
           sessionId,
           projectPath,
@@ -278,32 +248,25 @@ const fileRoutes: FastifyPluginAsync = async (fastify) => {
   }>(
     '/*',
     {
-      preHandler: fastify.authenticate,
-      config: {
-        rateLimit: rateLimitConfig.file,
-      },
       schema: {
-        headers: { $ref: 'authHeaders#' },
         params: Type.Object({
           sessionId: Type.String({ format: 'uuid' }),
           '*': Type.String(),
         }),
         response: {
           200: FileOperationSuccessSchema,
-          400: ErrorResponseSchema,
-          401: ErrorResponseSchema,
-          403: ErrorResponseSchema,
-          404: ErrorResponseSchema,
+          400: Type.Object({ error: Type.String(), code: Type.Optional(Type.String()) }),
+          403: Type.Object({ error: Type.String(), code: Type.Optional(Type.String()) }),
+          404: Type.Object({ error: Type.String(), code: Type.Optional(Type.String()) }),
         },
       },
     },
     async (request, reply) => {
-      const userId = (request.user as any).sub;
       const { sessionId } = request.params;
       const filePath = request.params['*'];
 
       try {
-        const projectPath = await verifySessionAccess(sessionId, userId);
+        const projectPath = await verifySessionAccess(sessionId);
         const result = await fileService.deleteFile(sessionId, projectPath, filePath);
         return reply.send(result);
       } catch (error: any) {

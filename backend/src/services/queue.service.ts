@@ -3,7 +3,7 @@ import { eq } from 'drizzle-orm';
 import { Redis } from 'ioredis';
 import { config } from '@/config';
 import { db } from '@/db';
-import { prompts, sessions } from '@/db/schema';
+import { sessions } from '@/db/schema';
 import type { PromptJobData } from '@/types';
 
 export class QueueService {
@@ -53,14 +53,8 @@ export class QueueService {
       },
     );
 
-    // Update prompt with job ID
-    await db
-      .update(prompts)
-      .set({
-        jobId: job.id,
-        status: 'processing',
-      })
-      .where(eq(prompts.id, promptId));
+    // Note: Prompts are now stored in Claude directory, not database
+    // Job tracking is handled via BullMQ job status
 
     return job.id;
   }
@@ -74,14 +68,7 @@ export class QueueService {
       await job.remove();
     }
 
-    // Update prompt status
-    await db
-      .update(prompts)
-      .set({
-        status: 'cancelled',
-        completedAt: new Date(),
-      })
-      .where(eq(prompts.id, promptId));
+    // Note: Prompt status is tracked via job status, not database
 
     // Publish cancellation event
     const { sessionId } = job?.data || {};

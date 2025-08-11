@@ -1,6 +1,5 @@
 import { type Static, Type } from '@sinclair/typebox';
 import type { FastifyPluginAsync } from 'fastify';
-import { ErrorResponseSchema } from '@/schemas/auth.schema';
 import {
   CreateSessionRequestSchema,
   ListSessionsQuerySchema,
@@ -18,22 +17,20 @@ const sessionRoutes: FastifyPluginAsync = async (fastify) => {
   }>(
     '/',
     {
-      preHandler: fastify.authenticate,
       schema: {
-        headers: { $ref: 'authHeaders#' },
         body: CreateSessionRequestSchema,
         response: {
           201: SessionResponseSchema,
-          400: ErrorResponseSchema,
-          401: ErrorResponseSchema,
+          400: Type.Object({
+            error: Type.String(),
+            code: Type.Optional(Type.String()),
+          }),
         },
       },
     },
     async (request, reply) => {
-      const userId = (request.user as any).sub;
-
       try {
-        const session = await sessionService.createSession(userId, request.body);
+        const session = await sessionService.createSession(request.body);
         return reply.code(201).send(session);
       } catch (error: any) {
         if (error.name === 'ValidationError') {
@@ -53,19 +50,15 @@ const sessionRoutes: FastifyPluginAsync = async (fastify) => {
   }>(
     '/',
     {
-      preHandler: fastify.authenticate,
       schema: {
-        headers: { $ref: 'authHeaders#' },
         querystring: ListSessionsQuerySchema,
         response: {
           200: ListSessionsResponseSchema,
-          401: ErrorResponseSchema,
         },
       },
     },
     async (request, reply) => {
-      const userId = (request.user as any).sub;
-      const result = await sessionService.listSessions(userId, request.query);
+      const result = await sessionService.listSessions(request.query);
       return reply.send(result);
     },
   );
@@ -76,23 +69,22 @@ const sessionRoutes: FastifyPluginAsync = async (fastify) => {
   }>(
     '/:sessionId',
     {
-      preHandler: fastify.authenticate,
       schema: {
-        headers: { $ref: 'authHeaders#' },
         params: SessionParamsSchema,
         response: {
           200: SessionResponseSchema,
-          401: ErrorResponseSchema,
-          404: ErrorResponseSchema,
+          404: Type.Object({
+            error: Type.String(),
+            code: Type.Optional(Type.String()),
+          }),
         },
       },
     },
     async (request, reply) => {
-      const userId = (request.user as any).sub;
       const { sessionId } = request.params;
 
       try {
-        const session = await sessionService.getSession(sessionId, userId);
+        const session = await sessionService.getSession(sessionId);
         return reply.send(session);
       } catch (error: any) {
         if (error.name === 'NotFoundError') {
@@ -113,25 +105,27 @@ const sessionRoutes: FastifyPluginAsync = async (fastify) => {
   }>(
     '/:sessionId',
     {
-      preHandler: fastify.authenticate,
       schema: {
-        headers: { $ref: 'authHeaders#' },
         params: SessionParamsSchema,
         body: UpdateSessionRequestSchema,
         response: {
           200: SessionResponseSchema,
-          400: ErrorResponseSchema,
-          401: ErrorResponseSchema,
-          404: ErrorResponseSchema,
+          400: Type.Object({
+            error: Type.String(),
+            code: Type.Optional(Type.String()),
+          }),
+          404: Type.Object({
+            error: Type.String(),
+            code: Type.Optional(Type.String()),
+          }),
         },
       },
     },
     async (request, reply) => {
-      const userId = (request.user as any).sub;
       const { sessionId } = request.params;
 
       try {
-        const session = await sessionService.updateSession(sessionId, userId, request.body);
+        const session = await sessionService.updateSession(sessionId, request.body);
         return reply.send(session);
       } catch (error: any) {
         if (error.name === 'NotFoundError') {
@@ -151,23 +145,22 @@ const sessionRoutes: FastifyPluginAsync = async (fastify) => {
   }>(
     '/:sessionId',
     {
-      preHandler: fastify.authenticate,
       schema: {
-        headers: { $ref: 'authHeaders#' },
         params: SessionParamsSchema,
         response: {
           200: Type.Object({ success: Type.Boolean() }),
-          401: ErrorResponseSchema,
-          404: ErrorResponseSchema,
+          404: Type.Object({
+            error: Type.String(),
+            code: Type.Optional(Type.String()),
+          }),
         },
       },
     },
     async (request, reply) => {
-      const userId = (request.user as any).sub;
       const { sessionId } = request.params;
 
       try {
-        const result = await sessionService.deleteSession(sessionId, userId);
+        const result = await sessionService.deleteSession(sessionId);
         return reply.send(result);
       } catch (error: any) {
         if (error.name === 'NotFoundError') {

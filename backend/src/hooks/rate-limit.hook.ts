@@ -12,9 +12,8 @@ const rateLimitPlugin: FastifyPluginAsync = async (fastify) => {
     redis,
     nameSpace: 'claude-code-rate-limit:',
     keyGenerator: (request) => {
-      // Use user ID if authenticated, otherwise use IP
-      const user = request.user as any;
-      return user?.sub || request.ip;
+      // Use IP address for rate limiting
+      return request.ip;
     },
     errorResponseBuilder: (_request, context) => {
       return {

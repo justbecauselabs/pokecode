@@ -67,6 +67,7 @@ export class ClaudeCodeSDKService extends EventEmitter {
     activeBlocks: new Map(),
     totalTokens: 0,
   };
+  private capturedClaudeSessionId: string | null = null;
 
   constructor(private options: ClaudeCodeOptions) {
     super();
@@ -102,15 +103,42 @@ export class ClaudeCodeSDKService extends EventEmitter {
           sessionId: this.sessionId,
           prompt: prompt.substring(0, 100),
           cwd: this.options.projectPath,
+          resuming: !!this.sessionId,
         },
         'Starting Claude Code SDK query',
       );
 
+      // Validate project path exists
+      const fs = await import('node:fs');
+      try {
+        await fs.promises.access(this.options.projectPath, fs.constants.F_OK);
+      } catch (_error) {
+        const errorMessage = `Project path does not exist: ${this.options.projectPath}`;
+        logger.error(
+          {
+            sessionId: this.sessionId,
+            projectPath: this.options.projectPath,
+          },
+          errorMessage,
+        );
+
+        return {
+          success: false,
+          error: errorMessage,
+          duration: Date.now() - this.startTime,
+          messages: this.messages,
+        };
+      }
+
+      // Check if we have a real Claude Code session ID to resume
+      const claudeCodeSessionId = await this.getClaudeCodeSessionId();
+      const shouldResume = claudeCodeSessionId !== null;
+
       // Configure SDK options to use local Claude Max authentication
       const sdkOptions: Options = {
         cwd: this.options.projectPath,
-        // Don't resume for now - start fresh sessions
-        // resume: this.sessionId,
+        // Only resume if we have a real Claude Code session ID
+        ...(shouldResume && { resume: claudeCodeSessionId }),
         permissionMode: 'bypassPermissions',
         // Use local Claude installation to access Claude Max account
         pathToClaudeCodeExecutable: this.pathToClaudeCodeExecutable,
@@ -121,11 +149,22 @@ export class ClaudeCodeSDKService extends EventEmitter {
             {
               sessionId: this.sessionId,
               stderr: data,
+              shouldResume,
             },
             'Claude Code SDK stderr',
           );
         },
       };
+
+      logger.info(
+        {
+          databaseSessionId: this.sessionId,
+          claudeCodeSessionId,
+          shouldResume,
+          projectPath: this.options.projectPath,
+        },
+        'Claude Code SDK configuration',
+      );
 
       try {
         this.currentQuery = query({ prompt, options: sdkOptions });
@@ -141,7 +180,12 @@ export class ClaudeCodeSDKService extends EventEmitter {
         logger.error(
           {
             sessionId: this.sessionId,
-            error,
+            error: {
+              message: errorMessage,
+              stack: error instanceof Error ? error.stack : undefined,
+              name: error instanceof Error ? error.name : undefined,
+              code: (error as any)?.code,
+            },
           },
           'Claude Code SDK query failed',
         );
@@ -197,6 +241,38 @@ export class ClaudeCodeSDKService extends EventEmitter {
     // Convert SDK message to our format and store it
     const convertedMessage: ClaudeCodeMessage = message as any;
     this.messages.push(convertedMessage);
+
+    // Debug: Log first few messages to see the structure
+    if (this.messages.length <= 3) {
+      logger.info(
+        {
+          messageNumber: this.messages.length,
+          messageType: message.type,
+          messageKeys: Object.keys(message),
+          hasSessionId: !!(message as any).sessionId,
+          message: JSON.stringify(message).substring(0, 500),
+        },
+        'Debug: SDK message structure',
+      );
+    }
+
+    // Capture Claude Code session ID from first message that has it
+    if (!this.capturedClaudeSessionId && (message as any).sessionId) {
+      this.capturedClaudeSessionId = (message as any).sessionId;
+      logger.info(
+        {
+          databaseSessionId: this.sessionId,
+          claudeCodeSessionId: this.capturedClaudeSessionId,
+        },
+        'Captured Claude Code session ID',
+      );
+
+      // Emit the captured session ID for the worker to handle
+      this.emit('claude_session_captured', {
+        databaseSessionId: this.sessionId,
+        claudeCodeSessionId: this.capturedClaudeSessionId,
+      });
+    }
 
     // Emit the raw message for streaming
     this.emit('message', convertedMessage);
@@ -328,7 +404,10 @@ export class ClaudeCodeSDKService extends EventEmitter {
         logger.error(
           {
             sessionId: this.sessionId,
-            error,
+            error: {
+              message: error instanceof Error ? error.message : String(error),
+              stack: error instanceof Error ? error.stack : undefined,
+            },
           },
           'Error aborting Claude Code SDK query',
         );
@@ -342,5 +421,34 @@ export class ClaudeCodeSDKService extends EventEmitter {
    */
   isRunning(): boolean {
     return this.isProcessing;
+  }
+
+  /**
+   * Get the Claude Code session ID from database if it exists
+   */
+  private async getClaudeCodeSessionId(): Promise<string | null> {
+    try {
+      const { db } = await import('@/db');
+      const { sessions } = await import('@/db/schema');
+      const { eq } = await import('drizzle-orm');
+
+      const session = await db.query.sessions.findFirst({
+        where: eq(sessions.id, this.sessionId),
+        columns: {
+          claudeCodeSessionId: true,
+        },
+      });
+
+      return session?.claudeCodeSessionId || null;
+    } catch (error) {
+      logger.warn(
+        {
+          sessionId: this.sessionId,
+          error: error instanceof Error ? error.message : String(error),
+        },
+        'Failed to get Claude Code session ID from database',
+      );
+      return null;
+    }
   }
 }

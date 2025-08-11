@@ -3,12 +3,10 @@ import Fastify, { type FastifyPluginAsync } from 'fastify';
 import { FastifySSEPlugin } from 'fastify-sse-v2';
 import rateLimitPlugin from './hooks/rate-limit.hook';
 // Import plugins
-import authPlugin from './plugins/auth';
 import corsPlugin from './plugins/cors';
 import errorHandlerPlugin from './plugins/error-handler';
 import requestLoggerPlugin from './plugins/request-logger';
 import swaggerPlugin from './plugins/swagger';
-import authRoutes from './routes/auth';
 // Import routes
 import healthRoutes from './routes/health';
 import repositoryRoutes from './routes/repositories';
@@ -27,7 +25,6 @@ export const app: FastifyPluginAsync = async (fastify, _opts) => {
   await fastify.register(corsPlugin);
   await fastify.register(requestLoggerPlugin);
   await fastify.register(swaggerPlugin);
-  await fastify.register(authPlugin);
   await fastify.register(rateLimitPlugin);
 
   // Register SSE plugin
@@ -38,7 +35,6 @@ export const app: FastifyPluginAsync = async (fastify, _opts) => {
 
   // Register routes
   await fastify.register(healthRoutes, { prefix: '/health' });
-  await fastify.register(authRoutes, { prefix: '/api/auth' });
   await fastify.register(repositoryRoutes, { prefix: '/api/claude-code/repositories' });
   await fastify.register(sessionRoutes, { prefix: '/api/claude-code/sessions' });
 
