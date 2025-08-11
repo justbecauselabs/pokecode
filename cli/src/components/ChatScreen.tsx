@@ -10,7 +10,7 @@ import { PromptInput } from './PromptInput';
 import type { ChatMessage } from '../types';
 import type { Session } from '../types/api';
 import { SessionService } from '../services/session.service';
-import { SSEService } from '../services/sse.service';
+// import { SSEService } from '../services/sse.service'; // Removed SSE
 import { ConfigService } from '../services/config.service';
 import { Logger } from '../utils/logger';
 
@@ -28,7 +28,7 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ session, onExit }) => {
   const { exit } = useApp();
   const { stdout } = useStdout();
   const sessionService = SessionService.getInstance();
-  const sseService = SSEService.getInstance();
+  // const sseService = SSEService.getInstance(); // Removed SSE
   const configService = ConfigService.getInstance();
   const logger = Logger.getInstance();
   
@@ -41,7 +41,7 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ session, onExit }) => {
     
     // Cleanup on unmount
     return () => {
-      sseService.closeAllConnections();
+      // sseService.closeAllConnections(); // Removed SSE
     };
   }, [session.id]);
 
@@ -105,7 +105,9 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ session, onExit }) => {
       // Start SSE streaming
       let accumulatedContent = '';
       
-      const cleanup = await sseService.streamPrompt(
+      // SSE streaming removed - CLI not functional until polling implemented
+      console.warn('SSE streaming removed from CLI');
+      const cleanup = () => {}; // await sseService.streamPrompt(
         session.id,
         prompt.id,
         (sseMessage) => {

@@ -1,10 +1,8 @@
 import { formatDistanceToNow } from "date-fns";
 import { Activity, Bot, Copy, MessageSquare, Settings, User } from "lucide-react";
 import { useMessageParser } from "../../hooks/useMessageParser";
-import { cn } from "../../lib/utils";
 import type { ChatMessage } from "../../types/chat";
 import { Badge } from "../ui/Badge";
-import { Button } from "../ui/Button";
 import { CodeBlock } from "../ui/CodeBlock";
 import { ErrorDisplay } from "../ui/ErrorDisplay";
 import { FileOperationDisplay } from "../ui/FileOperationDisplay";
@@ -82,6 +80,16 @@ export function MessageBubble({ message, onShowStream, onLoadIntermediateMessage
 					<Badge variant="outline" className="text-xs">
 						<div className="w-2 h-2 bg-current rounded-full animate-pulse" />
 						<span className="ml-1">Typing...</span>
+					</Badge>
+				)}
+				{message.isWorking && (
+					<Badge 
+						variant="outline" 
+						className="text-xs cursor-pointer hover:bg-accent" 
+						onClick={() => message.promptId && onShowStream?.(message.promptId)}
+					>
+						<Activity className="w-2 h-2 animate-spin" />
+						<span className="ml-1">Working... (click to view)</span>
 					</Badge>
 				)}
 			</div>

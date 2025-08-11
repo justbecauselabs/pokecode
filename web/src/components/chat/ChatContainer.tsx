@@ -6,7 +6,7 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { useSSE } from "../../hooks/useSSE";
+import { usePolling } from "../../hooks/usePolling";
 import { useChatStore } from "../../stores/chatStore";
 import { useSessionStore } from "../../stores/sessionStore";
 import { Button } from "../ui/Button";
@@ -32,7 +32,7 @@ export function ChatContainer() {
 		clearMessages,
 		streamMessages,
 		intermediateMessages,
-		isStreaming,
+		isWorking,
 		setStreamingSidebarPromptId,
 		streamingSidebarPromptId,
 	} = useChatStore();
@@ -40,19 +40,19 @@ export function ChatContainer() {
 	const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 	const [selectedThreadId, setSelectedThreadId] = useState<string | null>(null);
 
-	const { disconnect } = useSSE({
+	const { stopPolling } = usePolling({
 		sessionId: sessionId || "",
 		promptId: currentPrompt?.id || null,
-		enabled: Boolean(sessionId && currentPrompt?.id),
+		enabled: Boolean(sessionId && currentPrompt?.id && isWorking),
 	});
 
 	// Use refs to store functions to avoid dependency issues
-	const disconnectRef = useRef(disconnect);
+	const stopPollingRef = useRef(stopPolling);
 	const clearMessagesRef = useRef(clearMessages);
 	const selectSessionRef = useRef(selectSession);
 
 	// Update refs when functions change
-	disconnectRef.current = disconnect;
+	stopPollingRef.current = stopPolling;
 	clearMessagesRef.current = clearMessages;
 	selectSessionRef.current = selectSession;
 
@@ -69,20 +69,20 @@ export function ChatContainer() {
 
 		return () => {
 			// Use ref values to avoid function dependencies
-			disconnectRef.current();
+			stopPollingRef.current();
 			clearMessagesRef.current();
 		};
 	}, [sessionId, currentSession, sessions]);
 
 	const handleMessageSent = () => {
-		// SSE connection will be established automatically via the useSSE hook
+		// Polling will be established automatically via the usePolling hook
 		// when currentPrompt is updated
-		// Automatically show sidebar for new streaming messages
+		// Automatically show sidebar for new polling messages
 		setIsSidebarCollapsed(false);
 	};
 
 	const handleBackToSessions = () => {
-		disconnect();
+		stopPolling();
 		navigate("/");
 	};
 
@@ -102,9 +102,9 @@ export function ChatContainer() {
 		setIsSidebarCollapsed(!isSidebarCollapsed);
 	};
 
-	// Use the current streaming prompt or the explicitly selected one
+	// Use the current working prompt or the explicitly selected one
 	const activePromptId =
-		streamingSidebarPromptId || (isStreaming ? currentPrompt?.id : null);
+		streamingSidebarPromptId || (isWorking ? currentPrompt?.id : null);
 	const selectedStreamMessages = activePromptId
 		? streamMessages.get(activePromptId) || []
 		: [];
@@ -245,7 +245,7 @@ export function ChatContainer() {
 						streamMessages={selectedStreamMessages}
 						intermediateMessages={selectedIntermediateMessages}
 						onToggle={handleToggleSidebar}
-						isStreaming={isStreaming}
+						isStreaming={isWorking}
 						isCollapsed={false}
 					/>
 				</div>

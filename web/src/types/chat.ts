@@ -4,6 +4,7 @@ export interface ChatMessage {
 	content: string;
 	timestamp: Date;
 	isStreaming?: boolean;
+	isWorking?: boolean;
 	promptId?: string;
 	streamMessages?: StreamMessage[];
 	citations?: Citation[];

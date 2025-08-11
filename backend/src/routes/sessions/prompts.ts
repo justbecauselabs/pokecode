@@ -164,8 +164,87 @@ const promptRoutes: FastifyPluginAsync = async (fastify) => {
     },
   );
 
-  // Get prompt stream
-  fastify.register(import('./stream'), { prefix: '/:promptId' });
+  // Poll prompt intermediate messages
+  fastify.get<{
+    Params: Static<typeof PromptParamsSchema>;
+  }>(
+    '/:promptId/poll',
+    {
+      config: {
+        rateLimit: rateLimitConfig.read,
+      },
+      schema: {
+        params: PromptParamsSchema,
+        response: {
+          200: Type.Object({
+            status: Type.Union([
+              Type.Literal('pending'),
+              Type.Literal('running'), 
+              Type.Literal('completed'),
+              Type.Literal('failed')
+            ]),
+            messages: Type.Array(Type.Any()),
+            count: Type.Number(),
+            isComplete: Type.Boolean()
+          }),
+          404: Type.Object({
+            error: Type.String(),
+            code: Type.Optional(Type.String()),
+          }),
+        },
+      },
+    },
+    async (request, reply) => {
+      const { sessionId, promptId } = request.params;
+
+      try {
+        // Use promptId as threadId since they correspond in the JSONL structure
+        const messages = await promptService.getIntermediateMessages(sessionId, promptId);
+        
+        // For now, assume completed if we have messages, pending if not
+        // This could be enhanced to check actual job status from queue if needed
+        const status = messages.length > 0 ? 'completed' : 'pending';
+        const isComplete = status === 'completed';
+        
+        logger.debug(
+          {
+            sessionId,
+            promptId,
+            messageCount: messages.length,
+            status,
+            isComplete
+          },
+          'Poll endpoint response',
+        );
+
+        return reply.send({
+          status,
+          messages,
+          count: messages.length,
+          isComplete
+        });
+      } catch (error: any) {
+        logger.error(
+          {
+            sessionId,
+            promptId,
+            errorName: error.name,
+            errorMessage: error.message,
+          },
+          'Poll endpoint error',
+        );
+
+        if (error.name === 'NotFoundError') {
+          return reply.code(404).send({
+            error: error.message,
+            code: error.code,
+          });
+        }
+        throw error;
+      }
+    },
+  );
+
 };
 
 // Export routes for session history and export

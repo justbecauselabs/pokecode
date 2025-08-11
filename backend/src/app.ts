@@ -1,6 +1,5 @@
 import helmet from '@fastify/helmet';
 import Fastify, { type FastifyPluginAsync } from 'fastify';
-import { FastifySSEPlugin } from 'fastify-sse-v2';
 import rateLimitPlugin from './hooks/rate-limit.hook';
 // Import plugins
 import corsPlugin from './plugins/cors';
@@ -16,7 +15,7 @@ import { historyAndExportRoutes } from './routes/sessions/prompts';
 export const app: FastifyPluginAsync = async (fastify, _opts) => {
   // Register security headers
   await fastify.register(helmet, {
-    contentSecurityPolicy: false, // Disable for SSE
+    contentSecurityPolicy: false,
     crossOriginEmbedderPolicy: false,
   });
 
@@ -27,11 +26,6 @@ export const app: FastifyPluginAsync = async (fastify, _opts) => {
   await fastify.register(swaggerPlugin);
   await fastify.register(rateLimitPlugin);
 
-  // Register SSE plugin
-  await fastify.register(FastifySSEPlugin, {
-    retryDelay: 3000, // 3 seconds retry delay
-    highWaterMark: 16384, // 16KB buffer
-  });
 
   // Register routes
   await fastify.register(healthRoutes, { prefix: '/health' });

@@ -28,8 +28,9 @@ export const CreateSessionRequestSchema = Type.Object({
 
 export const SessionResponseSchema = Type.Object({
   id: Type.String({ format: 'uuid' }),
-  userId: Type.String(),
   projectPath: Type.String(),
+  claudeDirectoryPath: Type.Optional(Type.String()),
+  claudeCodeSessionId: Type.Optional(Type.String()),
   context: Type.Optional(Type.String()),
   status: Type.Union([Type.Literal('active'), Type.Literal('inactive'), Type.Literal('archived')]),
   metadata: Type.Optional(Type.Any()),
