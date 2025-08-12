@@ -37,6 +37,10 @@ export const SessionResponseSchema = Type.Object({
   createdAt: Type.String({ format: 'date-time' }),
   updatedAt: Type.String({ format: 'date-time' }),
   lastAccessedAt: Type.String({ format: 'date-time' }),
+  // Working state fields
+  isWorking: Type.Boolean(),
+  currentJobId: Type.Optional(Type.String()),
+  lastJobStatus: Type.Optional(Type.String()),
 });
 
 // List sessions schemas

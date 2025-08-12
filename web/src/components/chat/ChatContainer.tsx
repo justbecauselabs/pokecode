@@ -42,8 +42,8 @@ export function ChatContainer() {
 
 	const { stopPolling } = usePolling({
 		sessionId: sessionId || "",
-		promptId: currentPrompt?.id || null,
-		enabled: Boolean(sessionId && currentPrompt?.id && isWorking),
+		promptId: null, // Not needed for session-level polling
+		enabled: Boolean(sessionId && isWorking),
 	});
 
 	// Use refs to store functions to avoid dependency issues

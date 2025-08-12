@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import path from 'node:path';
 import { desc, eq, sql } from 'drizzle-orm';
 import { db } from '@/db';
@@ -46,12 +47,18 @@ export class SessionService {
       throw new ValidationError('Either projectPath or folderName must be provided');
     }
 
-    // Generate Claude directory path for this session
-    const claudeDirectoryPath = ClaudeDirectoryService.getClaudeDirectoryPath(projectPath);
+    // Generate session ID upfront to create session-specific Claude directory path
+    const sessionId = randomUUID();
+    const claudeDirectoryPath = ClaudeDirectoryService.getClaudeDirectoryPath(
+      projectPath,
+      sessionId,
+    );
 
+    // Create the session with all required data in a single operation
     const [session] = await db
       .insert(sessions)
       .values({
+        id: sessionId,
         projectPath,
         claudeDirectoryPath,
         context: data.context,
@@ -188,7 +195,7 @@ export class SessionService {
       throw new ValidationError('Session does not have Claude directory path configured');
     }
 
-    const claudeService = new ClaudeDirectoryService();
+    const claudeService = ClaudeDirectoryService.forSessionDirectory(session.claudeDirectoryPath);
     return claudeService.getProjectConversations(session.projectPath);
   }
 
@@ -198,7 +205,7 @@ export class SessionService {
   async getMostRecentConversation(sessionId: string) {
     const session = await this.getSession(sessionId);
 
-    const claudeService = new ClaudeDirectoryService();
+    const claudeService = ClaudeDirectoryService.forSessionDirectory(session.claudeDirectoryPath);
     return claudeService.getMostRecentConversation(session.projectPath);
   }
 
@@ -212,7 +219,7 @@ export class SessionService {
       return false;
     }
 
-    const claudeService = new ClaudeDirectoryService();
+    const claudeService = ClaudeDirectoryService.forSessionDirectory(session.claudeDirectoryPath);
     return claudeService.isInitialized();
   }
 
@@ -228,6 +235,10 @@ export class SessionService {
       createdAt: session.createdAt.toISOString(),
       updatedAt: session.updatedAt.toISOString(),
       lastAccessedAt: session.lastAccessedAt.toISOString(),
+      // Working state fields
+      isWorking: session.isWorking,
+      currentJobId: session.currentJobId,
+      lastJobStatus: session.lastJobStatus,
     };
   }
 

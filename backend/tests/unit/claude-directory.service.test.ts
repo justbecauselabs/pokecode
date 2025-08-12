@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, mock, afterAll } from 'bun:test';
+import { describe, it, expect, beforeAll, vi, afterAll } from 'vitest';
 import ClaudeDirectoryService from '@/services/claude-directory.service';
 
 describe('ClaudeDirectoryService', () => {
@@ -6,15 +6,15 @@ describe('ClaudeDirectoryService', () => {
 
   beforeAll(() => {
     // Mock file system operations
-    mock.module('fs', () => ({
-      existsSync: mock((path: string) => {
+    vi.doMock('fs', () => ({
+      existsSync: vi.fn((path: string) => {
         // Mock that ~/.claude exists
         if (path.includes('.claude')) {
           return true;
         }
         return false;
       }),
-      readFileSync: mock((path: string, encoding?: string) => {
+      readFileSync: vi.fn((path: string, encoding?: string) => {
         if (path.endsWith('.jsonl')) {
           // Mock JSONL conversation data
           return JSON.stringify({ role: 'user', content: 'Hello', timestamp: '2025-01-01T00:00:00Z' }) + '\n' +
@@ -22,15 +22,15 @@ describe('ClaudeDirectoryService', () => {
         }
         return '';
       }),
-      writeFileSync: mock(() => {}),
-      mkdirSync: mock(() => {}),
+      writeFileSync: vi.fn(() => {}),
+      mkdirSync: vi.fn(() => {}),
     }));
 
     service = new ClaudeDirectoryService();
   });
 
   afterAll(() => {
-    mock.restore();
+    vi.restoreAllMocks();
   });
 
   describe('initialization', () => {
@@ -132,7 +132,7 @@ describe('ClaudeDirectoryService', () => {
       const fs = require('fs');
       const originalReadFileSync = fs.readFileSync;
       
-      fs.readFileSync = mock((path: string) => {
+      fs.readFileSync = vi.fn((path: string) => {
         if (path.endsWith('.jsonl')) {
           return 'invalid json line\n{valid: "json"}'; // Mix of invalid and valid JSON
         }

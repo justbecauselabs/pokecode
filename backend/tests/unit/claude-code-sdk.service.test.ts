@@ -1,87 +1,110 @@
-import { describe, it, expect, beforeAll, mock, afterAll } from 'bun:test';
+import { describe, it, expect, beforeAll, vi, afterAll } from 'vitest';
+
+// Mock file system access before importing the service
+vi.mock('node:fs', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('node:fs')>();
+  return {
+    ...actual,
+    constants: { F_OK: 0 },
+    promises: {
+      access: vi.fn().mockResolvedValue(undefined),
+    },
+    createWriteStream: vi.fn().mockReturnValue({
+      write: vi.fn(),
+      end: vi.fn(),
+    }),
+  };
+});
+
+// Mock the Claude Code SDK
+vi.mock('@anthropic-ai/claude-code', () => ({
+  query: vi.fn(),
+}));
+
 import { ClaudeCodeSDKService } from '@/services/claude-code-sdk.service';
 
 describe('ClaudeCodeSDKService', () => {
   let service: ClaudeCodeSDKService;
 
-  beforeAll(() => {
+  beforeAll(async () => {
     // Set required environment variable
     process.env.CLAUDE_CODE_PATH = '/mock/path/to/claude-code';
 
-    // Mock the @anthropic-ai/claude-code module
-    mock.module('@anthropic-ai/claude-code', () => ({
-      query: mock(({ prompt, options }: any) => ({
-        async *[Symbol.asyncIterator]() {
-          yield {
-            type: 'system',
-            model: 'claude-3-5-sonnet-20241022',
-            tools: ['bash', 'str_replace', 'read'],
-          };
-          yield {
-            type: 'assistant',
-            message: {
-              content: [{
-                type: 'text',
-                text: 'Test response from Claude Code',
-              }],
-            },
-          };
-          yield {
-            type: 'result',
-            subtype: 'success',
-            result: 'Success',
-            usage: { input_tokens: 100, output_tokens: 50 },
-            total_cost_usd: 0.001,
-          };
-        },
-      })),
+    // Import the mocked function
+    const { query } = await import('@anthropic-ai/claude-code');
+    
+    // Setup default mock implementation
+    vi.mocked(query).mockImplementation(({ prompt, options }: any) => ({
+      async *[Symbol.asyncIterator]() {
+        yield {
+          type: 'system',
+          model: 'claude-3-5-sonnet-20241022',
+          tools: ['bash', 'str_replace', 'read'],
+        };
+        yield {
+          type: 'assistant',
+          message: {
+            content: [{
+              type: 'text',
+              text: 'Test response from Claude Code',
+            }],
+          },
+        };
+        yield {
+          type: 'result',
+          subtype: 'success',
+          result: 'Success',
+          usage: { input_tokens: 100, output_tokens: 50 },
+          total_cost_usd: 0.001,
+        };
+      },
     }));
 
     service = new ClaudeCodeSDKService({
-      sessionId: 'test-session-id',
+      sessionId: 'db-session-id',
       projectPath: '/test/project',
+      claudeCodeSessionId: 'test-session-id',
     });
   });
 
   afterAll(() => {
-    mock.restore();
+    vi.restoreAllMocks();
     delete process.env.CLAUDE_CODE_PATH;
   });
 
   describe('Session Continuity', () => {
-    it('should include resume parameter when sessionId is provided', async () => {
-      const mockQuery = mock(() => ({
-        async *[Symbol.asyncIterator]() {
-          yield {
-            type: 'system',
-            model: 'claude-3-5-sonnet-20241022',
-            tools: ['bash'],
-          };
-          yield {
-            type: 'assistant',
-            message: {
-              content: [{
-                type: 'text',
-                text: 'Resumed session response',
-              }],
-            },
-          };
-          yield {
-            type: 'result',
-            subtype: 'success',
-            result: 'Success',
-            usage: { input_tokens: 50, output_tokens: 25 },
-            total_cost_usd: 0.0005,
-          };
-        },
-      }));
-
+    it('should include resume parameter when claudeCodeSessionId is provided', async () => {
       // Override the query mock to capture options
       let capturedOptions: any;
       const { query } = await import('@anthropic-ai/claude-code');
-      (query as any).mockImplementation(({ prompt, options }: any) => {
+      
+      vi.mocked(query).mockImplementation(({ prompt, options }: any) => {
         capturedOptions = options;
-        return mockQuery();
+        return {
+          async *[Symbol.asyncIterator]() {
+            yield {
+              type: 'system',
+              model: 'claude-3-5-sonnet-20241022',
+              tools: ['bash'],
+            };
+            yield {
+              type: 'assistant',
+              message: {
+                content: [{
+                  type: 'text',
+                  text: 'Resumed session response',
+                }],
+              },
+            };
+            yield {
+              type: 'result',
+              subtype: 'success',
+              result: 'Success',
+              usage: { input_tokens: 50, output_tokens: 25 },
+              total_cost_usd: 0.0005,
+            };
+          },
+        };
       });
 
       const result = await service.execute('Test prompt for resumed session');
@@ -93,13 +116,13 @@ describe('ClaudeCodeSDKService', () => {
       expect(capturedOptions.permissionMode).toBe('bypassPermissions');
     });
 
-    it('should not include resume parameter when sessionId is not provided', async () => {
+    it('should not include resume parameter when claudeCodeSessionId is not provided', async () => {
       const serviceWithoutSession = new ClaudeCodeSDKService({
-        sessionId: '',
+        sessionId: 'db-session-id',
         projectPath: '/test/project',
       });
 
-      const mockQuery = mock(() => ({
+      const mockQuery = vi.fn(() => ({
         async *[Symbol.asyncIterator]() {
           yield {
             type: 'assistant',
@@ -307,7 +330,7 @@ describe('ClaudeCodeSDKService', () => {
       
       const { query } = await import('@anthropic-ai/claude-code');
       (query as any).mockImplementation(() => ({
-        interrupt: mock(() => {
+        interrupt: vi.fn(() => {
           interruptCalled = true;
           return Promise.resolve();
         }),

@@ -31,6 +31,14 @@ export interface Prompt {
 	};
 	createdAt: string;
 	completedAt?: string;
+	intermediateMessages?: Array<{
+		id: string;
+		content: string;
+		role?: string;
+		type?: string;
+		timestamp: string;
+		metadata?: any;
+	}>;
 }
 
 export type StopReason =
@@ -153,6 +161,38 @@ export interface SSEMessage {
 
 export interface HistoryResponse {
 	prompts: Prompt[];
+	total: number;
+	limit: number;
+	offset: number;
+}
+
+// New message-based API types
+export interface SessionMessage {
+	id: string;
+	sessionId: string;
+	text: string;
+	type: 'user' | 'assistant';
+	claudeSessionId?: string;
+	createdAt: string;
+	childMessages: Array<{
+		id: string;
+		content: string;
+		role?: string;
+		type?: string;
+		timestamp: string;
+		metadata?: any;
+	}>;
+}
+
+export interface MessagesResponse {
+	messages: SessionMessage[];
+	session: {
+		id: string;
+		isWorking: boolean;
+		currentJobId?: string;
+		lastJobStatus?: string;
+		status: 'active' | 'inactive' | 'archived';
+	};
 	total: number;
 	limit: number;
 	offset: number;

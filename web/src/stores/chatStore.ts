@@ -3,7 +3,9 @@ import { apiService } from "../services/api";
 import type {
 	ChatMessage,
 	HistoryResponse,
+	MessagesResponse,
 	Prompt,
+	SessionMessage,
 	StreamMessage,
 } from "../types/chat";
 
@@ -26,7 +28,8 @@ interface ChatState {
 	sendMessage: (sessionId: string, content: string) => Promise<string>;
 	addMessage: (message: ChatMessage) => void;
 	addStreamMessage: (promptId: string, streamMessage: StreamMessage) => void;
-	loadPromptHistory: (sessionId: string) => Promise<void>;
+	loadPromptHistory: (sessionId: string, providedResponse?: any) => Promise<void>;
+	loadMessages: (sessionId: string, providedResponse?: MessagesResponse) => Promise<void>;
 	loadIntermediateMessages: (sessionId: string, threadId: string) => Promise<void>;
 	setConnectionStatus: (connected: boolean, error?: string) => void;
 	setStreamingSidebarPromptId: (promptId: string | null) => void;
@@ -65,33 +68,42 @@ export const useChatStore = create<ChatState>((set, get) => ({
 			get().addMessage(userMessage);
 
 			// Create prompt on backend
-			const prompt = await apiService.post<Prompt>(
+			const response = await apiService.post<{
+				success: boolean, 
+				message: string, 
+				jobId?: string,
+				userMessage?: {
+					id: string;
+					sessionId: string;
+					text: string;
+					type: 'user';
+					createdAt: string;
+				}
+			}>(
 				`/api/claude-code/sessions/${sessionId}/prompts`,
 				{ prompt: content },
 			);
 
 			// Add "Claude is working" message
 			const workingMessage: ChatMessage = {
-				id: `working-${prompt.id}`,
+				id: `working-${response.jobId}`,
 				role: "assistant",
 				content: "Claude is working...",
 				timestamp: new Date(),
 				isWorking: true,
-				promptId: prompt.id,
+				promptId: response.jobId,
 			};
 
 			set((state) => ({
-				prompts: [...state.prompts, prompt],
-				currentPrompt: prompt,
 				messages: [...state.messages, workingMessage],
 				isLoading: false,
 				isWorking: true,
-				workingPromptId: prompt.id,
+				workingPromptId: response.jobId,
 				// Automatically set the new prompt as the streaming sidebar target
-				streamingSidebarPromptId: prompt.id,
+				streamingSidebarPromptId: response.jobId,
 			}));
 
-			return prompt.id;
+			return response.jobId || "";
 		} catch (error: any) {
 			set({
 				error: error.response?.data?.message || "Failed to send message",
@@ -139,11 +151,12 @@ export const useChatStore = create<ChatState>((set, get) => ({
 	},
 
 
-	loadPromptHistory: async (sessionId: string) => {
+	loadPromptHistory: async (sessionId: string, providedResponse?: any) => {
 		set({ isLoading: true, error: null });
 
 		try {
-			const historyResponse = await apiService.get<HistoryResponse>(
+			// Use provided response or fetch new one
+			const historyResponse = providedResponse || await apiService.get<HistoryResponse>(
 				`/api/claude-code/sessions/${sessionId}/history`,
 			);
 
@@ -153,35 +166,37 @@ export const useChatStore = create<ChatState>((set, get) => ({
 			// Convert prompts to messages with thread information
 			const messages: ChatMessage[] = [];
 
-			// Group prompts by thread since backend now returns user prompts and final responses separately
+			// Process prompts in chronological order
 			const promptsArray = prompts.reverse();
 
 			promptsArray.forEach((prompt) => {
-				// Check if this is a user prompt or final response based on metadata
-				if (prompt.metadata?.role === 'user') {
-					// User message
+				// Always add user message (from prompt.prompt field)
+				messages.push({
+					id: prompt.id,
+					role: "user",
+					content: prompt.prompt,
+					timestamp: new Date(prompt.createdAt),
+					metadata: {
+						...prompt.metadata,
+						hasIntermediateMessages: prompt.metadata?.hasIntermediateMessages,
+						threadId: prompt.metadata?.threadId
+					},
+				});
+
+				// Add assistant response if available (from prompt.response field)
+				if (prompt.response) {
 					messages.push({
-						id: prompt.id,
-						role: "user",
-						content: prompt.prompt,
-						timestamp: new Date(prompt.createdAt),
-						metadata: {
-							...prompt.metadata,
-							hasIntermediateMessages: prompt.metadata.hasIntermediateMessages,
-							threadId: prompt.metadata.threadId
-						},
-					});
-				} else if (prompt.metadata?.role === 'assistant') {
-					// Final response from assistant
-					messages.push({
-						id: prompt.id,
+						id: `${prompt.id}-response`,
 						role: "assistant",
-						content: prompt.prompt,
-						timestamp: new Date(prompt.createdAt),
+						content: prompt.response,
+						timestamp: new Date(prompt.completedAt || prompt.createdAt),
+						promptId: prompt.id,
+						thinking: prompt.metadata?.thinking,
+						citations: prompt.metadata?.citations,
 						metadata: {
 							...prompt.metadata,
-							isThreadFinalResponse: prompt.metadata.isThreadFinalResponse,
-							threadId: prompt.metadata.threadId
+							isThreadFinalResponse: true,
+							threadId: prompt.metadata?.threadId
 						},
 					});
 				}
@@ -195,6 +210,62 @@ export const useChatStore = create<ChatState>((set, get) => ({
 		} catch (error: any) {
 			set({
 				error: error.response?.data?.message || "Failed to load history",
+				isLoading: false,
+			});
+		}
+	},
+
+	loadMessages: async (sessionId: string, providedResponse?: MessagesResponse) => {
+		set({ isLoading: true, error: null });
+
+		try {
+			// Use provided response or fetch new one
+			const messagesResponse = providedResponse || await apiService.get<MessagesResponse>(
+				`/api/claude-code/sessions/${sessionId}/messages`,
+			);
+
+			// Extract messages array from the response object
+			const { messages: sessionMessages } = messagesResponse;
+
+			// Convert SessionMessage[] to ChatMessage[] for the UI
+			const messages: ChatMessage[] = [];
+
+			// Process messages in chronological order (oldest first)
+			const sortedMessages = sessionMessages.sort((a, b) => 
+				new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+			);
+
+			sortedMessages.forEach((sessionMessage) => {
+				// Convert SessionMessage to ChatMessage
+				const chatMessage: ChatMessage = {
+					id: sessionMessage.id,
+					role: sessionMessage.type,
+					content: sessionMessage.text,
+					timestamp: new Date(sessionMessage.createdAt),
+					// Add child messages as intermediate messages for compatibility
+					streamMessages: sessionMessage.childMessages.map(child => ({
+						id: child.id,
+						type: (child.type as any) || 'message',
+						data: child.content,
+						timestamp: child.timestamp,
+						promptId: sessionMessage.id,
+					})),
+					metadata: {
+						claudeSessionId: sessionMessage.claudeSessionId,
+						hasIntermediateMessages: sessionMessage.childMessages.length > 0,
+					},
+				};
+
+				messages.push(chatMessage);
+			});
+
+			set({
+				messages,
+				isLoading: false,
+			});
+		} catch (error: any) {
+			set({
+				error: error.response?.data?.message || "Failed to load messages",
 				isLoading: false,
 			});
 		}

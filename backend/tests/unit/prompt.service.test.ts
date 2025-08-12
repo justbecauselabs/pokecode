@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, mock, afterAll } from 'bun:test';
+import { describe, it, expect, beforeAll, vi, afterAll } from 'vitest';
 import { PromptService } from '@/services/prompt.service';
 import { NotFoundError, ConflictError } from '@/types';
 
@@ -7,11 +7,11 @@ describe('PromptService', () => {
 
   beforeAll(() => {
     // Mock the database
-    mock.module('@/db', () => ({
+    vi.doMock('@/db', () => ({
       db: {
-        insert: mock(() => ({
-          values: mock((data: any) => ({
-            returning: mock(() => [
+        insert: vi.fn(() => ({
+          values: vi.fn((data: any) => ({
+            returning: vi.fn(() => [
               {
                 id: 'test-prompt-id',
                 sessionId: data.sessionId,
@@ -25,14 +25,14 @@ describe('PromptService', () => {
             ])
           }))
         })),
-        update: mock(() => ({
-          set: mock(() => ({
-            where: mock(() => Promise.resolve())
+        update: vi.fn(() => ({
+          set: vi.fn(() => ({
+            where: vi.fn(() => Promise.resolve())
           }))
         })),
         query: {
           sessions: {
-            findFirst: mock((options: any) => Promise.resolve({
+            findFirst: vi.fn((options: any) => Promise.resolve({
               id: 'test-session-id',
               projectPath: '/test/project',
               claudeDirectoryPath: '/home/.claude/projects/test-project',
@@ -41,10 +41,13 @@ describe('PromptService', () => {
               createdAt: new Date(),
               updatedAt: new Date(),
               lastAccessedAt: new Date(),
+              isWorking: false,
+              currentJobId: null,
+              lastJobStatus: null,
             }))
           },
           prompts: {
-            findFirst: mock(() => Promise.resolve({
+            findFirst: vi.fn(() => Promise.resolve({
               id: 'test-prompt-id',
               sessionId: 'test-session-id',
               status: 'queued',
@@ -54,22 +57,22 @@ describe('PromptService', () => {
               createdAt: new Date(),
               completedAt: null,
             })),
-            findMany: mock(() => Promise.resolve([]))
+            findMany: vi.fn(() => Promise.resolve([]))
           }
         }
       }
     }));
 
     // Mock queue service
-    mock.module('@/services/queue.service', () => ({
+    vi.doMock('@/services/queue.service', () => ({
       queueService: {
-        addPromptJob: mock(() => Promise.resolve()),
-        cancelJob: mock(() => Promise.resolve()),
+        addPromptJob: vi.fn(() => Promise.resolve()),
+        cancelJob: vi.fn(() => Promise.resolve()),
       }
     }));
 
     // Mock Claude directory service
-    mock.module('@/services/claude-directory.service', () => ({
+    vi.doMock('@/services/claude-directory.service', () => ({
       default: class MockClaudeDirectoryService {
         getProjectConversations() {
           return {
@@ -114,7 +117,7 @@ describe('PromptService', () => {
   });
 
   afterAll(() => {
-    mock.restore();
+    vi.restoreAllMocks();
   });
 
   describe('createPrompt', () => {
@@ -125,48 +128,62 @@ describe('PromptService', () => {
       });
 
       expect(result).toBeDefined();
-      expect(result.id).toBeDefined();
-      expect(result.sessionId).toBe('test-session-id');
-      expect(result.status).toBe('queued');
+      expect(result.success).toBe(true);
+      expect(result.message).toBe('Prompt queued successfully');
+      expect(result.jobId).toBeDefined();
       // Note: prompt content is not stored in database anymore
     });
 
     it('should throw NotFoundError for non-existent session', async () => {
       // Override session mock to return null
       const { db } = await import('@/db');
-      db.query.sessions.findFirst = mock(() => Promise.resolve(null));
+      db.query.sessions.findFirst = vi.fn(() => Promise.resolve(null));
 
       await expect(service.createPrompt('non-existent-session', {
         prompt: 'Test prompt',
       })).rejects.toBeInstanceOf(NotFoundError);
     });
 
-    it('should throw ConflictError for inactive session', async () => {
+    it('should allow prompt creation for inactive session', async () => {
       // Override session mock to return inactive session
       const { db } = await import('@/db');
-      db.query.sessions.findFirst = mock(() => Promise.resolve({
+      db.query.sessions.findFirst = vi.fn(() => Promise.resolve({
         id: 'test-session-id',
         status: 'inactive',
         metadata: {},
+        isWorking: false,
+        currentJobId: null,
+        lastJobStatus: null,
       }));
 
-      await expect(service.createPrompt('test-session-id', {
+      const result = await service.createPrompt('test-session-id', {
         prompt: 'Test prompt',
-      })).rejects.toBeInstanceOf(ConflictError);
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.message).toBe('Prompt queued successfully');
     });
   });
 
   describe('getHistory', () => {
-    beforeAll(() => {
+    beforeAll(async () => {
       // Reset session mock to active
-      const { db } = require('@/db');
-      db.query.sessions.findFirst = mock(() => Promise.resolve({
+      const { db } = await import('@/db');
+      vi.mocked(db.query.sessions.findFirst).mockResolvedValue({
         id: 'test-session-id',
         projectPath: '/test/project',
         claudeDirectoryPath: '/home/.claude/projects/test-project',
         status: 'active',
         metadata: {},
-      }));
+        isWorking: false,
+        currentJobId: null,
+        lastJobStatus: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        lastAccessedAt: new Date(),
+        context: null,
+        claudeCodeSessionId: null,
+      });
     });
 
     it('should load history from Claude directory', async () => {
@@ -175,12 +192,15 @@ describe('PromptService', () => {
       expect(result).toBeDefined();
       expect(result.prompts).toBeDefined();
       expect(Array.isArray(result.prompts)).toBe(true);
+      expect(result.session).toBeDefined();
+      expect(result.session.id).toBe('test-session-id');
+      expect(result.session.isWorking).toBe(false);
     });
 
     it('should handle Claude directory errors with fallback', async () => {
       // Mock Claude directory service to throw error
       const ClaudeDirectoryService = (await import('@/services/claude-directory.service')).default;
-      ClaudeDirectoryService.prototype.getProjectConversations = mock(() => {
+      ClaudeDirectoryService.prototype.getProjectConversations = vi.fn(() => {
         throw new Error('Claude directory not available');
       });
 
@@ -188,6 +208,8 @@ describe('PromptService', () => {
 
       expect(result).toBeDefined();
       expect(Array.isArray(result.prompts)).toBe(true);
+      expect(result.session).toBeDefined();
+      expect(result.session.id).toBe('test-session-id');
     });
 
     it('should apply pagination correctly', async () => {
@@ -221,7 +243,7 @@ describe('PromptService', () => {
     it('should handle export errors with fallback', async () => {
       // Mock Claude directory service to throw error
       const ClaudeDirectoryService = (await import('@/services/claude-directory.service')).default;
-      ClaudeDirectoryService.prototype.exportSessionHistory = mock(() => {
+      ClaudeDirectoryService.prototype.exportSessionHistory = vi.fn(() => {
         throw new Error('Export failed');
       });
 
@@ -234,19 +256,21 @@ describe('PromptService', () => {
 
   describe('updatePromptResult', () => {
     it('should update prompt status and metadata (no response content)', async () => {
-      // Should not throw when updating prompt result
-      await expect(service.updatePromptResult('test-prompt-id', {
+      // Should return success for backward compatibility
+      const result = await service.updatePromptResult('test-prompt-id', {
         status: 'completed',
         metadata: {
           duration: 1000,
           toolCallCount: 2,
           hasClaudeDirectoryContent: true,
         },
-      })).resolves.not.toThrow();
+      });
+      
+      expect(result.success).toBe(true);
     });
 
     it('should handle error status updates', async () => {
-      await expect(service.updatePromptResult('test-prompt-id', {
+      const result = await service.updatePromptResult('test-prompt-id', {
         status: 'failed',
         error: 'Test error message',
         metadata: {
@@ -255,7 +279,9 @@ describe('PromptService', () => {
             timestamp: new Date().toISOString(),
           },
         },
-      })).resolves.not.toThrow();
+      });
+      
+      expect(result.success).toBe(true);
     });
   });
 });

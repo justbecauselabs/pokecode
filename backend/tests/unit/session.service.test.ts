@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, mock, afterAll } from 'bun:test';
+import { describe, it, expect, beforeAll, vi, afterAll } from 'vitest';
 import { SessionService } from '@/services/session.service';
 import { ValidationError } from '@/types';
 
@@ -7,11 +7,11 @@ describe('SessionService', () => {
 
   beforeAll(() => {
     // Mock the database and repository service
-    mock.module('@/db', () => ({
+    vi.doMock('@/db', () => ({
       db: {
-        insert: mock(() => ({
-          values: mock((data: any) => ({
-            returning: mock(() => [
+        insert: vi.fn(() => ({
+          values: vi.fn((data: any) => ({
+            returning: vi.fn(() => [
               {
                 id: 'test-session-id',
                 projectPath: data.projectPath, // Use the actual projectPath from input
@@ -30,10 +30,10 @@ describe('SessionService', () => {
     }));
 
     // Mock repository service
-    mock.module('@/services/repository.service', () => ({
+    vi.doMock('@/services/repository.service', () => ({
       repositoryService: {
-        resolveFolderPath: mock((folderName: string) => `/test/repos/${folderName}`),
-        validateRepository: mock((folderName: string) => 
+        resolveFolderPath: vi.fn((folderName: string) => `/test/repos/${folderName}`),
+        validateRepository: vi.fn((folderName: string) => 
           Promise.resolve({ exists: true, isGitRepository: true })
         ),
       }
@@ -43,7 +43,7 @@ describe('SessionService', () => {
   });
 
   afterAll(() => {
-    mock.restore();
+    vi.restoreAllMocks();
   });
 
   describe('createSession', () => {
@@ -90,7 +90,7 @@ describe('SessionService', () => {
     it('should throw error when folderName repository does not exist', async () => {
       // Override the mock for this test
       const { repositoryService } = await import('@/services/repository.service');
-      repositoryService.validateRepository = mock(() => 
+      repositoryService.validateRepository = vi.fn(() => 
         Promise.resolve({ exists: false, isGitRepository: false })
       );
 
@@ -114,7 +114,7 @@ describe('SessionService', () => {
       const { repositoryService } = await import('@/services/repository.service');
       const originalResolveFolderPath = repositoryService.resolveFolderPath;
       
-      repositoryService.resolveFolderPath = mock(() => {
+      repositoryService.resolveFolderPath = vi.fn(() => {
         throw new Error('Invalid folder name: cannot contain path separators or traversal');
       });
 
@@ -135,7 +135,7 @@ describe('SessionService', () => {
       const { repositoryService } = await import('@/services/repository.service');
       const originalValidateRepository = repositoryService.validateRepository;
       
-      repositoryService.validateRepository = mock(() => 
+      repositoryService.validateRepository = vi.fn(() => 
         Promise.resolve({ exists: true, isGitRepository: true })
       );
 

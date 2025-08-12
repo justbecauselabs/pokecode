@@ -30,7 +30,13 @@ export class QueueService {
     });
   }
 
-  async addPromptJob(sessionId: string, promptId: string, prompt: string, allowedTools?: string[]) {
+  async addPromptJob(
+    sessionId: string,
+    promptId: string,
+    prompt: string,
+    allowedTools?: string[],
+    messageId?: string,
+  ) {
     // Get project path from session
     const projectPath = await this.getProjectPath(sessionId);
 
@@ -43,6 +49,7 @@ export class QueueService {
         prompt,
         allowedTools,
         projectPath,
+        messageId,
       },
       {
         attempts: 3,

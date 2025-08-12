@@ -10,7 +10,7 @@ interface StatusBarProps {
 }
 
 export function StatusBar({ className }: StatusBarProps) {
-	const { isConnected, isStreaming, connectionError } = useChatStore();
+	const { isConnected, isWorking, connectionError } = useChatStore();
 	const { currentSession } = useSessionStore();
 
 	const getConnectionStatus = () => {
@@ -23,10 +23,10 @@ export function StatusBar({ className }: StatusBarProps) {
 			};
 		}
 
-		if (isStreaming) {
+		if (isWorking) {
 			return {
 				icon: Wifi,
-				label: "Streaming",
+				label: "Working",
 				variant: "default" as const,
 				color: "text-green-600",
 			};

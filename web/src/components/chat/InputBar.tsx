@@ -17,14 +17,14 @@ export function InputBar({
 	onMessageSent,
 	disabled,
 }: InputBarProps) {
-	const { sendMessage, isLoading, isStreaming, error, clearError } =
+	const { sendMessage, isLoading, isWorking, error, clearError } =
 		useChatStore();
 	const [message, setMessage] = useState("");
 	const [history, setHistory] = useState<string[]>([]);
 	const [historyIndex, setHistoryIndex] = useState(-1);
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-	const isSending = isLoading || isStreaming;
+	const isSending = isLoading || isWorking;
 
 	useEffect(() => {
 		if (textareaRef.current) {
@@ -130,7 +130,7 @@ export function InputBar({
 					</div>
 
 					<div className="flex gap-1">
-						{isStreaming && (
+						{isWorking && (
 							<Button
 								type="button"
 								size="sm"

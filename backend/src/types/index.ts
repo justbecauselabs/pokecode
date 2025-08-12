@@ -387,6 +387,7 @@ export interface PromptJobData {
   prompt: string;
   allowedTools?: string[];
   projectPath: string;
+  messageId?: string; // ID of the user message record in database
 }
 
 // Error Types

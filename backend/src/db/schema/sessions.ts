@@ -1,4 +1,4 @@
-import { index, jsonb, pgEnum, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import { boolean, index, jsonb, pgEnum, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 
 export const sessionStatusEnum = pgEnum('session_status', ['active', 'inactive', 'archived']);
 
@@ -22,10 +22,15 @@ export const sessions = pgTable(
       .notNull()
       .$onUpdate(() => new Date()),
     lastAccessedAt: timestamp('last_accessed_at').defaultNow().notNull(),
+    // Working state fields
+    isWorking: boolean('is_working').default(false).notNull(),
+    currentJobId: text('current_job_id'),
+    lastJobStatus: text('last_job_status'),
   },
   (table) => ({
     statusIdx: index('idx_sessions_status').on(table.status),
     lastAccessedIdx: index('idx_sessions_last_accessed').on(table.lastAccessedAt),
+    isWorkingIdx: index('idx_sessions_is_working').on(table.isWorking),
   }),
 );
 

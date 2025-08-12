@@ -26,7 +26,6 @@ export const app: FastifyPluginAsync = async (fastify, _opts) => {
   await fastify.register(swaggerPlugin);
   await fastify.register(rateLimitPlugin);
 
-
   // Register routes
   await fastify.register(healthRoutes, { prefix: '/health' });
   await fastify.register(repositoryRoutes, { prefix: '/api/claude-code/repositories' });

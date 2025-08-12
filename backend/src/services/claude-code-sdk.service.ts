@@ -1,4 +1,5 @@
 import { EventEmitter } from 'node:events';
+import { constants as fsConstants, promises as fsPromises } from 'node:fs';
 import { type Options, query, type SDKMessage } from '@anthropic-ai/claude-code';
 import { createChildLogger } from '@/utils/logger';
 
@@ -12,6 +13,7 @@ export interface ClaudeCodeMessage {
 export interface ClaudeCodeOptions {
   sessionId: string;
   projectPath: string;
+  claudeCodeSessionId?: string | null;
 }
 
 // Enhanced streaming state
@@ -98,20 +100,21 @@ export class ClaudeCodeSDKService extends EventEmitter {
     };
 
     try {
+      const claudeCodeSessionId = this.options.claudeCodeSessionId ?? null;
+      const shouldResume = claudeCodeSessionId !== null && claudeCodeSessionId !== undefined;
       logger.info(
         {
           sessionId: this.sessionId,
           prompt: prompt.substring(0, 100),
           cwd: this.options.projectPath,
-          resuming: !!this.sessionId,
+          resuming: shouldResume,
         },
         'Starting Claude Code SDK query',
       );
 
       // Validate project path exists
-      const fs = await import('node:fs');
       try {
-        await fs.promises.access(this.options.projectPath, fs.constants.F_OK);
+        await fsPromises.access(this.options.projectPath, fsConstants.F_OK);
       } catch (_error) {
         const errorMessage = `Project path does not exist: ${this.options.projectPath}`;
         logger.error(
@@ -129,10 +132,6 @@ export class ClaudeCodeSDKService extends EventEmitter {
           messages: this.messages,
         };
       }
-
-      // Check if we have a real Claude Code session ID to resume
-      const claudeCodeSessionId = await this.getClaudeCodeSessionId();
-      const shouldResume = claudeCodeSessionId !== null;
 
       // Configure SDK options to use local Claude Max authentication
       const sdkOptions: Options = {
@@ -249,7 +248,7 @@ export class ClaudeCodeSDKService extends EventEmitter {
           messageNumber: this.messages.length,
           messageType: message.type,
           messageKeys: Object.keys(message),
-          hasSessionId: !!(message as any).sessionId,
+          hasSessionId: !!(message as any).session_id,
           message: JSON.stringify(message).substring(0, 500),
         },
         'Debug: SDK message structure',
@@ -257,8 +256,8 @@ export class ClaudeCodeSDKService extends EventEmitter {
     }
 
     // Capture Claude Code session ID from first message that has it
-    if (!this.capturedClaudeSessionId && (message as any).sessionId) {
-      this.capturedClaudeSessionId = (message as any).sessionId;
+    if (!this.capturedClaudeSessionId && (message as any).session_id) {
+      this.capturedClaudeSessionId = (message as any).session_id;
       logger.info(
         {
           databaseSessionId: this.sessionId,
@@ -421,34 +420,5 @@ export class ClaudeCodeSDKService extends EventEmitter {
    */
   isRunning(): boolean {
     return this.isProcessing;
-  }
-
-  /**
-   * Get the Claude Code session ID from database if it exists
-   */
-  private async getClaudeCodeSessionId(): Promise<string | null> {
-    try {
-      const { db } = await import('@/db');
-      const { sessions } = await import('@/db/schema');
-      const { eq } = await import('drizzle-orm');
-
-      const session = await db.query.sessions.findFirst({
-        where: eq(sessions.id, this.sessionId),
-        columns: {
-          claudeCodeSessionId: true,
-        },
-      });
-
-      return session?.claudeCodeSessionId || null;
-    } catch (error) {
-      logger.warn(
-        {
-          sessionId: this.sessionId,
-          error: error instanceof Error ? error.message : String(error),
-        },
-        'Failed to get Claude Code session ID from database',
-      );
-      return null;
-    }
   }
 }

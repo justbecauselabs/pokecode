@@ -6,11 +6,15 @@ import {
   ExportQuerySchema,
   HistoryQuerySchema,
   HistoryResponseSchema,
+  MessagesQuerySchema,
+  MessagesResponseSchema,
   PromptDetailResponseSchema,
   PromptParamsSchema,
   PromptResponseSchema,
 } from '@/schemas/prompt.schema';
+import { messageService } from '@/services/message.service';
 import { promptService } from '@/services/prompt.service';
+import { sessionService } from '@/services/session.service';
 import { logger } from '@/utils/logger';
 
 const promptRoutes: FastifyPluginAsync = async (fastify) => {
@@ -179,13 +183,13 @@ const promptRoutes: FastifyPluginAsync = async (fastify) => {
           200: Type.Object({
             status: Type.Union([
               Type.Literal('pending'),
-              Type.Literal('running'), 
+              Type.Literal('running'),
               Type.Literal('completed'),
-              Type.Literal('failed')
+              Type.Literal('failed'),
             ]),
             messages: Type.Array(Type.Any()),
             count: Type.Number(),
-            isComplete: Type.Boolean()
+            isComplete: Type.Boolean(),
           }),
           404: Type.Object({
             error: Type.String(),
@@ -200,19 +204,19 @@ const promptRoutes: FastifyPluginAsync = async (fastify) => {
       try {
         // Use promptId as threadId since they correspond in the JSONL structure
         const messages = await promptService.getIntermediateMessages(sessionId, promptId);
-        
+
         // For now, assume completed if we have messages, pending if not
         // This could be enhanced to check actual job status from queue if needed
         const status = messages.length > 0 ? 'completed' : 'pending';
         const isComplete = status === 'completed';
-        
+
         logger.debug(
           {
             sessionId,
             promptId,
             messageCount: messages.length,
             status,
-            isComplete
+            isComplete,
           },
           'Poll endpoint response',
         );
@@ -221,7 +225,7 @@ const promptRoutes: FastifyPluginAsync = async (fastify) => {
           status,
           messages,
           count: messages.length,
-          isComplete
+          isComplete,
         });
       } catch (error: any) {
         logger.error(
@@ -244,7 +248,6 @@ const promptRoutes: FastifyPluginAsync = async (fastify) => {
       }
     },
   );
-
 };
 
 // Export routes for session history and export
@@ -317,82 +320,6 @@ export const historyAndExportRoutes: FastifyPluginAsync = async (fastify) => {
     },
   );
 
-  // Get intermediate messages for a conversation thread
-  fastify.get<{
-    Params: { sessionId: string; threadId: string };
-  }>(
-    '/threads/:threadId/intermediate',
-    {
-      config: {
-        rateLimit: rateLimitConfig.read,
-      },
-      schema: {
-        params: Type.Object({ 
-          sessionId: Type.String({ format: 'uuid' }),
-          threadId: Type.String()
-        }),
-        response: {
-          200: Type.Object({
-            messages: Type.Array(Type.Any()),
-            count: Type.Number()
-          }),
-          404: Type.Object({
-            error: Type.String(),
-            code: Type.Optional(Type.String()),
-          }),
-        },
-      },
-    },
-    async (request, reply) => {
-      const { sessionId, threadId } = request.params;
-
-      logger.debug(
-        {
-          sessionId,
-          threadId,
-        },
-        'Intermediate messages route called',
-      );
-
-      try {
-        const messages = await promptService.getIntermediateMessages(sessionId, threadId);
-
-        logger.debug(
-          {
-            sessionId,
-            threadId,
-            messageCount: messages.length,
-          },
-          'Intermediate messages route response',
-        );
-
-        return reply.send({
-          messages,
-          count: messages.length
-        });
-      } catch (error: any) {
-        logger.error(
-          {
-            sessionId,
-            threadId,
-            errorName: error.name,
-            errorMessage: error.message,
-            errorStack: error.stack,
-          },
-          'Intermediate messages route error',
-        );
-
-        if (error.name === 'NotFoundError') {
-          return reply.code(404).send({
-            error: error.message,
-            code: error.code,
-          });
-        }
-        throw error;
-      }
-    },
-  );
-
   // Export session
   fastify.get<{
     Params: { sessionId: string };
@@ -435,6 +362,103 @@ export const historyAndExportRoutes: FastifyPluginAsync = async (fastify) => {
           return reply.code(404).send({
             error: error.message,
             code: error.code,
+          });
+        }
+        throw error;
+      }
+    },
+  );
+
+  // Get session messages (new endpoint)
+  fastify.get<{
+    Params: { sessionId: string };
+    Querystring: Static<typeof MessagesQuerySchema>;
+  }>(
+    '/messages',
+    {
+      config: {
+        rateLimit: rateLimitConfig.read,
+      },
+      schema: {
+        params: Type.Object({ sessionId: Type.String({ format: 'uuid' }) }),
+        querystring: MessagesQuerySchema,
+        response: {
+          200: MessagesResponseSchema,
+          404: Type.Object({
+            error: Type.String(),
+            code: Type.Optional(Type.String()),
+          }),
+        },
+      },
+    },
+    async (request, reply) => {
+      const { sessionId } = request.params;
+      const { limit = 50, offset = 0 } = request.query;
+
+      logger.debug(
+        {
+          sessionId,
+          query: request.query,
+        },
+        'Messages route called',
+      );
+
+      try {
+        // Get session to verify it exists and get working state
+        const session = await sessionService.getSession(sessionId);
+        if (!session) {
+          throw new Error('Session not found');
+        }
+
+        // Get messages with content from hybrid approach
+        const messages = await messageService.getMessagesWithContent(sessionId);
+
+        // Apply pagination
+        const total = messages.length;
+        const paginatedMessages = messages.slice(offset, offset + limit);
+
+        const response = {
+          messages: paginatedMessages.map((msg) => ({
+            ...msg,
+            createdAt: msg.createdAt.toISOString(),
+          })),
+          session: {
+            id: session.id,
+            isWorking: session.isWorking,
+            currentJobId: session.currentJobId,
+            lastJobStatus: session.lastJobStatus,
+            status: session.status,
+          },
+          total,
+          limit,
+          offset,
+        };
+
+        logger.debug(
+          {
+            sessionId,
+            messageCount: paginatedMessages.length,
+            hasMessages: paginatedMessages.length > 0,
+          },
+          'Messages route response',
+        );
+
+        return reply.send(response);
+      } catch (error: any) {
+        logger.error(
+          {
+            sessionId,
+            errorName: error.name,
+            errorMessage: error.message,
+            errorStack: error.stack,
+          },
+          'Messages route error',
+        );
+
+        if (error.name === 'NotFoundError' || error.message === 'Session not found') {
+          return reply.code(404).send({
+            error: 'Session not found',
+            code: 'NOT_FOUND',
           });
         }
         throw error;

@@ -14,6 +14,7 @@ export class ClaudeDirectoryService {
   private claudeBasePath: string;
   private sqliteDbPath: string;
   private projectsPath: string;
+  private sessionSpecificPath?: string; // For session-isolated directories
 
   constructor(claudeDirectoryPath?: string) {
     this.claudeBasePath = claudeDirectoryPath || join(homedir(), '.claude');
@@ -28,6 +29,24 @@ export class ClaudeDirectoryService {
       },
       'ClaudeDirectoryService initialized',
     );
+  }
+
+  /**
+   * Create a service instance for a specific session directory
+   * Used for session-isolated conversation storage
+   */
+  static forSessionDirectory(sessionDirectoryPath: string): ClaudeDirectoryService {
+    const service = new ClaudeDirectoryService();
+    service.sessionSpecificPath = sessionDirectoryPath;
+
+    logger.debug(
+      {
+        sessionSpecificPath: sessionDirectoryPath,
+      },
+      'ClaudeDirectoryService initialized for session-specific directory',
+    );
+
+    return service;
   }
 
   /**
@@ -108,15 +127,21 @@ export class ClaudeDirectoryService {
    */
   getProjectConversationFiles(projectPath: string): string[] {
     try {
-      const projectKey = projectPath.replace(/\//g, '-');
-      const projectDir = join(this.projectsPath, projectKey);
+      // Use session-specific path if available, otherwise fall back to original behavior
+      let projectDir: string;
+      if (this.sessionSpecificPath) {
+        projectDir = this.sessionSpecificPath;
+      } else {
+        const projectKey = projectPath.replace(/\//g, '-');
+        projectDir = join(this.projectsPath, projectKey);
+      }
 
       logger.debug(
         {
           projectPath,
-          projectKey,
           projectDir,
-          projectsPath: this.projectsPath,
+          sessionSpecificPath: this.sessionSpecificPath,
+          usingSessionSpecific: !!this.sessionSpecificPath,
         },
         'Getting project conversation files',
       );
@@ -311,15 +336,15 @@ export class ClaudeDirectoryService {
     for (const jsonlConv of conversations.jsonlConversations) {
       const messages = jsonlConv.messages;
       const messageMap = new Map();
-      
+
       // Create a map of uuid -> message for easy lookup
       for (const message of messages) {
         messageMap.set(message.uuid, message);
       }
 
       // Find user prompts (messages with parentUuid: null and type: "user")
-      const userPrompts = messages.filter((msg: any) => 
-        msg.parentUuid === null && msg.type === 'user'
+      const userPrompts = messages.filter(
+        (msg: any) => msg.parentUuid === null && msg.type === 'user',
       );
 
       for (const userPrompt of userPrompts) {
@@ -337,12 +362,14 @@ export class ClaudeDirectoryService {
 
         while (queue.length > 0) {
           const currentUuid = queue.shift();
-          if (!currentUuid || visited.has(currentUuid)) continue;
+          if (!currentUuid || visited.has(currentUuid)) {
+            continue;
+          }
           visited.add(currentUuid);
 
           // Find all messages that have this uuid as their parentUuid
           const children = messages.filter((msg: any) => msg.parentUuid === currentUuid);
-          
+
           for (const child of children) {
             threadMessages.push(child);
             queue.push(child.uuid);
@@ -350,7 +377,9 @@ export class ClaudeDirectoryService {
         }
 
         // Sort thread messages by timestamp
-        threadMessages.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+        threadMessages.sort(
+          (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
+        );
 
         // Categorize messages: find the final response (last substantial assistant message)
         let finalResponse = null;
@@ -358,19 +387,22 @@ export class ClaudeDirectoryService {
 
         for (let i = threadMessages.length - 1; i >= 0; i--) {
           const msg = threadMessages[i];
-          
+
           if (msg.type === 'assistant' && !finalResponse) {
             // Check if this is a substantial final response
-            const hasTextContent = msg.message?.content?.some?.((content: any) => 
-              content.type === 'text' && content.text && content.text.length > 50
-            ) || (typeof msg.message?.content === 'string' && msg.message.content.length > 50);
+            const hasTextContent =
+              msg.message?.content?.some?.(
+                (content: any) =>
+                  content.type === 'text' && content.text && content.text.length > 50,
+              ) ||
+              (typeof msg.message?.content === 'string' && msg.message.content.length > 50);
 
             if (hasTextContent) {
               finalResponse = msg;
               continue;
             }
           }
-          
+
           intermediateMessages.unshift(msg);
         }
 
@@ -385,7 +417,7 @@ export class ClaudeDirectoryService {
       {
         projectPath,
         threadCount: conversationThreads.length,
-        threadsWithFinalResponse: conversationThreads.filter(t => t.finalResponse).length,
+        threadsWithFinalResponse: conversationThreads.filter((t) => t.finalResponse).length,
       },
       'Retrieved conversation threads',
     );
@@ -398,8 +430,8 @@ export class ClaudeDirectoryService {
    */
   getIntermediateMessages(projectPath: string, threadId: string): any[] {
     const threads = this.getConversationThreads(projectPath);
-    const thread = threads.conversationThreads.find(t => t.threadId === threadId);
-    
+    const thread = threads.conversationThreads.find((t) => t.threadId === threadId);
+
     if (!thread) {
       logger.warn({ projectPath, threadId }, 'Thread not found');
       return [];
@@ -435,13 +467,24 @@ export class ClaudeDirectoryService {
 
   /**
    * Create a mapping between project paths and Claude directory paths
+   * Now supports session-specific isolation to prevent history cross-contamination
    */
-  static getClaudeDirectoryPath(projectPath: string, claudeBasePath?: string): string {
+  static getClaudeDirectoryPath(
+    projectPath: string,
+    sessionId?: string,
+    claudeBasePath?: string,
+  ): string {
     const basePath = claudeBasePath || join(homedir(), '.claude');
 
-    // Claude CLI organizes projects by path, replacing slashes with dashes
-    const projectKey = projectPath.replace(/\//g, '-');
+    // Claude CLI organizes projects by path, replacing slashes with dashes and underscores with hyphens
+    const projectKey = projectPath.replace(/\//g, '-').replace(/_/g, '-');
 
+    // If sessionId is provided, create session-specific directory for isolation
+    if (sessionId) {
+      return join(basePath, 'projects', projectKey, sessionId);
+    }
+
+    // Fallback to original behavior for backward compatibility
     return join(basePath, 'projects', projectKey);
   }
 

@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll } from 'bun:test';
+import { describe, it, expect, beforeAll } from 'vitest';
 import { FileService } from '@/services/file.service';
 import { AuthorizationError, ValidationError } from '@/types';
 

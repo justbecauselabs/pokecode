@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, mock, afterAll } from 'bun:test';
+import { describe, it, expect, beforeAll, vi, afterAll } from 'vitest';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { RepositoryService } from '@/services/repository.service';
@@ -9,7 +9,7 @@ describe('RepositoryService', () => {
 
   beforeAll(() => {
     // Mock the config to use a test directory
-    mock.module('@/config', () => ({
+    vi.doMock('@/config', () => ({
       config: {
         GITHUB_REPOS_DIRECTORY: mockGithubReposDir,
       },
@@ -19,7 +19,7 @@ describe('RepositoryService', () => {
   });
 
   afterAll(() => {
-    mock.restore();
+    vi.restoreAllMocks();
   });
 
   describe('resolveFolderPath', () => {
@@ -53,7 +53,7 @@ describe('RepositoryService', () => {
     it('should return false for non-existent folder', async () => {
       // Mock fs.stat to throw for non-existent path
       const originalStat = fs.stat;
-      fs.stat = mock(() => Promise.reject(new Error('ENOENT'))) as any;
+      fs.stat = vi.fn(() => Promise.reject(new Error('ENOENT'))) as any;
 
       const result = await service.validateRepository('non-existent');
       expect(result).toEqual({ exists: false, isGitRepository: false });
@@ -64,7 +64,7 @@ describe('RepositoryService', () => {
     it('should return exists: true, isGitRepository: false for folder without .git', async () => {
       // Mock fs.stat to return directory for main folder but fail for .git
       const originalStat = fs.stat;
-      fs.stat = mock((path: string) => {
+      fs.stat = vi.fn((path: string) => {
         if (path.endsWith('test-repo')) {
           return Promise.resolve({ isDirectory: () => true });
         }
@@ -83,7 +83,7 @@ describe('RepositoryService', () => {
     it('should return exists: true, isGitRepository: true for git repository', async () => {
       // Mock fs.stat to return directory for both main folder and .git
       const originalStat = fs.stat;
-      fs.stat = mock(() => Promise.resolve({ isDirectory: () => true })) as any;
+      fs.stat = vi.fn(() => Promise.resolve({ isDirectory: () => true })) as any;
 
       const result = await service.validateRepository('git-repo');
       expect(result).toEqual({ exists: true, isGitRepository: true });
@@ -98,13 +98,13 @@ describe('RepositoryService', () => {
       const originalReaddir = fs.readdir;
       const originalStat = fs.stat;
 
-      fs.readdir = mock(() => Promise.resolve([
+      fs.readdir = vi.fn(() => Promise.resolve([
         { name: 'git-repo', isDirectory: () => true },
         { name: 'regular-folder', isDirectory: () => true },
         { name: 'file.txt', isDirectory: () => false },
       ])) as any;
 
-      fs.stat = mock((path: string) => {
+      fs.stat = vi.fn((path: string) => {
         if (path.endsWith('git-repo/.git')) {
           return Promise.resolve({ isDirectory: () => true });
         }
@@ -134,7 +134,7 @@ describe('RepositoryService', () => {
     it('should handle errors when reading repositories directory', async () => {
       // Mock fs.readdir to throw error
       const originalReaddir = fs.readdir;
-      fs.readdir = mock(() => Promise.reject(new Error('Permission denied'))) as any;
+      fs.readdir = vi.fn(() => Promise.reject(new Error('Permission denied'))) as any;
 
       await expect(service.listRepositories()).rejects.toThrow(
         'Failed to read repositories directory: Permission denied'

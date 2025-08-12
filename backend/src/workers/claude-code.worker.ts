@@ -5,6 +5,7 @@ import { config } from '@/config';
 import { db } from '@/db';
 import { sessions } from '@/db/schema';
 import { ClaudeCodeSDKService } from '@/services/claude-code-sdk.service';
+import { messageService } from '@/services/message.service';
 import { promptService } from '@/services/prompt.service';
 import type { PromptJobData } from '@/types';
 import { createChildLogger } from '@/utils/logger';
@@ -66,7 +67,7 @@ export class ClaudeCodeWorker {
    * Main job processing function
    */
   private async processPrompt(job: Job<PromptJobData>): Promise<void> {
-    const { sessionId, promptId, prompt, projectPath } = job.data;
+    const { sessionId, promptId, prompt, projectPath, messageId } = job.data;
     const channel = `claude-code:${sessionId}:${promptId}`;
 
     logger.info({ promptId, sessionId }, 'Processing prompt');
@@ -75,10 +76,28 @@ export class ClaudeCodeWorker {
       await this.markPromptAsProcessing(promptId);
       await this.publishStartEvent(channel);
 
+      // Look up existing Claude Code session ID (if any) and update working state
+      const session = await db.query.sessions.findFirst({
+        where: eq(sessions.id, sessionId),
+        columns: { claudeCodeSessionId: true },
+      });
+
+      // Update session working state to indicate job is running
+      await db
+        .update(sessions)
+        .set({
+          isWorking: true,
+          currentJobId: promptId,
+          lastJobStatus: 'processing',
+          updatedAt: new Date(),
+        })
+        .where(eq(sessions.id, sessionId));
+
       // Create Claude Code SDK service instance
       const sdkService = new ClaudeCodeSDKService({
         sessionId,
         projectPath,
+        claudeCodeSessionId: session?.claudeCodeSessionId ?? null,
       });
 
       // Store the service for potential cleanup
@@ -93,14 +112,24 @@ export class ClaudeCodeWorker {
         async (data: { databaseSessionId: string; claudeCodeSessionId: string }) => {
           try {
             await this.backfillClaudeSessionId(data.databaseSessionId, data.claudeCodeSessionId);
+
+            // Also update the user message with the claude session ID if messageId is provided
+            if (messageId) {
+              await messageService.updateClaudeSessionId(messageId, data.claudeCodeSessionId);
+              logger.debug(
+                { messageId, claudeCodeSessionId: data.claudeCodeSessionId },
+                'Updated user message with Claude session ID',
+              );
+            }
           } catch (error) {
             logger.warn(
               {
                 databaseSessionId: data.databaseSessionId,
                 claudeCodeSessionId: data.claudeCodeSessionId,
+                messageId,
                 error: error instanceof Error ? error.message : String(error),
               },
-              'Failed to backfill Claude session ID',
+              'Failed to backfill Claude session ID or update message',
             );
           }
         },
@@ -118,15 +147,58 @@ export class ClaudeCodeWorker {
       if (result.success) {
         await this.savePromptResult(promptId, result);
         await this.publishCompleteEvent(channel, result);
+
+        // Create assistant message if messageId is provided
+        if (messageId) {
+          try {
+            const assistantMessage = await messageService.createMessage({
+              sessionId,
+              text: result.response || 'Command completed successfully',
+              type: 'assistant',
+              claudeSessionId:
+                (
+                  await db.query.sessions.findFirst({
+                    where: eq(sessions.id, sessionId),
+                    columns: { claudeCodeSessionId: true },
+                  })
+                )?.claudeCodeSessionId || undefined,
+            });
+            logger.debug(
+              { messageId, assistantMessageId: assistantMessage.id },
+              'Created assistant message for completed prompt',
+            );
+          } catch (error) {
+            logger.warn(
+              {
+                messageId,
+                sessionId,
+                error: error instanceof Error ? error.message : String(error),
+              },
+              'Failed to create assistant message',
+            );
+          }
+        }
+
+        // Update session working state to indicate completion
+        await db
+          .update(sessions)
+          .set({
+            isWorking: false,
+            currentJobId: null,
+            lastJobStatus: 'completed',
+            updatedAt: new Date(),
+          })
+          .where(eq(sessions.id, sessionId));
+
         logger.info({ promptId }, 'Prompt completed successfully');
       } else {
-        await this.handlePromptError(promptId, channel, new Error(result.error));
+        await this.handlePromptError(promptId, sessionId, channel, new Error(result.error));
         throw new Error(result.error); // Let BullMQ handle retries
       }
     } catch (error) {
       // Clean up on error
       this.activeSessions.delete(promptId);
-      await this.handlePromptError(promptId, channel, error as Error);
+      await this.handlePromptError(promptId, sessionId, channel, error as Error);
       throw error; // Let BullMQ handle retries
     }
   }
@@ -413,16 +485,33 @@ export class ClaudeCodeWorker {
   /**
    * Handles and logs prompt processing errors
    */
-  private async handlePromptError(promptId: string, channel: string, error: Error): Promise<void> {
+  private async handlePromptError(
+    promptId: string,
+    sessionId: string,
+    channel: string,
+    error: Error,
+  ): Promise<void> {
     // Enhanced error logging with context
     const errorContext = {
       promptId,
+      sessionId,
       error: error.message,
       stack: error.stack,
       nodeEnv: process.env.NODE_ENV,
     };
 
     logger.error(errorContext, 'Error processing prompt');
+
+    // Update session working state to indicate failure
+    await db
+      .update(sessions)
+      .set({
+        isWorking: false,
+        currentJobId: null,
+        lastJobStatus: 'failed',
+        updatedAt: new Date(),
+      })
+      .where(eq(sessions.id, sessionId));
 
     await promptService.updatePromptResult(promptId, {
       error: error.message,
