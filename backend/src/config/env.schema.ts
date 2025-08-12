@@ -3,12 +3,12 @@ import { z } from 'zod';
 export const envSchema = z.object({
   // Server Configuration
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
-  PORT: z.string().transform(Number).default('3001'),
+  PORT: z.string().pipe(z.coerce.number()).default(3001),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
 
   // Database Configuration
   DB_HOST: z.string(),
-  DB_PORT: z.string().transform(Number).default('5432'),
+  DB_PORT: z.string().pipe(z.coerce.number()).default(5432),
   DB_NAME: z.string(),
   DB_USER: z.string(),
   DB_PASSWORD: z.string(),
@@ -29,8 +29,8 @@ export const envSchema = z.object({
   GITHUB_REPOS_DIRECTORY: z.string().min(1),
 
   // Rate Limiting
-  RATE_LIMIT_WINDOW: z.string().transform(Number).default('60000'),
-  RATE_LIMIT_MAX: z.string().transform(Number).default('100'),
+  RATE_LIMIT_WINDOW: z.string().pipe(z.coerce.number()).default(60000),
+  RATE_LIMIT_MAX: z.string().pipe(z.coerce.number()).default(100),
 
   // CORS
   CORS_ORIGIN: z.string().default('*'),

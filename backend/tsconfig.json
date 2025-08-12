@@ -6,19 +6,42 @@
     "lib": ["ES2022"],
     "outDir": "./dist",
     "rootDir": "./",
+    
+    // EXTREMELY STRICT TYPE CHECKING - NO ANYS OR UNKNOWNS ALLOWED
     "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "strictBindCallApply": true,
+    "strictPropertyInitialization": true,
+    "noImplicitThis": true,
+    "useUnknownInCatchVariables": true,
+    "alwaysStrict": true,
+    
+    // ADDITIONAL STRICT CHECKS
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "exactOptionalPropertyTypes": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "allowUnusedLabels": false,
+    "allowUnreachableCode": false,
+    
+    // MODULE RESOLUTION AND INTEROP
     "esModuleInterop": true,
-    "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
     "allowJs": false,
+    "checkJs": false,
+    
+    // OUTPUT AND DEBUGGING
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "noImplicitReturns": true,
-    "noFallthroughCasesInSwitch": true,
+    "skipLibCheck": false, // Enable for maximum strictness
+    
     "types": ["node"],
     "baseUrl": ".",
     "paths": {

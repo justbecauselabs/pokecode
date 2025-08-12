@@ -1,7 +1,29 @@
 {
   "extends": "expo/tsconfig.base",
   "compilerOptions": {
+    // EXTREMELY STRICT TYPE CHECKING - NO ANYS OR UNKNOWNS ALLOWED
     "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "strictBindCallApply": true,
+    "strictPropertyInitialization": true,
+    "noImplicitThis": true,
+    "useUnknownInCatchVariables": true,
+    "alwaysStrict": true,
+    
+    // ADDITIONAL STRICT CHECKS
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "exactOptionalPropertyTypes": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "allowUnusedLabels": false,
+    "allowUnreachableCode": false,
+    "noPropertyAccessFromIndexSignature": true,
+    
     "target": "ESNext",
     "module": "ESNext",
     "lib": ["ESNext"],
@@ -10,7 +32,7 @@
     "allowImportingTsExtensions": true,
     "resolveJsonModule": true,
     "noEmit": true,
-    "skipLibCheck": true,
+    "skipLibCheck": false, // Enable for maximum strictness
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,

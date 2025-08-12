@@ -485,7 +485,7 @@ export class PromptService {
           id: `${jsonlConv.file}-${index}`,
           type: msg.type || 'message',
           content: msg.content,
-          timestamp: msg.timestamp || jsonlConv.createdAt,
+          timestamp: msg.timestamp || new Date().toISOString(),
           metadata: msg.metadata || {},
         }));
         allMessages.push(...messages);

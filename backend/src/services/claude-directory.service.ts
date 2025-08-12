@@ -1,7 +1,9 @@
 import { existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
+import type { IntermediateMessage } from '../types/claude-messages';
 import { logger } from '../utils/logger';
+import { MessageValidator } from '../utils/message-validator';
 
 // TODO: Add 'better-sqlite3' dependency to package.json for SQLite access
 // For now, we'll focus on JSONL file access which is the primary storage format
@@ -187,21 +189,16 @@ export class ClaudeDirectoryService {
   }
 
   /**
-   * Read JSONL conversation file
+   * Read JSONL conversation file with Zod validation
    */
-  readConversationFile(filePath: string): Array<{
-    role: 'user' | 'assistant';
-    content: string;
-    timestamp: string;
-    metadata?: any;
-  }> {
+  readConversationFile(filePath: string): IntermediateMessage[] {
     try {
       logger.debug(
         {
           filePath,
           exists: existsSync(filePath),
         },
-        'Reading conversation file',
+        'Reading conversation file with validation',
       );
 
       if (!existsSync(filePath)) {
@@ -225,56 +222,61 @@ export class ClaudeDirectoryService {
         'Read conversation file content',
       );
 
-      const messages = lines
-        .map((line, index) => {
-          try {
-            const parsed = JSON.parse(line);
-            logger.debug(
-              {
-                filePath,
-                lineIndex: index,
-                parsedKeys: Object.keys(parsed),
-                role: parsed.role,
-                hasContent: !!parsed.content,
-                contentLength: parsed.content?.length || 0,
-              },
-              'Parsed JSONL line',
-            );
-            return parsed;
-          } catch (error) {
+      const intermediateMessages: IntermediateMessage[] = [];
+
+      for (const [index, line] of lines.entries()) {
+        try {
+          const parsed = JSON.parse(line);
+
+          // Strict validation - will throw on invalid messages
+          const validatedMessage = MessageValidator.parseJsonlMessage(parsed, index, filePath);
+
+          // Convert to intermediate message format
+          const intermediateMessage = MessageValidator.toIntermediateMessage(validatedMessage);
+          intermediateMessages.push(intermediateMessage);
+        } catch (jsonError) {
+          if (jsonError instanceof SyntaxError) {
             logger.error(
               {
                 filePath,
                 lineIndex: index,
                 line: line.substring(0, 100) + (line.length > 100 ? '...' : ''),
-                error: error instanceof Error ? error.message : String(error),
+                error: jsonError.message,
               },
-              'Error parsing JSONL line',
+              'JSON parsing error in JSONL file',
             );
-            return null;
+            throw new Error(
+              `JSON parsing error at line ${index} in ${filePath}: ${jsonError.message}`,
+            );
           }
-        })
-        .filter(Boolean);
+          // Re-throw validation errors from MessageValidator
+          throw jsonError;
+        }
+      }
 
       logger.debug(
         {
           filePath,
-          totalMessages: messages.length,
-          messageTypes: messages.map((m) => m.role),
+          totalMessages: intermediateMessages.length,
+          messageTypes: intermediateMessages.map((m) => m.type),
         },
-        'Finished reading conversation file',
+        'Successfully processed conversation file with strict validation',
       );
 
-      return messages;
+      return intermediateMessages;
     } catch (error) {
       logger.error(
         {
           filePath,
           error: error instanceof Error ? error.message : String(error),
         },
-        'Error reading conversation file',
+        'Error reading conversation file - strict validation failed',
       );
-      return [];
+
+      // Re-throw the error instead of returning empty array
+      throw error instanceof Error
+        ? error
+        : new Error(`Failed to read conversation file ${filePath}: ${String(error)}`);
     }
   }
 
@@ -283,18 +285,39 @@ export class ClaudeDirectoryService {
    * Currently focuses on JSONL files, SQLite support coming later
    */
   getProjectConversations(projectPath: string): {
-    jsonlConversations: Array<any>;
+    jsonlConversations: Array<{
+      file: string;
+      messages: IntermediateMessage[];
+    }>;
   } {
     logger.debug({ projectPath }, 'Getting project conversations');
 
     const jsonlFiles = this.getProjectConversationFiles(projectPath);
-    const jsonlConversations = jsonlFiles.map((file) => {
-      const messages = this.readConversationFile(file);
-      return {
-        file,
-        messages,
-      };
-    });
+    const jsonlConversations: Array<{
+      file: string;
+      messages: IntermediateMessage[];
+    }> = [];
+
+    for (const file of jsonlFiles) {
+      try {
+        const messages = this.readConversationFile(file);
+        jsonlConversations.push({
+          file,
+          messages,
+        });
+      } catch (error) {
+        logger.error(
+          {
+            projectPath,
+            file,
+            error: error instanceof Error ? error.message : String(error),
+          },
+          'Skipping conversation file due to validation error',
+        );
+        // Skip invalid files but continue processing others
+        continue;
+      }
+    }
 
     logger.debug(
       {
@@ -317,9 +340,9 @@ export class ClaudeDirectoryService {
    */
   getConversationThreads(projectPath: string): {
     conversationThreads: Array<{
-      userPrompt: any;
-      finalResponse: any | null;
-      intermediateMessages: any[];
+      userPrompt: IntermediateMessage;
+      finalResponse: IntermediateMessage | null;
+      intermediateMessages: IntermediateMessage[];
       threadId: string;
     }>;
   } {
@@ -327,52 +350,52 @@ export class ClaudeDirectoryService {
 
     const conversations = this.getProjectConversations(projectPath);
     const conversationThreads: Array<{
-      userPrompt: any;
-      finalResponse: any | null;
-      intermediateMessages: any[];
+      userPrompt: IntermediateMessage;
+      finalResponse: IntermediateMessage | null;
+      intermediateMessages: IntermediateMessage[];
       threadId: string;
     }> = [];
 
     for (const jsonlConv of conversations.jsonlConversations) {
       const messages = jsonlConv.messages;
-      const messageMap = new Map();
+      const messageMap = new Map<string, IntermediateMessage>();
 
-      // Create a map of uuid -> message for easy lookup
+      // Create a map of id -> message for easy lookup
       for (const message of messages) {
-        messageMap.set(message.uuid, message);
+        messageMap.set(message.id, message);
       }
 
-      // Find user prompts (messages with parentUuid: null and type: "user")
+      // Find user prompts (messages with no parent and role: "user")
       const userPrompts = messages.filter(
-        (msg: any) => msg.parentUuid === null && msg.type === 'user',
+        (msg) => !msg.metadata?.parentUuid && msg.role === 'user',
       );
 
       for (const userPrompt of userPrompts) {
         const thread = {
           userPrompt,
-          finalResponse: null as any,
-          intermediateMessages: [] as any[],
-          threadId: userPrompt.uuid,
+          finalResponse: null as IntermediateMessage | null,
+          intermediateMessages: [] as IntermediateMessage[],
+          threadId: userPrompt.id,
         };
 
         // Traverse the conversation chain to find all related messages
-        const visited = new Set();
-        const queue = [userPrompt.uuid];
-        const threadMessages: any[] = [];
+        const visited = new Set<string>();
+        const queue = [userPrompt.id];
+        const threadMessages: IntermediateMessage[] = [];
 
         while (queue.length > 0) {
-          const currentUuid = queue.shift();
-          if (!currentUuid || visited.has(currentUuid)) {
+          const currentId = queue.shift();
+          if (!currentId || visited.has(currentId)) {
             continue;
           }
-          visited.add(currentUuid);
+          visited.add(currentId);
 
-          // Find all messages that have this uuid as their parentUuid
-          const children = messages.filter((msg: any) => msg.parentUuid === currentUuid);
+          // Find all messages that have this id as their parent
+          const children = messages.filter((msg) => msg.metadata?.parentUuid === currentId);
 
           for (const child of children) {
             threadMessages.push(child);
-            queue.push(child.uuid);
+            queue.push(child.id);
           }
         }
 
@@ -387,17 +410,11 @@ export class ClaudeDirectoryService {
 
         for (let i = threadMessages.length - 1; i >= 0; i--) {
           const msg = threadMessages[i];
+          if (!msg) continue;
 
-          if (msg.type === 'assistant' && !finalResponse) {
-            // Check if this is a substantial final response
-            const hasTextContent =
-              msg.message?.content?.some?.(
-                (content: any) =>
-                  content.type === 'text' && content.text && content.text.length > 50,
-              ) ||
-              (typeof msg.message?.content === 'string' && msg.message.content.length > 50);
-
-            if (hasTextContent) {
+          if (msg.role === 'assistant' && !finalResponse) {
+            // Check if this is a substantial final response (more than 50 characters)
+            if (msg.content && msg.content.length > 50) {
               finalResponse = msg;
               continue;
             }
@@ -428,7 +445,7 @@ export class ClaudeDirectoryService {
   /**
    * Get intermediate messages for a specific conversation thread
    */
-  getIntermediateMessages(projectPath: string, threadId: string): any[] {
+  getIntermediateMessages(projectPath: string, threadId: string): IntermediateMessage[] {
     const threads = this.getConversationThreads(projectPath);
     const thread = threads.conversationThreads.find((t) => t.threadId === threadId);
 
@@ -445,24 +462,30 @@ export class ClaudeDirectoryService {
    * Currently works with JSONL files, will be enhanced with SQLite support
    */
   getConversationHistory(filePath: string): {
-    messages: Array<{
-      role: 'user' | 'assistant';
-      content: string;
-      timestamp: string;
-      metadata?: any;
-    }>;
+    messages: IntermediateMessage[];
     summary: {
       totalMessages: number;
     };
   } {
-    const messages = this.readConversationFile(filePath);
+    try {
+      const messages = this.readConversationFile(filePath);
 
-    return {
-      messages,
-      summary: {
-        totalMessages: messages.length,
-      },
-    };
+      return {
+        messages,
+        summary: {
+          totalMessages: messages.length,
+        },
+      };
+    } catch (error) {
+      logger.error(
+        {
+          filePath,
+          error: error instanceof Error ? error.message : String(error),
+        },
+        'Failed to get conversation history due to validation error',
+      );
+      throw error;
+    }
   }
 
   /**
@@ -516,7 +539,12 @@ export class ClaudeDirectoryService {
           markdown += `## Conversation from ${jsonlConv.file}\n\n`;
 
           for (const message of jsonlConv.messages) {
-            const role = message.role === 'user' ? 'User' : 'Assistant';
+            const role =
+              message.role === 'user'
+                ? 'User'
+                : message.role === 'assistant'
+                  ? 'Assistant'
+                  : 'System';
             markdown += `### ${role}\n\n${message.content}\n\n`;
           }
         }
@@ -554,7 +582,7 @@ export class ClaudeDirectoryService {
       for (const jsonlConv of jsonlConversations) {
         if (jsonlConv.messages.length > 0) {
           const lastMessage = jsonlConv.messages[jsonlConv.messages.length - 1];
-          if (!lastActivity || lastMessage.timestamp > lastActivity) {
+          if (lastMessage && (!lastActivity || lastMessage.timestamp > lastActivity)) {
             mostRecent = {
               conversationId: jsonlConv.file,
               source: 'jsonl' as const,

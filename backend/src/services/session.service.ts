@@ -61,9 +61,9 @@ export class SessionService {
         id: sessionId,
         projectPath,
         claudeDirectoryPath,
-        context: data.context,
-        metadata: data.metadata,
         status: 'active',
+        ...(data.context !== undefined && { context: data.context }),
+        ...(data.metadata !== undefined && { metadata: data.metadata }),
       })
       .returning();
 
@@ -98,10 +98,11 @@ export class SessionService {
     }
 
     // Get total count
-    const [{ count }] = await db
+    const countResult = await db
       .select({ count: sql<number>`count(*)` })
       .from(sessions)
       .where(whereClause);
+    const count = countResult[0]?.count ?? 0;
 
     // Get sessions
     const results = await db.query.sessions.findMany({
@@ -177,12 +178,12 @@ export class SessionService {
   }
 
   async getActiveSessionCount(): Promise<number> {
-    const [{ count }] = await db
+    const countResult = await db
       .select({ count: sql<number>`count(*)` })
       .from(sessions)
       .where(eq(sessions.status, 'active'));
 
-    return Number(count);
+    return Number(countResult[0]?.count ?? 0);
   }
 
   /**

@@ -6,49 +6,16 @@ import {
   type SessionMessage,
   sessionMessages,
 } from '../db/schema/session_messages';
+import type { IntermediateMessage } from '../types/claude-messages';
 import ClaudeDirectoryService from './claude-directory.service';
 
 export class MessageService {
-  /**
-   * Extract content from a Claude directory message
-   * @private
-   */
-  private extractContentFromMessage(msg: any): string {
-    let content = '';
-
-    if (msg.message) {
-      if (msg.message.content) {
-        if (typeof msg.message.content === 'string') {
-          content = msg.message.content;
-        } else if (Array.isArray(msg.message.content)) {
-          // Handle assistant messages with content array
-          content = msg.message.content
-            .map((item: any) => {
-              if (item.type === 'text') {
-                return item.text;
-              }
-              if (item.type === 'tool_use') {
-                return `[Tool: ${item.name}]`;
-              }
-              return '';
-            })
-            .filter(Boolean)
-            .join(' ');
-        }
-      }
-      // Handle tool use results
-      if (msg.toolUseResult) {
-        content += content
-          ? `\n\n[Tool Result]\n${msg.toolUseResult}`
-          : `[Tool Result]\n${msg.toolUseResult}`;
-      }
-    }
-
-    return content;
-  }
-
   async createMessage(data: NewSessionMessage): Promise<SessionMessage> {
-    const [message] = await db.insert(sessionMessages).values(data).returning();
+    const result = await db.insert(sessionMessages).values(data).returning();
+    const message = result[0];
+    if (!message) {
+      throw new Error('Failed to create message');
+    }
     return message;
   }
 
@@ -76,7 +43,9 @@ export class MessageService {
       .where(eq(sessionMessages.id, messageId));
   }
 
-  async getMessagesWithContent(sessionId: string) {
+  async getMessagesWithContent(
+    sessionId: string,
+  ): Promise<Array<SessionMessage & { childMessages: IntermediateMessage[] }>> {
     // Get message metadata from database
     const messages = await this.getMessagesBySessionId(sessionId);
 
@@ -104,28 +73,13 @@ export class MessageService {
             );
             const projectDir = ClaudeDirectoryService.getClaudeDirectoryPath(session.projectPath);
             const jsonlFilePath = `${projectDir}/${message.claudeSessionId}.jsonl`;
-            
-            // Read the specific JSONL file for this Claude Code session
-            const jsonlMessages = claudeService.readConversationFile(jsonlFilePath);
-            
-            // Convert JSONL messages to intermediate message format
-            const formattedMessages = jsonlMessages.map((msg: any, index: number) => ({
-              id: msg.uuid || `${message.claudeSessionId}-msg-${index}`,
-              content: this.extractContentFromMessage(msg),
-              role: msg.type,
-              type: msg.type,
-              timestamp: msg.timestamp || new Date().toISOString(),
-              metadata: {
-                parentUuid: msg.parentUuid,
-                sessionId: msg.sessionId,
-                isSidechain: msg.isSidechain,
-                userType: msg.userType,
-              },
-            }));
-            
+
+            // Read the specific JSONL file for this Claude Code session (now returns typed IntermediateMessage[])
+            const intermediateMessages = claudeService.readConversationFile(jsonlFilePath);
+
             return {
               ...message,
-              childMessages: formattedMessages,
+              childMessages: intermediateMessages,
             };
           } catch (_error) {
             // Fallback to just the database message if JSONL read fails

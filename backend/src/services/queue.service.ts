@@ -47,9 +47,9 @@ export class QueueService {
         sessionId,
         promptId,
         prompt,
-        allowedTools,
         projectPath,
-        messageId,
+        ...(allowedTools !== undefined && { allowedTools }),
+        ...(messageId !== undefined && { messageId }),
       },
       {
         attempts: 3,

@@ -212,8 +212,12 @@ export class ClaudeCodeSDKService extends EventEmitter {
         duration,
         toolCallCount: this.toolCallCount,
         messages: this.messages,
-        stopReason: this.streamingState.stopReason,
-        totalTokens: this.streamingState.totalTokens,
+        ...(this.streamingState.stopReason !== undefined && {
+          stopReason: this.streamingState.stopReason,
+        }),
+        ...(this.streamingState.totalTokens !== undefined && {
+          totalTokens: this.streamingState.totalTokens,
+        }),
       };
 
       logger.info(

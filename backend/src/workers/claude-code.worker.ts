@@ -155,13 +155,17 @@ export class ClaudeCodeWorker {
               sessionId,
               text: result.response || 'Command completed successfully',
               type: 'assistant',
-              claudeSessionId:
-                (
-                  await db.query.sessions.findFirst({
-                    where: eq(sessions.id, sessionId),
-                    columns: { claudeCodeSessionId: true },
-                  })
-                )?.claudeCodeSessionId || undefined,
+              ...((
+                await db.query.sessions.findFirst({
+                  where: eq(sessions.id, sessionId),
+                  columns: { claudeCodeSessionId: true },
+                })
+              )?.claudeCodeSessionId && {
+                claudeSessionId: (await db.query.sessions.findFirst({
+                  where: eq(sessions.id, sessionId),
+                  columns: { claudeCodeSessionId: true },
+                }))!.claudeCodeSessionId,
+              }),
             });
             logger.debug(
               { messageId, assistantMessageId: assistantMessage.id },

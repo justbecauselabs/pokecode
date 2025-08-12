@@ -73,13 +73,24 @@ export const PromptParamsSchema = Type.Object({
   promptId: Type.String({ format: 'uuid' }),
 });
 
-
 // Schema for intermediate messages (child messages in the messages endpoint)
+// Updated to match IntermediateMessage type from claude-messages.ts
 const IntermediateMessageSchema = Type.Object({
   id: Type.String(),
-  content: Type.Any(),
+  content: Type.String(),
+  role: Type.Union([Type.Literal('user'), Type.Literal('assistant'), Type.Literal('system')]),
   type: Type.Optional(Type.String()),
   timestamp: Type.String({ format: 'date-time' }),
+  metadata: Type.Optional(
+    Type.Object({
+      parentUuid: Type.Optional(Type.Union([Type.String(), Type.Null()])),
+      sessionId: Type.Optional(Type.String()),
+      isSidechain: Type.Optional(Type.Boolean()),
+      userType: Type.Optional(Type.String()),
+      requestId: Type.Optional(Type.String()),
+      toolUseResult: Type.Optional(Type.String()),
+    }),
+  ),
 });
 
 // Export query schema

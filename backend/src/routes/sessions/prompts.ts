@@ -185,7 +185,29 @@ const promptRoutes: FastifyPluginAsync = async (fastify) => {
               Type.Literal('completed'),
               Type.Literal('failed'),
             ]),
-            messages: Type.Array(Type.Any()),
+            messages: Type.Array(
+              Type.Object({
+                id: Type.String(),
+                content: Type.String(),
+                role: Type.Union([
+                  Type.Literal('user'),
+                  Type.Literal('assistant'),
+                  Type.Literal('system'),
+                ]),
+                type: Type.Optional(Type.String()),
+                timestamp: Type.String({ format: 'date-time' }),
+                metadata: Type.Optional(
+                  Type.Object({
+                    parentUuid: Type.Optional(Type.Union([Type.String(), Type.Null()])),
+                    sessionId: Type.Optional(Type.String()),
+                    isSidechain: Type.Optional(Type.Boolean()),
+                    userType: Type.Optional(Type.String()),
+                    requestId: Type.Optional(Type.String()),
+                    toolUseResult: Type.Optional(Type.String()),
+                  }),
+                ),
+              }),
+            ),
             count: Type.Number(),
             isComplete: Type.Boolean(),
           }),
@@ -250,7 +272,6 @@ const promptRoutes: FastifyPluginAsync = async (fastify) => {
 
 // Export routes for session history and export
 export const historyAndExportRoutes: FastifyPluginAsync = async (fastify) => {
-
   // Export session
   fastify.get<{
     Params: { sessionId: string };
@@ -265,8 +286,20 @@ export const historyAndExportRoutes: FastifyPluginAsync = async (fastify) => {
           200: Type.Union([
             Type.Object({ content: Type.String(), format: Type.Literal('markdown') }),
             Type.Object({
-              session: Type.Any(),
-              prompts: Type.Array(Type.Any()),
+              session: Type.Object({
+                id: Type.String({ format: 'uuid' }),
+                projectPath: Type.Optional(Type.String()),
+                status: Type.String(),
+                createdAt: Type.String({ format: 'date-time' }),
+              }),
+              prompts: Type.Array(
+                Type.Object({
+                  id: Type.String(),
+                  text: Type.String(),
+                  response: Type.Optional(Type.String()),
+                  createdAt: Type.String({ format: 'date-time' }),
+                }),
+              ),
             }),
           ]),
           404: Type.Object({

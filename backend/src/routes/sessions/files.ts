@@ -43,8 +43,8 @@ const fileRoutes: FastifyPluginAsync = async (fastify) => {
       try {
         const projectPath = await verifySessionAccess(sessionId);
         const result = await fileService.listFiles(sessionId, projectPath, path, {
-          recursive,
-          pattern,
+          ...(recursive !== undefined && { recursive }),
+          ...(pattern !== undefined && { pattern }),
         });
         return reply.send(result);
       } catch (error: any) {

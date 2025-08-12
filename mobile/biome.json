@@ -1,0 +1,84 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.1.3/schema.json",
+  "files": {
+    "includes": ["src/**/*", "app/**/*"],
+    "ignoreUnknown": false
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "recommended": true,
+      "complexity": {
+        "all": true,
+        "noBannedTypes": "error",
+        "noUselessConstructor": "error",
+        "noForEach": "off"
+      },
+      "correctness": {
+        "all": true,
+        "noUnusedVariables": "error",
+        "noUnusedImports": "error",
+        "useExhaustiveDependencies": "error"
+      },
+      "style": {
+        "all": true,
+        "noNonNullAssertion": "error",
+        "useConst": "error",
+        "useBlockStatements": "error",
+        "noParameterAssign": "error",
+        "noDefaultExport": "off", // Allow default exports for React Native
+        "noParameterProperties": "off",
+        "useNodejsImportProtocol": "off", // Not applicable in React Native
+        "useNamingConvention": {
+          "level": "error",
+          "options": {
+            "strictCase": false,
+            "conventions": [
+              {
+                "selector": {
+                  "kind": "function"
+                },
+                "formats": ["camelCase", "PascalCase"]
+              }
+            ]
+          }
+        }
+      },
+      "suspicious": {
+        "all": true,
+        "noExplicitAny": "error", // CRITICAL: NO ANYS ALLOWED
+        "noImplicitAnyLet": "error",
+        "noDoubleEquals": "error",
+        "noDebugger": "error",
+        "noConsole": {
+          "level": "warn",
+          "options": {
+            "allow": ["error", "warn", "info", "log"]
+          }
+        }
+      },
+      "nursery": {
+        "all": true,
+        "noEvolvingTypes": "error",
+        "useImportExtensions": "off",
+        "useSemanticElements": "off" // Not applicable in React Native
+      }
+    }
+  },
+  "formatter": {
+    "enabled": true,
+    "formatWithErrors": false,
+    "indentStyle": "space",
+    "indentWidth": 2,
+    "lineWidth": 100
+  },
+  "javascript": {
+    "formatter": {
+      "enabled": true,
+      "quoteStyle": "single",
+      "jsxQuoteStyle": "double",
+      "trailingCommas": "all",
+      "semicolons": "always"
+    }
+  }
+}

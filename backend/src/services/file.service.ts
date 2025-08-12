@@ -324,9 +324,9 @@ export class FileService {
       sessionId,
       filePath,
       accessType,
-      content: accessType === 'write' || accessType === 'create' ? content : undefined,
+      ...(accessType === 'write' || accessType === 'create' ? (content ? { content } : {}) : {}),
       metadata: {
-        size: content ? Buffer.from(content).length : undefined,
+        ...(content && { size: Buffer.from(content).length }),
         mimeType: this.getMimeType(filePath),
         encoding: 'utf-8',
       },
