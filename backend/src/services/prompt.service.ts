@@ -539,33 +539,6 @@ export class PromptService {
   /**
    * Get history with nested intermediate messages and session working state
    */
-  async getHistory(sessionId: string, options: any = {}) {
-    // First get the session to include working state
-    const session = await db.query.sessions.findFirst({
-      where: eq(sessions.id, sessionId),
-    });
-
-    if (!session) {
-      throw new NotFoundError('Session');
-    }
-
-    const result = await this.getPromptHistory(sessionId, options);
-
-    // Transform to match enhanced HistoryResponseSchema format
-    return {
-      prompts: result.data,
-      session: {
-        id: session.id,
-        isWorking: session.isWorking || false,
-        currentJobId: session.currentJobId,
-        lastJobStatus: session.lastJobStatus,
-        status: session.status,
-      },
-      total: result.pagination.total,
-      limit: result.pagination.limit,
-      offset: result.pagination.offset,
-    };
-  }
 
   /**
    * Get intermediate messages for a specific conversation thread

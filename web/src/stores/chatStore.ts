@@ -2,35 +2,24 @@ import { create } from "zustand";
 import { apiService } from "../services/api";
 import type {
 	ChatMessage,
-	HistoryResponse,
 	MessagesResponse,
-	Prompt,
 	SessionMessage,
-	StreamMessage,
 } from "../types/chat";
 
 interface ChatState {
 	messages: ChatMessage[];
-	prompts: Prompt[];
-	currentPrompt: Prompt | null;
 	isConnected: boolean;
 	isWorking: boolean; // Replaces isStreaming for "Claude is working" state
 	connectionError: string | null;
 	isLoading: boolean;
 	error: string | null;
-	streamMessages: Map<string, StreamMessage[]>;
 	workingPromptId: string | null; // Track which prompt is currently being processed
 	streamingSidebarPromptId: string | null;
-	intermediateMessages: Map<string, ChatMessage[]>;
-	loadingIntermediateMessages: Set<string>;
 
 	// Actions
 	sendMessage: (sessionId: string, content: string) => Promise<string>;
 	addMessage: (message: ChatMessage) => void;
-	addStreamMessage: (promptId: string, streamMessage: StreamMessage) => void;
-	loadPromptHistory: (sessionId: string, providedResponse?: any) => Promise<void>;
 	loadMessages: (sessionId: string, providedResponse?: MessagesResponse) => Promise<void>;
-	loadIntermediateMessages: (sessionId: string, threadId: string) => Promise<void>;
 	setConnectionStatus: (connected: boolean, error?: string) => void;
 	setStreamingSidebarPromptId: (promptId: string | null) => void;
 	setWorkingState: (isWorking: boolean, promptId?: string | null) => void;
@@ -40,18 +29,13 @@ interface ChatState {
 
 export const useChatStore = create<ChatState>((set, get) => ({
 	messages: [],
-	prompts: [],
-	currentPrompt: null,
 	isConnected: false,
 	isWorking: false,
 	connectionError: null,
 	isLoading: false,
 	error: null,
-	streamMessages: new Map(),
 	workingPromptId: null,
 	streamingSidebarPromptId: null,
-	intermediateMessages: new Map(),
-	loadingIntermediateMessages: new Set(),
 
 	sendMessage: async (sessionId: string, content: string) => {
 		set({ isLoading: true, error: null });
@@ -141,79 +125,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
 		}));
 	},
 
-	addStreamMessage: (promptId: string, streamMessage: StreamMessage) => {
-		set((state) => {
-			const currentMessages = state.streamMessages.get(promptId) || [];
-			const newStreamMessages = new Map(state.streamMessages);
-			newStreamMessages.set(promptId, [...currentMessages, streamMessage]);
-			return { streamMessages: newStreamMessages };
-		});
-	},
 
-
-	loadPromptHistory: async (sessionId: string, providedResponse?: any) => {
-		set({ isLoading: true, error: null });
-
-		try {
-			// Use provided response or fetch new one
-			const historyResponse = providedResponse || await apiService.get<HistoryResponse>(
-				`/api/claude-code/sessions/${sessionId}/history`,
-			);
-
-			// Extract prompts array from the response object
-			const { prompts } = historyResponse;
-
-			// Convert prompts to messages with thread information
-			const messages: ChatMessage[] = [];
-
-			// Process prompts in chronological order
-			const promptsArray = prompts.reverse();
-
-			promptsArray.forEach((prompt) => {
-				// Always add user message (from prompt.prompt field)
-				messages.push({
-					id: prompt.id,
-					role: "user",
-					content: prompt.prompt,
-					timestamp: new Date(prompt.createdAt),
-					metadata: {
-						...prompt.metadata,
-						hasIntermediateMessages: prompt.metadata?.hasIntermediateMessages,
-						threadId: prompt.metadata?.threadId
-					},
-				});
-
-				// Add assistant response if available (from prompt.response field)
-				if (prompt.response) {
-					messages.push({
-						id: `${prompt.id}-response`,
-						role: "assistant",
-						content: prompt.response,
-						timestamp: new Date(prompt.completedAt || prompt.createdAt),
-						promptId: prompt.id,
-						thinking: prompt.metadata?.thinking,
-						citations: prompt.metadata?.citations,
-						metadata: {
-							...prompt.metadata,
-							isThreadFinalResponse: true,
-							threadId: prompt.metadata?.threadId
-						},
-					});
-				}
-			});
-
-			set({
-				prompts,
-				messages,
-				isLoading: false,
-			});
-		} catch (error: any) {
-			set({
-				error: error.response?.data?.message || "Failed to load history",
-				isLoading: false,
-			});
-		}
-	},
 
 	loadMessages: async (sessionId: string, providedResponse?: MessagesResponse) => {
 		set({ isLoading: true, error: null });
@@ -242,8 +154,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
 					role: sessionMessage.type,
 					content: sessionMessage.text,
 					timestamp: new Date(sessionMessage.createdAt),
-					// Add child messages as intermediate messages for compatibility
-					streamMessages: sessionMessage.childMessages.map(child => ({
+					// Add child messages
+					childMessages: sessionMessage.childMessages.map(child => ({
 						id: child.id,
 						type: (child.type as any) || 'message',
 						data: child.content,
@@ -285,69 +197,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
 	clearMessages: () => {
 		set({
 			messages: [],
-			prompts: [],
-			currentPrompt: null,
-			streamMessages: new Map(),
-			activeStreamingBlocks: new Map(),
 			streamingSidebarPromptId: null,
 		});
 	},
 
 	clearError: () => set({ error: null }),
-
-	loadIntermediateMessages: async (sessionId: string, threadId: string) => {
-		// Check if already loading
-		const { loadingIntermediateMessages } = get();
-		if (loadingIntermediateMessages.has(threadId)) {
-			return;
-		}
-
-		// Add to loading set
-		set((state) => ({
-			loadingIntermediateMessages: new Set([...state.loadingIntermediateMessages, threadId])
-		}));
-
-		try {
-			const response = await apiService.get<{ messages: ChatMessage[]; count: number }>(
-				`/api/claude-code/sessions/${sessionId}/threads/${threadId}/intermediate`
-			);
-
-			// Convert response messages to ChatMessage format
-			const intermediateMessages: ChatMessage[] = response.messages.map((msg: any) => ({
-				id: msg.id,
-				role: msg.metadata?.role === 'user' ? 'user' : 'assistant',
-				content: msg.prompt || '',
-				timestamp: new Date(msg.createdAt),
-				metadata: {
-					...msg.metadata,
-					isIntermediate: true,
-				},
-			}));
-
-			// Update store with intermediate messages
-			set((state) => {
-				const newIntermediateMessages = new Map(state.intermediateMessages);
-				newIntermediateMessages.set(threadId, intermediateMessages);
-				const newLoadingSet = new Set(state.loadingIntermediateMessages);
-				newLoadingSet.delete(threadId);
-
-				return {
-					intermediateMessages: newIntermediateMessages,
-					loadingIntermediateMessages: newLoadingSet,
-				};
-			});
-		} catch (error: any) {
-			console.error('Failed to load intermediate messages:', error);
-			
-			// Remove from loading set on error
-			set((state) => {
-				const newLoadingSet = new Set(state.loadingIntermediateMessages);
-				newLoadingSet.delete(threadId);
-				return {
-					loadingIntermediateMessages: newLoadingSet,
-					error: error.response?.data?.message || 'Failed to load intermediate messages',
-				};
-			});
-		}
-	},
 }));

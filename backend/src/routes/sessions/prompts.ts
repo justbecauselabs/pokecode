@@ -4,8 +4,6 @@ import { rateLimitConfig } from '@/config';
 import {
   CreatePromptRequestSchema,
   ExportQuerySchema,
-  HistoryQuerySchema,
-  HistoryResponseSchema,
   MessagesQuerySchema,
   MessagesResponseSchema,
   PromptDetailResponseSchema,
@@ -252,73 +250,6 @@ const promptRoutes: FastifyPluginAsync = async (fastify) => {
 
 // Export routes for session history and export
 export const historyAndExportRoutes: FastifyPluginAsync = async (fastify) => {
-  // Get session history
-  fastify.get<{
-    Params: { sessionId: string };
-    Querystring: Static<typeof HistoryQuerySchema>;
-  }>(
-    '/history',
-    {
-      config: {
-        rateLimit: rateLimitConfig.read,
-      },
-      schema: {
-        params: Type.Object({ sessionId: Type.String({ format: 'uuid' }) }),
-        querystring: HistoryQuerySchema,
-        response: {
-          200: HistoryResponseSchema,
-          404: Type.Object({
-            error: Type.String(),
-            code: Type.Optional(Type.String()),
-          }),
-        },
-      },
-    },
-    async (request, reply) => {
-      const { sessionId } = request.params;
-
-      logger.debug(
-        {
-          sessionId,
-          query: request.query,
-        },
-        'History route called',
-      );
-
-      try {
-        const history = await promptService.getHistory(sessionId, request.query);
-
-        logger.debug(
-          {
-            sessionId,
-            promptCount: Array.isArray(history.prompts) ? history.prompts.length : 0,
-            hasPrompts: !!(history.prompts && history.prompts.length > 0),
-          },
-          'History route response',
-        );
-
-        return reply.send(history);
-      } catch (error: any) {
-        logger.error(
-          {
-            sessionId,
-            errorName: error.name,
-            errorMessage: error.message,
-            errorStack: error.stack,
-          },
-          'History route error',
-        );
-
-        if (error.name === 'NotFoundError') {
-          return reply.code(404).send({
-            error: error.message,
-            code: error.code,
-          });
-        }
-        throw error;
-      }
-    },
-  );
 
   // Export session
   fastify.get<{

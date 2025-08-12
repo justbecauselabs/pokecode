@@ -20,7 +20,7 @@ import {
 import { InputBar } from "./InputBar";
 import { MessageList } from "./MessageList";
 import { StatusBar } from "./StatusBar";
-import { StreamSidebar } from "./StreamSidebar";
+import { ChildMessageSidebar } from "./ChildMessageSidebar";
 
 export function ChatContainer() {
 	const { sessionId } = useParams<{ sessionId: string }>();
@@ -30,15 +30,13 @@ export function ChatContainer() {
 	const {
 		currentPrompt,
 		clearMessages,
-		streamMessages,
-		intermediateMessages,
 		isWorking,
 		setStreamingSidebarPromptId,
 		streamingSidebarPromptId,
+		messages,
 	} = useChatStore();
 
 	const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-	const [selectedThreadId, setSelectedThreadId] = useState<string | null>(null);
 
 	const { stopPolling } = usePolling({
 		sessionId: sessionId || "",
@@ -86,15 +84,8 @@ export function ChatContainer() {
 		navigate("/");
 	};
 
-	const handleShowStream = (promptId: string) => {
-		setStreamingSidebarPromptId(promptId);
-		setSelectedThreadId(null); // Clear intermediate messages when showing stream
-		setIsSidebarCollapsed(false);
-	};
-
-	const handleShowIntermediateMessages = (threadId: string) => {
-		setSelectedThreadId(threadId);
-		setStreamingSidebarPromptId(null); // Clear stream when showing intermediate
+	const handleShowChildMessages = (messageId: string) => {
+		setStreamingSidebarPromptId(messageId);
 		setIsSidebarCollapsed(false);
 	};
 
@@ -102,19 +93,14 @@ export function ChatContainer() {
 		setIsSidebarCollapsed(!isSidebarCollapsed);
 	};
 
-	// Use the current working prompt or the explicitly selected one
-	const activePromptId =
-		streamingSidebarPromptId || (isWorking ? currentPrompt?.id : null);
-	const selectedStreamMessages = activePromptId
-		? streamMessages.get(activePromptId) || []
-		: [];
-	
-	// Get intermediate messages for the selected thread
-	const selectedIntermediateMessages = selectedThreadId
-		? intermediateMessages.get(selectedThreadId) || []
-		: [];
+	// Get the selected message and its child messages
+	const selectedMessageId = streamingSidebarPromptId;
+	const selectedMessage = selectedMessageId 
+		? messages.find(msg => msg.id === selectedMessageId)
+		: null;
+	const childMessages = selectedMessage?.childMessages || [];
 
-	const showSidebar = Boolean((activePromptId || selectedThreadId) && !isSidebarCollapsed);
+	const showSidebar = Boolean(selectedMessageId && !isSidebarCollapsed);
 
 	if (!sessionId) {
 		return (
@@ -195,7 +181,7 @@ export function ChatContainer() {
 						)}
 					</div>
 					{/* Sidebar Toggle Button */}
-					{(activePromptId || selectedThreadId) && (
+					{selectedMessageId && (
 						<Button
 							variant="ghost"
 							size="sm"
@@ -205,12 +191,12 @@ export function ChatContainer() {
 							{isSidebarCollapsed ? (
 								<>
 									<ChevronLeft className="h-4 w-4 mr-1" />
-									{selectedThreadId ? 'Show Messages' : 'Show Stream'}
+									Show Messages
 								</>
 							) : (
 								<>
 									<ChevronRight className="h-4 w-4 mr-1" />
-									{selectedThreadId ? 'Hide Messages' : 'Hide Stream'}
+									Hide Messages
 								</>
 							)}
 						</Button>
@@ -220,8 +206,7 @@ export function ChatContainer() {
 				{/* Chat Messages */}
 				<MessageList 
 					sessionId={sessionId} 
-					onShowStream={handleShowStream}
-					onShowIntermediateMessages={handleShowIntermediateMessages}
+					onShowStream={handleShowChildMessages}
 				/>
 
 				{/* Input Bar */}
@@ -232,7 +217,7 @@ export function ChatContainer() {
 				/>
 			</div>
 
-			{/* Persistent Stream Sidebar */}
+			{/* Child Messages Sidebar */}
 			{showSidebar && (
 				<div className="fixed inset-0 z-50 md:relative md:inset-auto md:z-auto md:w-1/2 md:flex md:flex-col">
 					{/* Mobile backdrop */}
@@ -240,14 +225,15 @@ export function ChatContainer() {
 						className="absolute inset-0 bg-black/50 md:hidden"
 						onClick={handleToggleSidebar}
 					/>
-					<StreamSidebar
-						promptId={activePromptId || selectedThreadId}
-						streamMessages={selectedStreamMessages}
-						intermediateMessages={selectedIntermediateMessages}
-						onToggle={handleToggleSidebar}
-						isStreaming={isWorking}
-						isCollapsed={false}
-					/>
+					<div className="relative ml-auto w-full h-full bg-black/5 md:bg-transparent">
+						<ChildMessageSidebar
+							messageId={selectedMessageId}
+							childMessages={childMessages}
+							onToggle={handleToggleSidebar}
+							isStreaming={false}
+							isCollapsed={false}
+						/>
+					</div>
 				</div>
 			)}
 		</div>

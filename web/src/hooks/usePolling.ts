@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef } from "react";
 import { useChatStore } from "../stores/chatStore";
 import { apiService } from "../services/api";
-import type { ChatMessage, HistoryResponse, MessagesResponse } from "../types/chat";
+import type { ChatMessage, MessagesResponse } from "../types/chat";
 
 interface UsePollingProps {
 	sessionId: string;
@@ -9,15 +9,6 @@ interface UsePollingProps {
 	enabled?: boolean;
 }
 
-interface ExtendedHistoryResponse extends HistoryResponse {
-	session: {
-		id: string;
-		isWorking: boolean;
-		currentJobId?: string;
-		lastJobStatus?: string;
-		status: 'active' | 'inactive' | 'archived';
-	};
-}
 
 export function usePolling({ sessionId, enabled = true }: UsePollingProps) {
 	const intervalRef = useRef<number | null>(null);

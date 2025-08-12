@@ -8,20 +8,17 @@ import { MessageBubble } from "./MessageBubble";
 
 interface MessageListProps {
 	sessionId: string;
-	onShowStream?: (promptId: string) => void;
-	onShowIntermediateMessages?: (threadId: string) => void;
+	onShowStream?: (messageId: string) => void;
 }
 
-export function MessageList({ sessionId, onShowStream, onShowIntermediateMessages }: MessageListProps) {
+export function MessageList({ sessionId, onShowStream }: MessageListProps) {
 	const {
 		messages,
 		isLoading,
 		error,
-		loadPromptHistory,
+		loadMessages,
 		clearError,
 		clearMessages,
-		loadIntermediateMessages,
-		loadingIntermediateMessages,
 	} = useChatStore();
 
 	const { currentSession } = useSessionStore();
@@ -30,12 +27,12 @@ export function MessageList({ sessionId, onShowStream, onShowIntermediateMessage
 	const containerRef = useRef<HTMLDivElement>(null);
 
 	useEffect(() => {
-		// Only load prompt history when we have both sessionId and the session is properly selected
+		// Only load messages when we have both sessionId and the session is properly selected
 		if (sessionId && currentSession && currentSession.id === sessionId) {
 			clearMessages();
-			loadPromptHistory(sessionId);
+			loadMessages(sessionId);
 		}
-	}, [sessionId, currentSession, loadPromptHistory, clearMessages]);
+	}, [sessionId, currentSession, loadMessages, clearMessages]);
 
 	useEffect(() => {
 		// Auto-scroll to bottom when new messages arrive
@@ -44,13 +41,9 @@ export function MessageList({ sessionId, onShowStream, onShowIntermediateMessage
 
 	const retryLoading = () => {
 		clearError();
-		loadPromptHistory(sessionId);
+		loadMessages(sessionId);
 	};
 
-	const handleLoadIntermediateMessages = (threadId: string) => {
-		loadIntermediateMessages(sessionId, threadId);
-		onShowIntermediateMessages?.(threadId);
-	};
 
 	if (isLoading && messages.length === 0) {
 		return (
@@ -103,8 +96,6 @@ export function MessageList({ sessionId, onShowStream, onShowIntermediateMessage
 					key={message.id}
 					message={message}
 					onShowStream={onShowStream}
-					onLoadIntermediateMessages={handleLoadIntermediateMessages}
-					isLoadingIntermediate={message.metadata?.threadId ? loadingIntermediateMessages.has(message.metadata.threadId) : false}
 				/>
 			))}
 			<div ref={messagesEndRef} />

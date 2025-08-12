@@ -1,11 +1,41 @@
 import axios, { type AxiosInstance, type AxiosRequestConfig } from "axios";
 
+// Function to determine the API base URL based on current domain
+function getApiBaseUrl(): string {
+	// If explicitly set via environment variable, use that
+	if (import.meta.env.VITE_API_URL) {
+		console.log('Using VITE_API_URL:', import.meta.env.VITE_API_URL);
+		return import.meta.env.VITE_API_URL;
+	}
+
+	// Otherwise, construct URL based on current location
+	if (typeof window !== 'undefined') {
+		const { protocol, hostname } = window.location;
+		
+		// If running on localhost, use localhost:3001
+		if (hostname === 'localhost' || hostname === '127.0.0.1') {
+			const url = `${protocol}//localhost:3001`;
+			console.log('Constructed API URL for localhost:', url);
+			return url;
+		}
+		
+		// For other domains (like Tailscale), use the same hostname but port 3001
+		const url = `${protocol}//${hostname}:3001`;
+		console.log('Constructed API URL for external domain:', url, 'from hostname:', hostname);
+		return url;
+	}
+	
+	// Fallback for server-side rendering or when window is not available
+	console.log('Using fallback API URL: http://localhost:3001');
+	return "http://localhost:3001";
+}
+
 class ApiService {
 	private api: AxiosInstance;
 
 	constructor() {
 		this.api = axios.create({
-			baseURL: import.meta.env.VITE_API_URL || "http://localhost:3001",
+			baseURL: getApiBaseUrl(),
 			timeout: 30000,
 			headers: {
 				"Content-Type": "application/json",

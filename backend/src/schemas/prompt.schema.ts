@@ -73,53 +73,13 @@ export const PromptParamsSchema = Type.Object({
   promptId: Type.String({ format: 'uuid' }),
 });
 
-// History query schema
-export const HistoryQuerySchema = Type.Object({
-  limit: Type.Optional(Type.Integer({ minimum: 1, maximum: 100, default: 20 })),
-  offset: Type.Optional(Type.Integer({ minimum: 0, default: 0 })),
-  includeToolCalls: Type.Optional(Type.Boolean({ default: false })),
-});
 
-// Schema for intermediate messages nested within prompts
+// Schema for intermediate messages (child messages in the messages endpoint)
 const IntermediateMessageSchema = Type.Object({
   id: Type.String(),
-  content: Type.String(),
-  role: Type.Optional(Type.String()),
+  content: Type.Any(),
   type: Type.Optional(Type.String()),
   timestamp: Type.String({ format: 'date-time' }),
-  metadata: Type.Optional(Type.Any()),
-});
-
-// Schema for enhanced history response with nested intermediate messages and session state
-export const HistoryResponseSchema = Type.Object({
-  prompts: Type.Array(
-    Type.Object({
-      id: Type.String(),
-      prompt: Type.String(),
-      response: Type.Optional(Type.String()),
-      status: Type.String(),
-      metadata: Type.Optional(Type.Any()),
-      createdAt: Type.String(),
-      completedAt: Type.Optional(Type.String()),
-      // Nested intermediate messages for this prompt/thread
-      intermediateMessages: Type.Array(IntermediateMessageSchema),
-    }),
-  ),
-  // Session working state information
-  session: Type.Object({
-    id: Type.String({ format: 'uuid' }),
-    isWorking: Type.Boolean(),
-    currentJobId: Type.Optional(Type.String()),
-    lastJobStatus: Type.Optional(Type.String()),
-    status: Type.Union([
-      Type.Literal('active'),
-      Type.Literal('inactive'),
-      Type.Literal('archived'),
-    ]),
-  }),
-  total: Type.Integer(),
-  limit: Type.Integer(),
-  offset: Type.Integer(),
 });
 
 // Export query schema
@@ -167,8 +127,6 @@ export type CreatePromptRequest = Static<typeof CreatePromptRequestSchema>;
 export type PromptResponse = Static<typeof PromptResponseSchema>;
 export type PromptDetailResponse = Static<typeof PromptDetailResponseSchema>;
 export type PromptParams = Static<typeof PromptParamsSchema>;
-export type HistoryQuery = Static<typeof HistoryQuerySchema>;
-export type HistoryResponse = Static<typeof HistoryResponseSchema>;
 export type ExportQuery = Static<typeof ExportQuerySchema>;
 export type MessagesQuery = Static<typeof MessagesQuerySchema>;
 export type MessagesResponse = Static<typeof MessagesResponseSchema>;

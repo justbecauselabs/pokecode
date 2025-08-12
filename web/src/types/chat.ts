@@ -1,3 +1,13 @@
+// Define ChildMessage type based on SessionMessage.childMessages
+export interface ChildMessage {
+	id: string;
+	content: string;
+	role?: string;
+	type?: string;
+	timestamp: string;
+	metadata?: any;
+}
+
 export interface ChatMessage {
 	id: string;
 	role: "user" | "assistant" | "system";
@@ -6,7 +16,7 @@ export interface ChatMessage {
 	isStreaming?: boolean;
 	isWorking?: boolean;
 	promptId?: string;
-	streamMessages?: StreamMessage[];
+	childMessages?: ChildMessage[];
 	citations?: Citation[];
 	thinking?: string;
 	signature?: string;
@@ -124,47 +134,7 @@ export interface WebSearchToolResultError {
 		| "query_too_long";
 }
 
-export interface StreamMessage {
-	id: string;
-	type:
-		| "connected"
-		| "message"
-		| "tool_use"
-		| "tool_result"
-		| "complete"
-		| "error"
-		| "message_start"
-		| "content_block_start"
-		| "text_delta"
-		| "thinking_delta"
-		| "citations_delta"
-		| "content_block_delta"
-		| "content_block_stop"
-		| "message_delta"
-		| "message_stop"
-		| "thinking"
-		| "server_tool_use"
-		| "web_search_result"
-		| "system"
-		| "result";
-	data?: unknown;
-	timestamp: string;
-	promptId: string;
-	index?: number;
-}
 
-export interface SSEMessage {
-	type: StreamMessage["type"];
-	data?: unknown;
-	timestamp?: string;
-}
-
-export interface HistoryResponse {
-	prompts: Prompt[];
-	total: number;
-	limit: number;
-	offset: number;
-}
 
 // New message-based API types
 export interface SessionMessage {
@@ -174,14 +144,7 @@ export interface SessionMessage {
 	type: 'user' | 'assistant';
 	claudeSessionId?: string;
 	createdAt: string;
-	childMessages: Array<{
-		id: string;
-		content: string;
-		role?: string;
-		type?: string;
-		timestamp: string;
-		metadata?: any;
-	}>;
+	childMessages: ChildMessage[];
 }
 
 export interface MessagesResponse {

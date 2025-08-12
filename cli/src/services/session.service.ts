@@ -143,19 +143,19 @@ export class SessionService {
   }
 
   /**
-   * Get session history
+   * Get session messages
    */
-  public async getSessionHistory(sessionId: string): Promise<Prompt[]> {
-    this.logger.debug('Fetching session history', { sessionId });
+  public async getSessionMessages(sessionId: string): Promise<any[]> {
+    this.logger.debug('Fetching session messages', { sessionId });
 
     try {
-      const history = await this.apiService.get<Prompt[]>(
-        `/api/claude-code/sessions/${sessionId}/history`
+      const response = await this.apiService.get<{messages: any[], session: any}>(
+        `/api/claude-code/sessions/${sessionId}/messages`
       );
-      return history;
+      return response.messages;
     } catch (error) {
-      this.logger.error('Failed to get session history', error);
-      throw new SessionError('Failed to fetch session history');
+      this.logger.error('Failed to get session messages', error);
+      throw new SessionError('Failed to fetch session messages');
     }
   }
 

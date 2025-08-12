@@ -12,12 +12,10 @@ import { ThinkingDisplay } from "./ThinkingDisplay";
 
 interface MessageBubbleProps {
 	message: ChatMessage;
-	onShowStream?: (promptId: string) => void;
-	onLoadIntermediateMessages?: (threadId: string) => void;
-	isLoadingIntermediate?: boolean;
+	onShowStream?: (messageId: string) => void;
 }
 
-export function MessageBubble({ message, onShowStream, onLoadIntermediateMessages, isLoadingIntermediate }: MessageBubbleProps) {
+export function MessageBubble({ message, onShowStream }: MessageBubbleProps) {
 	const isUser = message.role === "user";
 	const isSystem = message.role === "system";
 
@@ -108,30 +106,15 @@ export function MessageBubble({ message, onShowStream, onLoadIntermediateMessage
 				{/* Action buttons at bottom - always visible for non-system messages */}
 				{!isSystem && (
 					<div className="flex gap-2 mt-2 text-xs">
-						{/* Show intermediate messages button for assistant responses with intermediate messages */}
-						{!isUser && message.metadata?.hasIntermediateMessages && onLoadIntermediateMessages && message.metadata?.threadId && (
+						{/* Show child messages button when there are childMessages */}
+						{message.childMessages && message.childMessages.length > 0 && onShowStream && (
 							<button
-								onClick={() => onLoadIntermediateMessages(message.metadata.threadId)}
-								className="flex items-center gap-1 text-blue-400 hover:text-blue-300 transition-colors"
-								title="View intermediate messages"
-								disabled={isLoadingIntermediate}
+								onClick={() => onShowStream(message.id)}
+								className="flex items-center gap-1 text-purple-400 hover:text-purple-300 transition-colors"
+								title="View child messages"
 							>
-								{isLoadingIntermediate ? (
-									<div className="w-3 h-3 animate-spin rounded-full border border-current border-t-transparent" />
-								) : (
-									<MessageSquare className="h-3 w-3" />
-								)}
-								<span>Details</span>
-							</button>
-						)}
-						{message.promptId && onShowStream && (
-							<button
-								onClick={() => onShowStream(message.promptId!)}
-								className="flex items-center gap-1 text-green-400 hover:text-green-300 transition-colors"
-								title="Show stream messages"
-							>
-								<Activity className="h-3 w-3" />
-								<span>Stream</span>
+								<MessageSquare className="h-3 w-3" />
+								<span>Messages ({message.childMessages.length})</span>
 							</button>
 						)}
 						<button

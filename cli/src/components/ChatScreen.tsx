@@ -47,7 +47,7 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({ session, onExit }) => {
 
   const loadHistory = async () => {
     try {
-      const history = await sessionService.getSessionHistory(session.id);
+      const history = await sessionService.getSessionMessages(session.id);
       const loadedMessages: ChatMessage[] = history
         .filter(prompt => prompt.status === 'completed' && prompt.response)
         .flatMap(prompt => [

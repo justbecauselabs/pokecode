@@ -165,63 +165,6 @@ describe('PromptService', () => {
     });
   });
 
-  describe('getHistory', () => {
-    beforeAll(async () => {
-      // Reset session mock to active
-      const { db } = await import('@/db');
-      vi.mocked(db.query.sessions.findFirst).mockResolvedValue({
-        id: 'test-session-id',
-        projectPath: '/test/project',
-        claudeDirectoryPath: '/home/.claude/projects/test-project',
-        status: 'active',
-        metadata: {},
-        isWorking: false,
-        currentJobId: null,
-        lastJobStatus: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        lastAccessedAt: new Date(),
-        context: null,
-        claudeCodeSessionId: null,
-      });
-    });
-
-    it('should load history from Claude directory', async () => {
-      const result = await service.getHistory('test-session-id', {});
-
-      expect(result).toBeDefined();
-      expect(result.prompts).toBeDefined();
-      expect(Array.isArray(result.prompts)).toBe(true);
-      expect(result.session).toBeDefined();
-      expect(result.session.id).toBe('test-session-id');
-      expect(result.session.isWorking).toBe(false);
-    });
-
-    it('should handle Claude directory errors with fallback', async () => {
-      // Mock Claude directory service to throw error
-      const ClaudeDirectoryService = (await import('@/services/claude-directory.service')).default;
-      ClaudeDirectoryService.prototype.getProjectConversations = vi.fn(() => {
-        throw new Error('Claude directory not available');
-      });
-
-      const result = await service.getHistory('test-session-id', {});
-
-      expect(result).toBeDefined();
-      expect(Array.isArray(result.prompts)).toBe(true);
-      expect(result.session).toBeDefined();
-      expect(result.session.id).toBe('test-session-id');
-    });
-
-    it('should apply pagination correctly', async () => {
-      const result = await service.getHistory('test-session-id', {
-        limit: 10,
-        offset: 5,
-      });
-
-      expect(result.limit).toBe(10);
-      expect(result.offset).toBe(5);
-    });
-  });
 
   describe('exportSession', () => {
     it('should export session with Claude directory data', async () => {
