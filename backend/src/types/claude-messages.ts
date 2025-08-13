@@ -167,7 +167,7 @@ const AssistantMessageSchema = z.object({
     cache_creation_input_tokens: z.number().optional(),
     cache_read_input_tokens: z.number(),
     output_tokens: z.number(),
-    service_tier: z.string(), // Relaxed - allow any string value
+    service_tier: z.string().nullable(), // Allow null values for service_tier
   }),
 });
 

@@ -3,6 +3,8 @@ import { View, Text } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from '../../src/components/shared/SafeAreaView';
 import { MessageList } from '../../src/components/session/MessageList';
+import { MessageInput } from '../../src/components/session/MessageInput';
+import { WorkingIndicator } from '../../src/components/session/WorkingIndicator';
 import { useSessionMessages } from '../../src/hooks/useSessionMessages';
 
 export default function SessionDetailScreen() {
@@ -13,6 +15,9 @@ export default function SessionDetailScreen() {
     isLoading,
     error,
     refetch,
+    sendMessage,
+    isSending,
+    isWorking,
   } = useSessionMessages(sessionId!);
 
   if (!sessionId) {
@@ -27,12 +32,21 @@ export default function SessionDetailScreen() {
 
   return (
     <SafeAreaView>
-      <MessageList
-        messages={messages}
-        isLoading={isLoading}
-        error={error}
-        onRefresh={refetch}
-      />
+      <View className="flex-1">
+        <MessageList
+          messages={messages}
+          isLoading={isLoading}
+          error={error}
+          onRefresh={refetch}
+        />
+        <WorkingIndicator isWorking={isWorking} />
+        <MessageInput
+          sessionId={sessionId}
+          onSendMessage={sendMessage}
+          isSending={isSending}
+          disabled={isLoading}
+        />
+      </View>
     </SafeAreaView>
   );
 }
