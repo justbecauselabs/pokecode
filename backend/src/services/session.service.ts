@@ -62,7 +62,6 @@ export class SessionService {
         id: sessionId,
         projectPath,
         claudeDirectoryPath,
-        status: 'active',
         ...(data.context !== undefined && { context: data.context }),
         ...(data.metadata !== undefined && { metadata: data.metadata }),
       })
@@ -92,16 +91,12 @@ export class SessionService {
   }
 
   async listSessions(
-    options: { status?: 'active' | 'inactive' | 'archived'; limit?: number; offset?: number } = {},
+    options: { status?: 'active' | 'idle' | 'expired'; limit?: number; offset?: number } = {},
   ) {
-    const { status, limit = 20, offset = 0 } = options;
+    const { limit = 20, offset = 0 } = options;
 
     // Build where clause - only show sessions that have Claude Code session IDs
-    let whereClause = sql`${sessions.claudeCodeSessionId} IS NOT NULL`;
-
-    if (status) {
-      whereClause = sql`${whereClause} AND ${eq(sessions.status, status)}`;
-    }
+    const whereClause = sql`${sessions.claudeCodeSessionId} IS NOT NULL`;
 
     // Get total count
     const countResult = await db
@@ -118,8 +113,15 @@ export class SessionService {
       offset,
     });
 
+    // Format sessions and apply status filter if needed
+    let formattedSessions = results.map((session) => this.formatSession(session));
+
+    if (options.status) {
+      formattedSessions = formattedSessions.filter((session) => session.status === options.status);
+    }
+
     return {
-      sessions: results.map(this.formatSession),
+      sessions: formattedSessions,
       total: Number(count),
       limit,
       offset,
@@ -130,7 +132,6 @@ export class SessionService {
     sessionId: string,
     data: {
       context?: string;
-      status?: 'active' | 'inactive' | 'archived';
       metadata?: Record<string, unknown>;
     },
   ) {
@@ -150,9 +151,6 @@ export class SessionService {
 
     if (data.context !== undefined) {
       updateData.context = data.context;
-    }
-    if (data.status !== undefined) {
-      updateData.status = data.status;
     }
     if (data.metadata !== undefined) {
       updateData.metadata = { ...session.metadata, ...data.metadata };
@@ -189,12 +187,16 @@ export class SessionService {
   }
 
   async getActiveSessionCount(): Promise<number> {
-    const countResult = await db
-      .select({ count: sql<number>`count(*)` })
-      .from(sessions)
-      .where(eq(sessions.status, 'active'));
+    // Get all sessions and compute active ones based on updated_at
+    const allSessions = await db.query.sessions.findMany({
+      where: sql`${sessions.claudeCodeSessionId} IS NOT NULL`,
+    });
 
-    return Number(countResult[0]?.count ?? 0);
+    const activeSessions = allSessions.filter(
+      (session) => this.computeSessionStatus(session.updatedAt) === 'active',
+    );
+
+    return activeSessions.length;
   }
 
   /**
@@ -246,7 +248,7 @@ export class SessionService {
       claudeDirectoryPath: session.claudeDirectoryPath,
       claudeCodeSessionId: session.claudeCodeSessionId,
       context: session.context,
-      status: session.status,
+      status: this.computeSessionStatus(session.updatedAt),
       metadata: session.metadata,
       createdAt: session.createdAt.toISOString(),
       updatedAt: session.updatedAt.toISOString(),
@@ -256,6 +258,20 @@ export class SessionService {
       currentJobId: session.currentJobId,
       lastJobStatus: session.lastJobStatus,
     };
+  }
+
+  private computeSessionStatus(updatedAt: Date): 'active' | 'idle' | 'expired' {
+    const now = new Date();
+    const timeDiff = now.getTime() - updatedAt.getTime();
+    const hoursAgo = timeDiff / (1000 * 60 * 60);
+
+    if (hoursAgo < 1) {
+      return 'active';
+    } else if (hoursAgo < 3) {
+      return 'idle';
+    } else {
+      return 'expired';
+    }
   }
 
   private normalizeProjectPath(inputPath: string): string {

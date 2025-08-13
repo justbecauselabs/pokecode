@@ -1,6 +1,6 @@
 import { EventEmitter } from 'node:events';
 import { constants as fsConstants, promises as fsPromises } from 'node:fs';
-import { type Options, Query, query, type SDKMessage } from '@anthropic-ai/claude-code';
+import { type Options, type Query, query, type SDKMessage } from '@anthropic-ai/claude-code';
 import type { Citation, ClaudeCodeMessage, MessageContent } from '@/types';
 // These imports are for future use when we integrate with message service
 import { createChildLogger } from '@/utils/logger';

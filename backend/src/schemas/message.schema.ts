@@ -1,10 +1,7 @@
 import { type Static, Type } from '@sinclair/typebox';
 
 // Base message role enum
-export const MessageRoleSchema = Type.Union([
-  Type.Literal('user'),
-  Type.Literal('assistant'),
-]);
+export const MessageRoleSchema = Type.Union([Type.Literal('user'), Type.Literal('assistant')]);
 
 // Tool call schema for nested messages
 export const ToolCallSchema = Type.Object({
@@ -57,7 +54,7 @@ export const SessionInfoSchema = Type.Object({
   isWorking: Type.Boolean(),
   currentJobId: Type.Optional(Type.Union([Type.String(), Type.Null()])),
   lastJobStatus: Type.Optional(Type.Union([Type.String(), Type.Null()])),
-  status: Type.Union([Type.Literal('active'), Type.Literal('inactive'), Type.Literal('archived')]),
+  status: Type.Union([Type.Literal('active'), Type.Literal('idle'), Type.Literal('expired')]),
 });
 
 export const GetMessagesResponseSchema = Type.Object({

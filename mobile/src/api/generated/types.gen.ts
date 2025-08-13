@@ -148,7 +148,7 @@ export type GetApiClaudeCodeSessionsData = {
     body?: never;
     path?: never;
     query?: {
-        status?: 'active' | 'inactive' | 'archived';
+        status?: 'active' | 'idle' | 'expired';
         limit?: number;
         offset?: number;
     };
@@ -166,7 +166,7 @@ export type GetApiClaudeCodeSessionsResponses = {
             claudeDirectoryPath?: string;
             claudeCodeSessionId?: string;
             context?: string;
-            status: 'active' | 'inactive' | 'archived';
+            status: 'active' | 'idle' | 'expired';
             metadata?: unknown;
             createdAt: string;
             updatedAt: string;
@@ -221,7 +221,7 @@ export type PostApiClaudeCodeSessionsResponses = {
         claudeDirectoryPath?: string;
         claudeCodeSessionId?: string;
         context?: string;
-        status: 'active' | 'inactive' | 'archived';
+        status: 'active' | 'idle' | 'expired';
         metadata?: unknown;
         createdAt: string;
         updatedAt: string;
@@ -297,7 +297,7 @@ export type GetApiClaudeCodeSessionsBySessionIdResponses = {
         claudeDirectoryPath?: string;
         claudeCodeSessionId?: string;
         context?: string;
-        status: 'active' | 'inactive' | 'archived';
+        status: 'active' | 'idle' | 'expired';
         metadata?: unknown;
         createdAt: string;
         updatedAt: string;
@@ -313,7 +313,6 @@ export type GetApiClaudeCodeSessionsBySessionIdResponse = GetApiClaudeCodeSessio
 export type PatchApiClaudeCodeSessionsBySessionIdData = {
     body?: {
         context?: string;
-        status?: 'active' | 'inactive' | 'archived';
         metadata?: unknown;
     };
     path: {
@@ -352,7 +351,7 @@ export type PatchApiClaudeCodeSessionsBySessionIdResponses = {
         claudeDirectoryPath?: string;
         claudeCodeSessionId?: string;
         context?: string;
-        status: 'active' | 'inactive' | 'archived';
+        status: 'active' | 'idle' | 'expired';
         metadata?: unknown;
         createdAt: string;
         updatedAt: string;
@@ -419,7 +418,7 @@ export type GetApiClaudeCodeSessionsBySessionIdMessagesResponses = {
             isWorking: boolean;
             currentJobId?: string | unknown;
             lastJobStatus?: string | unknown;
-            status: 'active' | 'inactive' | 'archived';
+            status: 'active' | 'idle' | 'expired';
         };
     };
 };

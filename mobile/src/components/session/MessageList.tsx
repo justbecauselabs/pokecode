@@ -1,5 +1,6 @@
 import React, { useRef, useEffect } from 'react';
-import { FlatList, View, Text, RefreshControl } from 'react-native';
+import { View, Text, RefreshControl } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import type { Message } from '../../types/messages';
 import { MessageBubble } from './MessageBubble';
 import { LoadingState } from '../ui/LoadingState';
@@ -17,17 +18,46 @@ export const MessageList: React.FC<MessageListProps> = ({
   error,
   onRefresh,
 }) => {
-  const flatListRef = useRef<FlatList>(null);
+  const flashListRef = useRef<FlashList<Message>>(null);
+  const isInitialLoad = useRef(true);
+
+  // Process messages to include latest child of last message
+  const processedMessages = React.useMemo(() => {
+    if (messages.length === 0) return messages;
+    
+    const lastMessage = messages[messages.length - 1];
+    
+    // If last message has children, replace it with the latest child
+    if (lastMessage.children && lastMessage.children.length > 0) {
+      const latestChild = lastMessage.children[lastMessage.children.length - 1];
+      
+      // Create a new message object from the latest child
+      const latestChildAsMessage: Message = {
+        ...lastMessage, // Start with parent message structure
+        id: latestChild.id,
+        role: latestChild.role,
+        content: latestChild.content,
+        timestamp: latestChild.timestamp,
+        children: [], // Children don't have nested children
+      };
+      
+      // Return all messages except the last one, plus the latest child as the new last message
+      return [...messages.slice(0, -1), latestChildAsMessage];
+    }
+    
+    return messages;
+  }, [messages]);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
-    if (messages.length > 0 && flatListRef.current) {
+    if (processedMessages.length > 0 && flashListRef.current) {
       // Small delay to ensure content is rendered
       setTimeout(() => {
-        flatListRef.current?.scrollToEnd({ animated: true });
+        flashListRef.current?.scrollToEnd({ animated: !isInitialLoad.current });
+        isInitialLoad.current = false;
       }, 100);
     }
-  }, [messages.length]);
+  }, [processedMessages.length]);
 
   const renderMessage = ({ item }: { item: Message }) => (
     <MessageBubble message={item} />
@@ -62,14 +92,13 @@ export const MessageList: React.FC<MessageListProps> = ({
       {isLoading && messages.length === 0 ? (
         <LoadingState />
       ) : (
-        <FlatList
-          ref={flatListRef}
-          data={messages}
+        <FlashList
+          ref={flashListRef}
+          data={processedMessages}
           renderItem={renderMessage}
           keyExtractor={(item) => item.id}
           contentContainerStyle={{
             padding: 16,
-            flexGrow: 1,
           }}
           ListEmptyComponent={renderEmpty}
           refreshControl={
@@ -78,9 +107,6 @@ export const MessageList: React.FC<MessageListProps> = ({
               onRefresh={onRefresh}
             />
           }
-          removeClippedSubviews={true}
-          maxToRenderPerBatch={10}
-          windowSize={10}
         />
       )}
     </View>

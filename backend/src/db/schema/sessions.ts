@@ -1,6 +1,4 @@
-import { boolean, index, jsonb, pgEnum, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
-
-export const sessionStatusEnum = pgEnum('session_status', ['active', 'inactive', 'archived']);
+import { boolean, index, jsonb, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 
 export const sessions = pgTable(
   'claude_code_sessions',
@@ -8,7 +6,6 @@ export const sessions = pgTable(
     id: uuid('id').primaryKey().defaultRandom(),
     projectPath: text('project_path').notNull(),
     context: text('context'),
-    status: sessionStatusEnum('status').default('active').notNull(),
     claudeDirectoryPath: text('claude_directory_path'), // Path to ~/.claude directory for this session
     claudeCodeSessionId: text('claude_code_session_id'), // Actual Claude Code CLI session ID (captured after first prompt)
     metadata: jsonb('metadata').$type<{
@@ -28,7 +25,6 @@ export const sessions = pgTable(
     lastJobStatus: text('last_job_status'),
   },
   (table) => ({
-    statusIdx: index('idx_sessions_status').on(table.status),
     lastAccessedIdx: index('idx_sessions_last_accessed').on(table.lastAccessedAt),
     isWorkingIdx: index('idx_sessions_is_working').on(table.isWorking),
   }),

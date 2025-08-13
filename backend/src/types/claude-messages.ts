@@ -88,12 +88,18 @@ const GenericToolInputSchema = z.record(
     z.boolean(),
     z.array(z.string()),
     z.array(z.number()),
-    z.array(z.object({
-      id: z.string().optional(),
-      content: z.string().optional(),
-      status: z.string().optional(),
-    }).passthrough()), // Allow arrays of objects with flexible structure
-    z.object({}).passthrough(), // Allow objects with any structure
+    z.array(
+      z
+        .object({
+          id: z.string().optional(),
+          content: z.string().optional(),
+          status: z.string().optional(),
+        })
+        .passthrough(),
+    ), // Allow arrays of objects with flexible structure
+    z
+      .object({})
+      .passthrough(), // Allow objects with any structure
   ]),
 );
 

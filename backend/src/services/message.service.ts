@@ -18,12 +18,9 @@ export class MessageService {
       text: content,
       type: 'user' as const,
     };
-    
+
     // Save to DB using Drizzle properly
-    const result = await db
-      .insert(sessionMessages)
-      .values(insertValues)
-      .returning();
+    const result = await db.insert(sessionMessages).values(insertValues).returning();
 
     const dbMessage = result[0];
     if (!dbMessage) {
@@ -48,7 +45,7 @@ export class MessageService {
     if (jobId) {
       await db
         .update(sessions)
-        .set({ 
+        .set({
           isWorking: true,
           currentJobId: jobId,
         })
@@ -115,14 +112,12 @@ export class MessageService {
    */
   async saveAssistantMessage(
     sessionId: string,
-    claudeSessionId: string,
     content: string,
   ): Promise<void> {
     await db.insert(sessionMessages).values({
       sessionId,
       text: content,
       type: 'assistant',
-      claudeSessionId,
     });
   }
 

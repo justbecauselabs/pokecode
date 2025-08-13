@@ -149,32 +149,16 @@ export class ClaudeCodeWorker {
         // Save assistant message after Claude responds
         if (messageId && result.response) {
           try {
-            // Get the Claude session ID from the SDK result or session
-            const sessionData = await db.query.sessions.findFirst({
-              where: eq(sessions.id, sessionId),
-              columns: { claudeCodeSessionId: true },
-            });
+             // Extract final content from the result
+             const finalContent = extractFinalContent(result) || result.response;
 
-            const claudeSessionId =
-              sessionData?.claudeCodeSessionId || extractClaudeSessionId(result);
+             // Save assistant message with Claude session ID
+             await messageService.saveAssistantMessage(sessionId, finalContent);
 
-            if (claudeSessionId) {
-              // Extract final content from the result
-              const finalContent = extractFinalContent(result) || result.response;
-
-              // Save assistant message with Claude session ID
-              await messageService.saveAssistantMessage(sessionId, claudeSessionId, finalContent);
-
-              logger.debug(
-                { messageId, sessionId, claudeSessionId },
-                'Saved assistant message after Claude response',
-              );
-            } else {
-              logger.warn(
-                { messageId, sessionId },
-                'No Claude session ID available for assistant message',
-              );
-            }
+             logger.debug(
+               { messageId, sessionId },
+               'Saved assistant message after Claude response',
+             );
           } catch (error) {
             logger.warn(
               {

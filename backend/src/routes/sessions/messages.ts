@@ -1,8 +1,8 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { rateLimitConfig } from '@/config';
 import {
-  type CreateMessageRequest,
   CreateMessageBodySchema,
+  type CreateMessageRequest,
   CreateMessageResponseSchema,
   ErrorResponseSchema,
   GetMessagesResponseSchema,
@@ -119,7 +119,7 @@ const messageRoutes: FastifyPluginAsync = async (fastify) => {
         );
 
         // Include session info in response
-        return reply.send({ 
+        return reply.send({
           messages,
           session: {
             id: session.id,
@@ -127,7 +127,7 @@ const messageRoutes: FastifyPluginAsync = async (fastify) => {
             currentJobId: session.currentJobId,
             lastJobStatus: session.lastJobStatus,
             status: session.status,
-          }
+          },
         });
       } catch (error) {
         logger.error(

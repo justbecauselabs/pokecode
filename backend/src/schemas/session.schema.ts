@@ -32,7 +32,7 @@ export const SessionResponseSchema = Type.Object({
   claudeDirectoryPath: Type.Optional(Type.String()),
   claudeCodeSessionId: Type.Optional(Type.String()),
   context: Type.Optional(Type.String()),
-  status: Type.Union([Type.Literal('active'), Type.Literal('inactive'), Type.Literal('archived')]),
+  status: Type.Union([Type.Literal('active'), Type.Literal('idle'), Type.Literal('expired')]),
   metadata: Type.Optional(Type.Any()),
   createdAt: Type.String({ format: 'date-time' }),
   updatedAt: Type.String({ format: 'date-time' }),
@@ -46,7 +46,7 @@ export const SessionResponseSchema = Type.Object({
 // List sessions schemas
 export const ListSessionsQuerySchema = Type.Object({
   status: Type.Optional(
-    Type.Union([Type.Literal('active'), Type.Literal('inactive'), Type.Literal('archived')]),
+    Type.Union([Type.Literal('active'), Type.Literal('idle'), Type.Literal('expired')]),
   ),
   limit: Type.Optional(Type.Integer({ minimum: 1, maximum: 100, default: 20 })),
   offset: Type.Optional(Type.Integer({ minimum: 0, default: 0 })),
@@ -62,9 +62,6 @@ export const ListSessionsResponseSchema = Type.Object({
 // Update session schemas
 export const UpdateSessionRequestSchema = Type.Object({
   context: Type.Optional(Type.String({ maxLength: 5000 })),
-  status: Type.Optional(
-    Type.Union([Type.Literal('active'), Type.Literal('inactive'), Type.Literal('archived')]),
-  ),
   metadata: Type.Optional(Type.Any()),
 });
 

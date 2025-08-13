@@ -152,7 +152,7 @@ function extractToolResults(
   if (msg.type !== 'user') return undefined;
 
   const content = msg.message.content;
-  
+
   // If content is a string, no tool results
   if (typeof content === 'string') {
     return undefined;

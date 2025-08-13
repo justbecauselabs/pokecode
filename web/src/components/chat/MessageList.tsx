@@ -25,18 +25,27 @@ export function MessageList({ sessionId, onShowStream }: MessageListProps) {
 
 	const messagesEndRef = useRef<HTMLDivElement>(null);
 	const containerRef = useRef<HTMLDivElement>(null);
+	const isInitialLoad = useRef(true);
 
 	useEffect(() => {
 		// Only load messages when we have both sessionId and the session is properly selected
 		if (sessionId && currentSession && currentSession.id === sessionId) {
 			clearMessages();
 			loadMessages(sessionId);
+			isInitialLoad.current = true;
 		}
 	}, [sessionId, currentSession, loadMessages, clearMessages]);
 
 	useEffect(() => {
 		// Auto-scroll to bottom when new messages arrive
-		messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+		if (messages.length > 0) {
+			setTimeout(() => {
+				messagesEndRef.current?.scrollIntoView({ 
+					behavior: isInitialLoad.current ? "instant" : "smooth" 
+				});
+				isInitialLoad.current = false;
+			}, 100);
+		}
 	}, [messages]);
 
 	const retryLoading = () => {

@@ -32,7 +32,7 @@ export interface SessionResponse {
   userId: string;
   projectPath: string;
   context?: string;
-  status: 'active' | 'inactive' | 'archived';
+  status: 'active' | 'idle' | 'expired';
   metadata?: Record<string, unknown>;
   createdAt: string;
   updatedAt: string;

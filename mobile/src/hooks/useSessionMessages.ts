@@ -7,23 +7,33 @@ export function useSessionMessages(sessionId: string) {
   const queryClient = useQueryClient();
   const retryCountRef = useRef(0);
   const maxRetries = 5;
+  const lastPollingStateRef = useRef<'working' | 'finished' | 'no-session' | null>(null);
 
   // Conditional polling function - matches web pattern
   const getRefetchInterval = useCallback((data: GetMessagesResponse | undefined) => {
     if (!data?.session) {
-      console.log('[Polling] No session data, stopping polling');
+      if (lastPollingStateRef.current !== 'no-session') {
+        console.log('[Polling] No session data, stopping polling');
+        lastPollingStateRef.current = 'no-session';
+      }
       return false;
     }
     
     // If Claude is working, poll every 3 seconds
     if (data.session.isWorking) {
-      console.log('[Polling] Claude is working, continuing polling every 3s');
+      if (lastPollingStateRef.current !== 'working') {
+        console.log('[Polling] Claude is working, continuing polling every 3s');
+        lastPollingStateRef.current = 'working';
+      }
       retryCountRef.current = 0; // Reset retry count on successful poll
       return 3000;
     }
     
     // If Claude finished working, stop polling
-    console.log('[Polling] Claude finished working, stopping polling');
+    if (lastPollingStateRef.current !== 'finished') {
+      console.log('[Polling] Claude finished working, stopping polling');
+      lastPollingStateRef.current = 'finished';
+    }
     return false;
   }, []);
 

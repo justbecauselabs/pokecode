@@ -23,10 +23,10 @@ export const SessionCard = memo(({ session, onPress, onDelete }: SessionCardProp
     switch (status) {
       case 'active':
         return 'bg-green-500';
-      case 'inactive':
-        return 'bg-gray-500';
-      case 'archived':
+      case 'idle':
         return 'bg-yellow-500';
+      case 'expired':
+        return 'bg-red-500';
       default:
         return 'bg-gray-500';
     }
@@ -36,10 +36,10 @@ export const SessionCard = memo(({ session, onPress, onDelete }: SessionCardProp
     switch (status) {
       case 'active':
         return 'Active';
-      case 'inactive':
-        return 'Inactive';
-      case 'archived':
-        return 'Archived';
+      case 'idle':
+        return 'Idle';
+      case 'expired':
+        return 'Expired';
       default:
         return 'Unknown';
     }

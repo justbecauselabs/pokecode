@@ -72,12 +72,11 @@ export function useUpdateSession() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (params: { sessionId: string; context?: string; status?: 'active' | 'inactive' | 'archived' }) => {
+    mutationFn: async (params: { sessionId: string; context?: string }) => {
       return apiClient.updateSession({
         sessionId: params.sessionId,
         data: {
           context: params.context,
-          status: params.status,
         },
       });
     },
