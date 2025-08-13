@@ -35,12 +35,15 @@ export function useSessionMessages(sessionId: string) {
   } = useQuery({
     queryKey: ['sessionMessages', sessionId],
     queryFn: async (): Promise<GetMessagesResponse> => {
+      console.log('[API] Fetching messages for session:', sessionId);
       try {
         const response = await apiClient.getMessages({ sessionId });
         retryCountRef.current = 0; // Reset retry count on success
+        console.log('[API] Messages fetched successfully, isWorking:', response.session?.isWorking);
         return response;
       } catch (error) {
         retryCountRef.current += 1;
+        console.error('[API] Message fetch failed, attempt', retryCountRef.current, 'of', maxRetries);
         if (retryCountRef.current >= maxRetries) {
           console.error('Message polling failed after max retries');
           throw error;
@@ -98,6 +101,7 @@ export function useSessionMessages(sessionId: string) {
     },
     onSuccess: () => {
       // Invalidate to get fresh data from server, which will start polling
+      console.log('[Mutation] Message sent successfully, invalidating query to start polling');
       queryClient.invalidateQueries({ queryKey: ['sessionMessages', sessionId] });
     },
   });
@@ -109,9 +113,8 @@ export function useSessionMessages(sessionId: string) {
   const sendMessage = async (params: { content: string }) => {
     const result = await sendMessageMutation.mutateAsync(params);
     
-    // Force an immediate refetch to start polling cycle
-    // This ensures polling resumes even if it had previously stopped
-    refetch();
+    // No need to call refetch() here - onSuccess already invalidates the query
+    // which triggers a refetch and starts the polling cycle
     
     return result;
   };
