@@ -44,7 +44,7 @@ export class SQLiteQueueService {
         ...(messageId !== undefined && { messageId }),
       },
       attempts: 0,
-      maxAttempts: 3,
+      maxAttempts: 1, // Disable retries - fail immediately
     });
 
     logger.info({ jobId, promptId, sessionId }, 'Job added to queue');

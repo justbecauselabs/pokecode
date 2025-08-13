@@ -14,7 +14,7 @@ export { ClaudeCodeSQLiteWorker };
  */
 async function verifyDatabaseConnection(): Promise<void> {
   try {
-    await db.execute(sql`SELECT 1`);
+    db.run(sql`SELECT 1`);
     logger.info('Database connection verified');
   } catch (error) {
     logger.error({ error }, 'Database connection failed');

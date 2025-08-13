@@ -1,6 +1,6 @@
 import helmet from '@fastify/helmet';
 import Fastify, { type FastifyPluginAsync } from 'fastify';
-import rateLimitPlugin from './hooks/rate-limit.hook';
+// Rate limiting removed - was Redis-based
 // Import plugins
 import corsPlugin from './plugins/cors';
 import errorHandlerPlugin from './plugins/error-handler';
@@ -23,7 +23,7 @@ export const app: FastifyPluginAsync = async (fastify, _opts) => {
   await fastify.register(corsPlugin);
   await fastify.register(requestLoggerPlugin);
   await fastify.register(swaggerPlugin);
-  await fastify.register(rateLimitPlugin);
+  // Rate limiting plugin removed (was Redis-based)
 
   // Register routes
   await fastify.register(healthRoutes, { prefix: '/health' });

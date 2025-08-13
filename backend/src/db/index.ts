@@ -51,7 +51,5 @@ export function closeDatabase(): void {
   }
 }
 
-// Setup graceful shutdown
-process.on('SIGTERM', closeDatabase);
-process.on('SIGINT', closeDatabase);
-process.on('beforeExit', closeDatabase);
+// Note: Graceful shutdown should be handled by the application (server/worker)
+// not by the database module to avoid duplicate handlers

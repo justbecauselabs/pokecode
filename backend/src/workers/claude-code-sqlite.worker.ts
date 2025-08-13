@@ -1,5 +1,5 @@
 import { eq } from 'drizzle-orm';
-import { db } from '@/db/index-sqlite';
+import { db } from '@/db';
 import { sessions } from '@/db/schema-sqlite';
 import { ClaudeCodeSDKService } from '@/services/claude-code-sdk.service';
 import { messageService } from '@/services/message.service';

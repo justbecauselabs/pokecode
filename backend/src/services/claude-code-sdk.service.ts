@@ -63,16 +63,6 @@ export class ClaudeCodeSDKService {
         this.sessionId,
       );
 
-      logger.info(
-        {
-          sessionId: this.sessionId,
-          prompt: prompt.substring(0, 100),
-          cwd: this.options.projectPath,
-          resumingSessionId: lastClaudeSessionId,
-        },
-        'Starting Claude Code SDK query',
-      );
-
       // Validate project path exists using File Service
       const pathExists = await fileService.systemDirectoryExists(this.options.projectPath);
       if (!pathExists) {
@@ -93,9 +83,22 @@ export class ClaudeCodeSDKService {
         cwd: this.options.projectPath,
         permissionMode: 'bypassPermissions',
         pathToClaudeCodeExecutable: this.pathToClaudeCodeExecutable,
-        executable: 'node',
+        executable: 'bun',
         ...(lastClaudeSessionId && { resume: lastClaudeSessionId }),
+        // Add stderr debugging
+        stderr: (data: string) => {
+          logger.error({ sessionId: this.sessionId, stderr: data }, 'Claude Code SDK stderr');
+        },
       };
+
+      logger.info(
+        {
+          sessionId: this.sessionId,
+          prompt: prompt.substring(0, 100),
+          sdkOptions,
+        },
+        'Starting Claude Code SDK query',
+      );
 
       this.currentQuery = query({ prompt, options: sdkOptions });
 

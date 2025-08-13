@@ -62,7 +62,7 @@ export class MessageService {
           continue;
         }
 
-        const message = validated[0];
+        const message = validated[0]!;
         
         // Extract content based on message type
         let content = '';
