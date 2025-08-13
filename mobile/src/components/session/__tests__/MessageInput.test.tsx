@@ -102,4 +102,17 @@ describe('MessageInput', () => {
     const sendButton = getByText('Send');
     expect(sendButton.props.accessibilityState?.disabled).toBe(true);
   });
+
+  it('handles disabled state correctly', () => {
+    const { getByText } = render(
+      <MessageInput
+        sessionId="test-session"
+        onSendMessage={mockOnSendMessage}
+        disabled={true}
+      />
+    );
+
+    const sendButton = getByText('Send');
+    expect(sendButton.props.accessibilityState?.disabled).toBe(true);
+  });
 });

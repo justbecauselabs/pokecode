@@ -16,7 +16,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
         {isUser ? 'User' : 'Assistant'}
       </Text>
       
-      <View className="p-3 border border-gray-200 rounded">
+      <View>
         {message.content.trim() ? (
           <MarkdownRenderer content={message.content} />
         ) : (
