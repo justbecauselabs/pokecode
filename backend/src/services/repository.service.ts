@@ -52,8 +52,9 @@ export class RepositoryService {
         total: repositories.length,
         githubReposDirectory,
       };
-    } catch (error: any) {
-      throw new Error(`Failed to read repositories directory: ${error.message}`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      throw new Error(`Failed to read repositories directory: ${message}`);
     }
   }
 

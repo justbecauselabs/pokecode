@@ -3,12 +3,18 @@ import { Platform } from 'react-native';
 export const isIOS = Platform.OS === 'ios';
 export const isAndroid = Platform.OS === 'android';
 
-export const platformSelect = <T>(options: { ios?: T; android?: T; default?: T }): T | undefined => {
-  return Platform.select({
-    ios: options.ios,
-    android: options.android,
-    default: options.default,
-  });
+type PlatformSelectOptions<T> = {
+  ios?: T;
+  android?: T;
+  default?: T;
+  native?: T;
+  web?: T;
+  windows?: T;
+  macos?: T;
+};
+
+export const platformSelect = <T>(params: { options: PlatformSelectOptions<T> }): T | undefined => {
+  return Platform.select(params.options);
 };
 
 export const getKeyboardAvoidingViewBehavior = () => {

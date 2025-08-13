@@ -25,7 +25,7 @@ const repositoryRoutes: FastifyPluginAsync = async (fastify) => {
       try {
         const repositories = await repositoryService.listRepositories();
         return reply.send(repositories);
-      } catch (error: any) {
+      } catch (error) {
         fastify.log.error('Failed to list repositories:', error);
         return reply.code(500).send({
           error: 'Failed to list repositories',

@@ -1,15 +1,16 @@
-import React from 'react';
+import type React from 'react';
 import {
-  TouchableOpacity,
-  Text,
-  StyleSheet,
   ActivityIndicator,
-  TouchableOpacityProps,
-  ViewStyle,
-  TextStyle,
+  StyleSheet,
+  Text,
+  type TextStyle,
+  TouchableOpacity,
+  type TouchableOpacityProps,
+  useColorScheme,
+  type ViewStyle,
 } from 'react-native';
+import { darkTheme, lightTheme } from '@/constants/theme';
 import { useUIStore } from '@/stores/uiStore';
-import { lightTheme, darkTheme } from '@/constants/theme';
 
 interface ButtonProps extends TouchableOpacityProps {
   title: string;
@@ -31,20 +32,22 @@ export const Button: React.FC<ButtonProps> = ({
   style,
   ...props
 }) => {
-  const isDark = useUIStore((state) => state.isDark());
-  const theme = isDark ? darkTheme : lightTheme;
+  const colorScheme = useColorScheme();
+  const { theme } = useUIStore();
+  const isDark = theme === 'dark' || (theme === 'system' && colorScheme === 'dark');
+  const currentTheme = isDark ? darkTheme : lightTheme;
 
   const getVariantStyles = (): ViewStyle => {
     switch (variant) {
       case 'primary':
         return {
-          backgroundColor: theme.colors.primary,
-          borderColor: theme.colors.primary,
+          backgroundColor: currentTheme.colors.primary,
+          borderColor: currentTheme.colors.primary,
         };
       case 'secondary':
         return {
           backgroundColor: 'transparent',
-          borderColor: theme.colors.primary,
+          borderColor: currentTheme.colors.primary,
           borderWidth: 1,
         };
       case 'ghost':
@@ -54,8 +57,8 @@ export const Button: React.FC<ButtonProps> = ({
         };
       case 'danger':
         return {
-          backgroundColor: theme.colors.error,
-          borderColor: theme.colors.error,
+          backgroundColor: currentTheme.colors.error,
+          borderColor: currentTheme.colors.error,
         };
     }
   };
@@ -64,20 +67,20 @@ export const Button: React.FC<ButtonProps> = ({
     switch (size) {
       case 'small':
         return {
-          paddingHorizontal: theme.spacing.sm,
-          paddingVertical: theme.spacing.xs,
+          paddingHorizontal: currentTheme.spacing.sm,
+          paddingVertical: currentTheme.spacing.xs,
           minHeight: 32,
         };
       case 'medium':
         return {
-          paddingHorizontal: theme.spacing.md,
-          paddingVertical: theme.spacing.sm,
+          paddingHorizontal: currentTheme.spacing.md,
+          paddingVertical: currentTheme.spacing.sm,
           minHeight: 44,
         };
       case 'large':
         return {
-          paddingHorizontal: theme.spacing.lg,
-          paddingVertical: theme.spacing.md,
+          paddingHorizontal: currentTheme.spacing.lg,
+          paddingVertical: currentTheme.spacing.md,
           minHeight: 56,
         };
     }
@@ -85,7 +88,7 @@ export const Button: React.FC<ButtonProps> = ({
 
   const getTextColor = (): string => {
     if (variant === 'secondary' || variant === 'ghost') {
-      return theme.colors.primary;
+      return currentTheme.colors.primary;
     }
     return '#FFFFFF';
   };
@@ -93,11 +96,11 @@ export const Button: React.FC<ButtonProps> = ({
   const getTextSize = (): TextStyle => {
     switch (size) {
       case 'small':
-        return theme.typography.bodySmall;
+        return currentTheme.typography.bodySmall;
       case 'medium':
-        return theme.typography.body;
+        return currentTheme.typography.body;
       case 'large':
-        return { ...theme.typography.body, fontSize: 18 };
+        return { ...currentTheme.typography.body, fontSize: 18 };
     }
   };
 

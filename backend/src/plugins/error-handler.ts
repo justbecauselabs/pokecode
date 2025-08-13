@@ -2,6 +2,22 @@ import type { FastifyError, FastifyPluginAsync } from 'fastify';
 import fp from 'fastify-plugin';
 import { ApiError } from '@/types';
 
+interface FastifyValidationError extends Error {
+  validation: unknown[];
+}
+
+interface ErrorWithStatusCode extends Error {
+  statusCode?: number;
+}
+
+function isValidationError(error: unknown): error is FastifyValidationError {
+  return error instanceof Error && 'validation' in error;
+}
+
+function hasStatusCode(error: unknown): error is ErrorWithStatusCode {
+  return error instanceof Error && 'statusCode' in error;
+}
+
 const errorHandlerPlugin: FastifyPluginAsync = async (fastify) => {
   // Set custom error handler
   fastify.setErrorHandler((error: FastifyError | ApiError | Error, request, reply) => {
@@ -27,17 +43,17 @@ const errorHandlerPlugin: FastifyPluginAsync = async (fastify) => {
     }
 
     // Handle Fastify validation errors
-    if ((error as any).validation) {
+    if (isValidationError(error)) {
       return reply.code(400).send({
         error: 'Validation error',
         code: 'VALIDATION_ERROR',
         statusCode: 400,
-        details: (error as any).validation,
+        details: error.validation,
       });
     }
 
     // Handle rate limit errors
-    if ((error as any).statusCode === 429) {
+    if (hasStatusCode(error) && error.statusCode === 429) {
       return reply.code(429).send({
         error: error.message || 'Too many requests',
         code: 'RATE_LIMIT_ERROR',
@@ -64,7 +80,7 @@ const errorHandlerPlugin: FastifyPluginAsync = async (fastify) => {
     }
 
     // Default error response
-    const statusCode = (error as any).statusCode || 500;
+    const statusCode = hasStatusCode(error) ? error.statusCode || 500 : 500;
     const message = statusCode === 500 ? 'Internal server error' : error.message;
 
     return reply.code(statusCode).send({
@@ -87,7 +103,7 @@ const errorHandlerPlugin: FastifyPluginAsync = async (fastify) => {
   // Add hook to catch uncaught errors
   fastify.addHook('onError', async (request, _reply, error) => {
     // Additional error logging or reporting can be added here
-    if ((error as any).statusCode && (error as any).statusCode >= 500) {
+    if (hasStatusCode(error) && error.statusCode && error.statusCode >= 500) {
       fastify.log.fatal(
         {
           err: error,

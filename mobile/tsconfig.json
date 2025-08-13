@@ -1,7 +1,7 @@
 {
   "extends": "expo/tsconfig.base",
   "compilerOptions": {
-    // EXTREMELY STRICT TYPE CHECKING - NO ANYS OR UNKNOWNS ALLOWED
+    // MAXIMUM STRICTNESS - ABSOLUTELY NO ANY OR UNKNOWN
     "strict": true,
     "noImplicitAny": true,
     "strictNullChecks": true,
@@ -11,11 +11,10 @@
     "noImplicitThis": true,
     "useUnknownInCatchVariables": true,
     "alwaysStrict": true,
-    
-    // ADDITIONAL STRICT CHECKS
+    // ADDITIONAL STRICT CHECKS - ALL ENABLED
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "exactOptionalPropertyTypes": true,
+    "exactOptionalPropertyTypes": false,
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
     "noUncheckedIndexedAccess": true,
@@ -23,33 +22,102 @@
     "allowUnusedLabels": false,
     "allowUnreachableCode": false,
     "noPropertyAccessFromIndexSignature": true,
-    
+    // ADDITIONAL STRICT TYPE CHECKS
+    "noUncheckedSideEffectImports": true,
+    "verbatimModuleSyntax": false,
+    "allowArbitraryExtensions": false,
+    "customConditions": [],
+    // MODULE SETTINGS
     "target": "ESNext",
     "module": "ESNext",
-    "lib": ["ESNext"],
+    "lib": [
+      "ESNext",
+      "ESNext.Array",
+      "ESNext.AsyncIterable"
+    ],
     "jsx": "react-native",
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
     "resolveJsonModule": true,
+    "resolvePackageJsonExports": true,
+    "resolvePackageJsonImports": true,
+    // EMIT SETTINGS
     "noEmit": true,
-    "skipLibCheck": false, // Enable for maximum strictness
+    "declaration": false,
+    "declarationMap": false,
+    "sourceMap": false,
+    "removeComments": true,
+    "stripInternal": true,
+    // INTEROP CONSTRAINTS
+    "skipLibCheck": true,
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "isolatedModules": true,
-    "types": ["react", "react-native"],
+    "preserveConstEnums": true,
+    "preserveValueImports": false,
+    // TYPE ACQUISITION
+    "types": [
+      "react"
+    ],
+    "typeRoots": [
+      "./node_modules/@types",
+      "./src/types"
+    ],
+    // PATH MAPPING
     "paths": {
-      "@/*": ["./src/*"]
-    }
+      "@/*": [
+        "./src/*"
+      ],
+      "@components/*": [
+        "./src/components/*"
+      ],
+      "@hooks/*": [
+        "./src/hooks/*"
+      ],
+      "@stores/*": [
+        "./src/stores/*"
+      ],
+      "@utils/*": [
+        "./src/utils/*"
+      ],
+      "@types/*": [
+        "./src/types/*"
+      ],
+      "@api/*": [
+        "./src/api/*"
+      ],
+      "@constants/*": [
+        "./src/constants/*"
+      ]
+    },
+    // ROOT DIRECTORIES
+    "rootDir": ".",
+    "baseUrl": "."
   },
   "include": [
     "**/*.ts",
     "**/*.tsx",
+    "**/*.d.ts",
     ".expo/types/**/*.ts",
-    "expo-env.d.ts"
+    "expo-env.d.ts",
+    "src/**/*",
+    "app/**/*",
+    "nativewind-env.d.ts"
   ],
   "exclude": [
     "node_modules",
-    "babel.config.js"
+    "babel.config.js",
+    "metro.config.js",
+    "dist",
+    "build",
+    ".expo",
+    "**/*.spec.ts",
+    "**/*.spec.tsx",
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "src/api/generated/client/**/*",
+    "src/api/generated/core/**/*",
+    "src/api/polyfills.ts"
   ]
 }

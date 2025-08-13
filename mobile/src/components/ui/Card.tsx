@@ -1,94 +1,70 @@
-import React from 'react';
-import {
-  View,
-  StyleSheet,
-  ViewProps,
-  TouchableOpacity,
-  TouchableOpacityProps,
-} from 'react-native';
+import type React from 'react';
+import { StyleSheet, TouchableOpacity, useColorScheme, View, type ViewStyle } from 'react-native';
+import { darkTheme, lightTheme } from '@/constants/theme';
 import { useUIStore } from '@/stores/uiStore';
-import { lightTheme, darkTheme } from '@/constants/theme';
 
-interface CardProps extends ViewProps {
-  variant?: 'elevated' | 'outlined' | 'filled';
+interface CardProps {
+  children: React.ReactNode;
+  style?: ViewStyle;
   padding?: 'none' | 'small' | 'medium' | 'large';
   onPress?: () => void;
 }
 
-export const Card: React.FC<CardProps> = ({
-  children,
-  variant = 'elevated',
-  padding = 'medium',
-  onPress,
-  style,
-  ...props
-}) => {
-  const isDark = useUIStore((state) => state.isDark());
-  const theme = isDark ? darkTheme : lightTheme;
+export const Card: React.FC<CardProps> = ({ children, style, padding = 'medium', onPress }) => {
+  const colorScheme = useColorScheme();
+  const { theme } = useUIStore();
+  const isDark = theme === 'dark' || (theme === 'system' && colorScheme === 'dark');
+  const currentTheme = isDark ? darkTheme : lightTheme;
 
-  const getVariantStyles = () => {
-    switch (variant) {
-      case 'elevated':
-        return {
-          backgroundColor: theme.colors.surface,
-          ...theme.shadows.md,
-        };
-      case 'outlined':
-        return {
-          backgroundColor: theme.colors.background,
-          borderWidth: 1,
-          borderColor: theme.colors.border,
-        };
-      case 'filled':
-        return {
-          backgroundColor: theme.colors.surface,
-        };
-    }
-  };
-
-  const getPaddingStyles = () => {
+  const getPaddingStyle = (): ViewStyle => {
     switch (padding) {
       case 'none':
-        return { padding: 0 };
+        return {};
       case 'small':
-        return { padding: theme.spacing.sm };
+        return { padding: currentTheme.spacing.sm };
       case 'medium':
-        return { padding: theme.spacing.md };
+        return { padding: currentTheme.spacing.md };
       case 'large':
-        return { padding: theme.spacing.lg };
+        return { padding: currentTheme.spacing.lg };
     }
   };
 
-  const cardStyle = [
-    styles.card,
-    getVariantStyles(),
-    getPaddingStyles(),
-    style,
-  ];
+  const cardContent = (
+    <View
+      style={[
+        styles.card,
+        {
+          backgroundColor: currentTheme.colors.card,
+          shadowColor: isDark ? '#000' : '#000',
+        },
+        getPaddingStyle(),
+        style,
+      ]}
+    >
+      {children}
+    </View>
+  );
 
   if (onPress) {
     return (
-      <TouchableOpacity
-        style={cardStyle}
-        onPress={onPress}
-        activeOpacity={0.7}
-        {...(props as TouchableOpacityProps)}
-      >
-        {children}
+      <TouchableOpacity onPress={onPress} activeOpacity={0.9}>
+        {cardContent}
       </TouchableOpacity>
     );
   }
 
-  return (
-    <View style={cardStyle} {...props}>
-      {children}
-    </View>
-  );
+  return cardContent;
 };
 
 const styles = StyleSheet.create({
   card: {
     borderRadius: 12,
-    overflow: 'hidden',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
 });

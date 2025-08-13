@@ -1,16 +1,19 @@
 import { useMemo } from "react";
 import type { ChildMessage } from "../../types/chat";
 import { CodeBlock } from "../ui/CodeBlock";
+import { MarkdownRenderer } from "../ui/MarkdownRenderer";
+import { ToolDisplay } from "../ui/ToolDisplay";
 
 interface ChildMessageRendererProps {
 	childMessages: ChildMessage[];
 }
 
 interface TextBlock {
-	type: "text" | "thinking" | "code" | "system" | "error";
+	type: "text" | "thinking" | "code" | "system" | "error" | "tool";
 	content: string;
 	language?: string;
 	timestamp: string;
+	metadata?: Record<string, any>;
 }
 
 export function ChildMessageRenderer({
@@ -39,15 +42,55 @@ export function ChildMessageRenderer({
 				type: message.type,
 				role: message.role,
 				content: message.content,
-				contentLength: message.content?.length
+				contentLength: message.content?.length,
+				metadata: message.metadata
 			});
+
+			// Check for tool calls in metadata
+			if (message.metadata?.toolCalls && message.metadata.toolCalls.length > 0) {
+				for (const toolCall of message.metadata.toolCalls) {
+					blocks.push({
+						type: "tool",
+						content: `🔧 **Tool:** ${toolCall.name}\n\n**Input:**\n\`\`\`json\n${JSON.stringify(toolCall.input, null, 2)}\n\`\`\``,
+						timestamp,
+						metadata: { isToolCall: true, toolName: toolCall.name }
+					});
+				}
+			}
+
+			// Check for tool results in metadata
+			if (message.metadata?.toolResults && message.metadata.toolResults.length > 0) {
+				for (const toolResult of message.metadata.toolResults) {
+					blocks.push({
+						type: "tool",
+						content: `✅ **Tool Result** (${toolResult.tool_use_id.substring(0, 8)}...)\n\n${toolResult.content}`,
+						timestamp,
+						metadata: { isToolResult: true, toolUseId: toolResult.tool_use_id }
+					});
+				}
+			}
+
+			// Check for thinking in metadata
+			if (message.metadata?.thinking) {
+				blocks.push({
+					type: "thinking",
+					content: message.metadata.thinking,
+					timestamp,
+					metadata: {}
+				});
+			}
 
 			// For ChildMessage format, we have content directly
 			if (message.content && message.content.trim()) {
-				// Determine the type of content based on role/type
+				// Determine the type of content based on role/type and content patterns
 				let blockType: TextBlock["type"] = "text";
 				
-				if (message.role === "assistant" || message.type === "assistant") {
+				// Check for tool usage patterns first
+				if (message.content.includes("🔧") || 
+					message.content.match(/Using tool:|Tool:|Executing:|^\[Tool:/) ||
+					message.content.match(/^(Read|Write|Edit|Bash|Search|Grep|Glob|Task|WebFetch|TodoWrite|ExitPlanMode)/)) {
+					blockType = "tool";
+				} else if (message.role === "assistant" || message.type === "assistant") {
 					blockType = "text";
 				} else if (message.role === "user" || message.type === "user") {
 					blockType = "text";
@@ -57,7 +100,7 @@ export function ChildMessageRenderer({
 					blockType = "error";
 				} else if (message.type === "thinking") {
 					blockType = "thinking";
-				} else if (message.content.startsWith("[Tool:") || message.content.includes("```")) {
+				} else if (message.content.includes("```")) {
 					blockType = "code";
 				}
 
@@ -71,9 +114,10 @@ export function ChildMessageRenderer({
 					type: blockType,
 					content: message.content,
 					timestamp,
+					metadata: blockType === "tool" ? { isToolUse: true } : undefined,
 				});
-			} else {
-				console.log("Skipping message with no content:", {
+			} else if (!message.metadata?.toolCalls && !message.metadata?.toolResults && !message.metadata?.thinking) {
+				console.log("Skipping message with no content or metadata:", {
 					id: message.id,
 					hasContent: !!message.content,
 					contentType: typeof message.content
@@ -84,44 +128,26 @@ export function ChildMessageRenderer({
 		return blocks;
 	}, [childMessages]);
 
-	// Group consecutive blocks of the same type for better rendering
+	// Keep each message separate for individual rendering
 	const groupedBlocks = useMemo(() => {
 		const grouped: Array<{
 			type: TextBlock["type"];
 			content: string;
 			language?: string;
+			metadata?: Record<string, any>;
 			startTime: string;
 			endTime: string;
 		}> = [];
 
-		let currentGroup: TextBlock[] = [];
-
+		// Each text block becomes its own group to ensure separate rendering
 		for (const block of textBlocks) {
-			if (currentGroup.length === 0 || currentGroup[0].type === block.type) {
-				currentGroup.push(block);
-			} else {
-				// Process current group
-				if (currentGroup.length > 0) {
-					grouped.push({
-						type: currentGroup[0].type,
-						content: currentGroup.map((b) => b.content).join(""),
-						language: currentGroup[0].language,
-						startTime: currentGroup[0].timestamp,
-						endTime: currentGroup[currentGroup.length - 1].timestamp,
-					});
-				}
-				currentGroup = [block];
-			}
-		}
-
-		// Process final group
-		if (currentGroup.length > 0) {
 			grouped.push({
-				type: currentGroup[0].type,
-				content: currentGroup.map((b) => b.content).join(""),
-				language: currentGroup[0].language,
-				startTime: currentGroup[0].timestamp,
-				endTime: currentGroup[currentGroup.length - 1].timestamp,
+				type: block.type,
+				content: block.content,
+				language: block.language,
+				metadata: block.metadata,
+				startTime: block.timestamp,
+				endTime: block.timestamp,
 			});
 		}
 
@@ -183,10 +209,8 @@ export function ChildMessageRenderer({
 				switch (group.type) {
 					case "text":
 						return (
-							<div key={index} className="prose prose-sm max-w-none">
-								<div className="whitespace-pre-wrap leading-relaxed text-foreground">
-									{group.content}
-								</div>
+							<div key={index}>
+								<MarkdownRenderer content={group.content} />
 							</div>
 						);
 
@@ -199,9 +223,19 @@ export function ChildMessageRenderer({
 								<div className="text-xs text-purple-600 font-medium mb-2 flex items-center gap-1">
 									<span>💭</span> Thinking
 								</div>
-								<div className="text-purple-800 whitespace-pre-wrap leading-relaxed font-mono text-xs">
-									{group.content}
+								<div className="text-purple-800 font-mono text-xs">
+									<MarkdownRenderer content={group.content} />
 								</div>
+							</div>
+						);
+
+					case "tool":
+						return (
+							<div key={index}>
+								<ToolDisplay
+									content={group.content}
+									metadata={group.metadata}
+								/>
 							</div>
 						);
 
@@ -245,8 +279,8 @@ export function ChildMessageRenderer({
 								<div className="text-xs text-gray-600 font-medium mb-2 flex items-center gap-1">
 									<span>⚙️</span> System
 								</div>
-								<div className="text-gray-700 whitespace-pre-wrap leading-relaxed">
-									{group.content}
+								<div className="text-gray-700">
+									<MarkdownRenderer content={group.content} />
 								</div>
 							</div>
 						);
@@ -261,8 +295,8 @@ export function ChildMessageRenderer({
 								<div className="text-xs text-red-600 font-medium mb-2 flex items-center gap-1">
 									<span>❌</span> Error
 								</div>
-								<div className="text-red-800 whitespace-pre-wrap leading-relaxed">
-									{group.content}
+								<div className="text-red-800">
+									<MarkdownRenderer content={group.content} />
 								</div>
 							</div>
 						);

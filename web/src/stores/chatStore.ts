@@ -5,6 +5,11 @@ import type {
 	MessagesResponse,
 	SessionMessage,
 } from "../types/chat";
+import type {
+	ApiMessage,
+	CreateMessageResponse,
+	GetMessagesResponse,
+} from "../types/api";
 
 interface ChatState {
 	messages: ChatMessage[];
@@ -41,53 +46,51 @@ export const useChatStore = create<ChatState>((set, get) => ({
 		set({ isLoading: true, error: null });
 
 		try {
-			// Add user message immediately
-			const userMessage: ChatMessage = {
-				id: `user-${Date.now()}`,
+			// Add user message immediately with temporary ID
+			const tempUserMessage: ChatMessage = {
+				id: `temp-user-${Date.now()}`,
 				role: "user",
 				content,
 				timestamp: new Date(),
 			};
 
-			get().addMessage(userMessage);
+			get().addMessage(tempUserMessage);
 
-			// Create prompt on backend
-			const response = await apiService.post<{
-				success: boolean, 
-				message: string, 
-				jobId?: string,
-				userMessage?: {
-					id: string;
-					sessionId: string;
-					text: string;
-					type: 'user';
-					createdAt: string;
-				}
-			}>(
-				`/api/claude-code/sessions/${sessionId}/prompts`,
-				{ prompt: content },
+			// Create message on backend using new /messages endpoint
+			const response = await apiService.post<CreateMessageResponse>(
+				`/api/claude-code/sessions/${sessionId}/messages`,
+				{ content },
 			);
+
+			// Update the temp message with real ID from backend
+			set((state) => ({
+				messages: state.messages.map(msg => 
+					msg.id === tempUserMessage.id 
+						? { ...msg, id: response.message.id }
+						: msg
+				),
+			}));
 
 			// Add "Claude is working" message
 			const workingMessage: ChatMessage = {
-				id: `working-${response.jobId}`,
+				id: `working-${response.message.id}`,
 				role: "assistant",
 				content: "Claude is working...",
 				timestamp: new Date(),
 				isWorking: true,
-				promptId: response.jobId,
+				promptId: response.message.id,
 			};
 
 			set((state) => ({
 				messages: [...state.messages, workingMessage],
 				isLoading: false,
 				isWorking: true,
-				workingPromptId: response.jobId,
-				// Automatically set the new prompt as the streaming sidebar target
-				streamingSidebarPromptId: response.jobId,
+				workingPromptId: response.message.id,
+				// Automatically set the new message as the streaming sidebar target
+				streamingSidebarPromptId: response.message.id,
 			}));
 
-			return response.jobId || "";
+			return response.message.id;
 		} catch (error: any) {
 			set({
 				error: error.response?.data?.message || "Failed to send message",
@@ -127,45 +130,44 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
 
 
-	loadMessages: async (sessionId: string, providedResponse?: MessagesResponse) => {
+	loadMessages: async (sessionId: string, providedResponse?: GetMessagesResponse) => {
 		set({ isLoading: true, error: null });
 
 		try {
-			// Use provided response or fetch new one
-			const messagesResponse = providedResponse || await apiService.get<MessagesResponse>(
+			// Use provided response or fetch new one using new /messages endpoint
+			const response = providedResponse || await apiService.get<GetMessagesResponse>(
 				`/api/claude-code/sessions/${sessionId}/messages`,
 			);
 
-			// Extract messages array from the response object
-			const { messages: sessionMessages } = messagesResponse;
-
-			// Convert SessionMessage[] to ChatMessage[] for the UI
+			// Convert ApiMessage[] to ChatMessage[] for the UI
 			const messages: ChatMessage[] = [];
 
 			// Process messages in chronological order (oldest first)
-			const sortedMessages = sessionMessages.sort((a, b) => 
-				new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+			const sortedMessages = response.messages.sort((a, b) => 
+				new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
 			);
 
-			sortedMessages.forEach((sessionMessage) => {
-				// Convert SessionMessage to ChatMessage
+			sortedMessages.forEach((apiMessage) => {
+				// Convert ApiMessage to ChatMessage
 				const chatMessage: ChatMessage = {
-					id: sessionMessage.id,
-					role: sessionMessage.type,
-					content: sessionMessage.text,
-					timestamp: new Date(sessionMessage.createdAt),
-					// Add child messages
-					childMessages: sessionMessage.childMessages.map(child => ({
+					id: apiMessage.id,
+					role: apiMessage.role,
+					content: apiMessage.content,
+					timestamp: new Date(apiMessage.timestamp),
+					// Map children to childMessages format
+					childMessages: apiMessage.children.map(child => ({
 						id: child.id,
-						type: (child.type as any) || 'message',
-						data: child.content,
+						content: child.content,
+						role: child.role,
+						type: child.role,
 						timestamp: child.timestamp,
-						promptId: sessionMessage.id,
+						metadata: {
+							toolCalls: child.toolCalls,
+							toolResults: child.toolResults,
+							thinking: child.thinking,
+						},
 					})),
-					metadata: {
-						claudeSessionId: sessionMessage.claudeSessionId,
-						hasIntermediateMessages: sessionMessage.childMessages.length > 0,
-					},
+					promptId: apiMessage.claudeSessionId,
 				};
 
 				messages.push(chatMessage);

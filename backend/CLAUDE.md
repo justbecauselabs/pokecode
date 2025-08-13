@@ -1,220 +1,218 @@
-# Claude Code Mobile Backend - Developer Guide
+# Claude Code Mobile Backend
 
-This guide provides a comprehensive overview of the Claude Code Mobile backend structure and documentation to help developers navigate and contribute to the codebase effectively.
+## Overview
 
-## Directory Structure
+This backend powers the Claude Code Mobile application, providing a robust API for managing Claude Code sessions, processing AI prompts, and handling file operations. Built with TypeScript, Fastify, and Bun runtime, it offers high performance and type safety throughout the stack.
 
-```
-backend/
-├── src/                    # Source code
-│   ├── app.ts             # Main Fastify application setup
-│   ├── server.ts          # Server entry point
-│   ├── config/            # Configuration management
-│   │   ├── index.ts       # Config loader with validation
-│   │   └── env.schema.ts  # Environment variable schemas
-│   ├── db/                # Database layer
-│   │   ├── index.ts       # Database connection
-│   │   └── schema/        # Drizzle ORM schemas
-│   │       ├── users.ts   # User model
-│   │       ├── sessions.ts # Session model
-│   │       ├── prompts.ts # Prompt model
-│   │       └── files.ts   # File model
-│   ├── routes/            # API routes
-│   │   ├── health.ts      # Health check endpoints
-│   │   ├── auth/          # Authentication routes
-│   │   └── sessions/      # Session management routes
-│   ├── services/          # Business logic layer
-│   │   ├── auth.service.ts
-│   │   ├── session.service.ts
-│   │   ├── prompt.service.ts
-│   │   ├── file.service.ts
-│   │   └── queue.service.ts
-│   ├── plugins/           # Fastify plugins
-│   │   ├── auth.ts        # JWT authentication
-│   │   ├── cors.ts        # CORS configuration
-│   │   ├── error-handler.ts
-│   │   └── swagger.ts     # API documentation
-│   ├── hooks/             # Fastify hooks
-│   │   └── rate-limit.hook.ts
-│   ├── schemas/           # TypeBox validation schemas
-│   ├── types/             # TypeScript type definitions
-│   └── utils/             # Utility functions
-│       ├── errors.ts      # Error handling utilities
-│       ├── jwt.ts         # JWT helpers
-│       └── sse.ts         # Server-sent events
-├── tests/                 # Test files
-│   ├── setup.ts          # Test configuration
-│   └── unit/             # Unit tests
-├── scripts/              # Utility scripts
-│   └── migrate.ts        # Database migration runner
-├── drizzle/              # Database migrations
-├── docs/                 # Documentation
-│   ├── routes.md         # Route development guide
-│   ├── database.md       # Database operations guide
-│   ├── testing.md        # Testing strategies
-│   ├── local-development.md # Local setup guide
-│   ├── claude-code-flow.md  # AI-assisted development
-│   └── git-flows.md      # Version control practices
-└── config files          # Various configuration files
-    ├── package.json      # Dependencies and scripts
-    ├── tsconfig.json     # TypeScript configuration
-    ├── vitest.config.ts  # Test configuration
-    ├── drizzle.config.ts # Database configuration
-    └── biome.json        # Code formatting/linting
-```
+## Key Technologies
 
-## Documentation Overview
+- **Runtime**: Bun (fast, modern JavaScript runtime)
+- **Framework**: Fastify (high-performance web framework)
+- **Database**: PostgreSQL with Drizzle ORM
+- **Queue**: BullMQ with Redis
+- **AI Integration**: @anthropic-ai/claude-code SDK
 
-### 📍 [Routes Documentation](./docs/routes.md)
-Learn how to create and structure API routes using Fastify, TypeBox schemas, and best practices for RESTful endpoints.
+## Documentation
 
-**Key Topics:**
-- Route structure and registration
-- Schema validation with TypeBox
-- Authentication middleware
-- Error handling patterns
-- SSE (Server-Sent Events) implementation
+### Core Documentation
 
-### 🗄️ [Database Documentation](./docs/database.md)
-Comprehensive guide to database operations using Drizzle ORM with PostgreSQL.
+- **[Architecture](./docs/architecture.md)** - System design, patterns, and structure
+- **[API Reference](./docs/api-reference.md)** - Complete API endpoints and schemas
+- **[Database](./docs/database.md)** - Schema, migrations, and query patterns
+- **[Development](./docs/development.md)** - Setup, workflow, and best practices
 
-**Key Topics:**
-- Schema definition patterns
-- Migration procedures
-- CRUD operations with examples
-- Transaction handling
-- Query optimization
-- Database best practices
+### Feature Documentation
 
-### 🧪 [Testing Documentation](./docs/testing.md)
-Testing strategies and patterns for ensuring code quality and reliability.
+- **[JSONL Processing](./docs/jsonl-processing.md)** - Conversation history handling
+- **[Worker Queue](./docs/worker-queue.md)** - Asynchronous job processing and SDK integration
+- **[Security](./docs/security.md)** - Security measures and best practices
 
-**Key Topics:**
-- Unit testing with Vitest
-- Integration testing Fastify routes
-- Mocking strategies
-- Test database setup
-- Coverage requirements
-- Testing best practices
-
-### 💻 [Local Development](./docs/local-development.md)
-Complete setup guide for running the backend locally.
-
-**Key Topics:**
-- Prerequisites and initial setup
-- Environment configuration
-- Docker setup for dependencies
-- Development scripts
-- Debugging techniques
-- Common troubleshooting
-
-### 🤖 [Claude Code Flow](./docs/claude-code-flow.md)
-How to effectively use Claude Code for AI-assisted development.
-
-**Key Topics:**
-- Effective prompting strategies
-- Common development workflows
-- Code generation templates
-- Best practices for AI assistance
-- Anti-patterns to avoid
-
-### 🌿 [Git Flows](./docs/git-flows.md)
-Version control best practices and workflows.
-
-**Key Topics:**
-- Branch strategy
-- Commit conventions
-- Pull request process
-- Release workflow
-- Git hooks setup
-- Troubleshooting common issues
-
-## Quick Start Commands
+## Quick Start
 
 ```bash
 # Install dependencies
 bun install
 
+# Setup environment
+cp .env.example .env
+# Edit .env with your configuration
+
+# Run database migrations
+bun run db:migrate
+
 # Start development server
-bun dev
-
-# Run tests
-bun test
-
-# Run migrations
-bun migrate
-
-# Open database studio
-bun migrate:studio
-
-# Check types
-bun type-check
-
-# Format and lint
-bun format && bun lint:fix
+bun run dev
 ```
 
-## Key Technologies
+## Project Structure
 
-- **Fastify**: High-performance web framework
-- **TypeScript**: Type-safe development
-- **Drizzle ORM**: Type-safe database toolkit
-- **PostgreSQL**: Primary database
-- **Redis**: Caching and queue management
-- **TypeBox**: Runtime validation with TypeScript inference
-- **Vitest**: Fast unit testing framework
-- **JWT**: Authentication mechanism
-- **BullMQ**: Job queue processing
+```
+backend/
+├── src/
+│   ├── app.ts                    # Fastify application setup
+│   ├── server.ts                 # Server entry point
+│   ├── config/                   # Configuration management
+│   │   └── env.schema.ts         # Environment validation
+│   ├── db/                       # Database layer
+│   │   ├── schema.ts            # Drizzle schema definitions
+│   │   └── index.ts             # Database connection
+│   ├── routes/                   # API endpoints
+│   │   ├── health.ts            # Health check endpoints
+│   │   ├── repositories.ts     # Repository management
+│   │   └── sessions/            # Session endpoints
+│   │       ├── index.ts        # Session CRUD
+│   │       ├── messages.ts     # Message handling
+│   │       └── files.ts        # File operations
+│   ├── services/                 # Business logic
+│   │   ├── claude-code-sdk.service.ts  # Claude SDK integration
+│   │   ├── session.service.ts         # Session management
+│   │   ├── message.service.ts         # Message persistence
+│   │   ├── queue.service.ts           # Job queue management
+│   │   └── file.service.ts            # File operations
+│   ├── workers/                  # Background processing
+│   │   └── claude-code.worker.ts      # Claude prompt processing
+│   └── utils/                    # Utilities
+│       ├── message-parser.ts          # JSONL parsing
+│       └── logger.ts                   # Logging configuration
+├── drizzle/                      # Database migrations
+└── docs/                         # Documentation
+```
 
-## Architecture Principles
+## API Endpoints
 
-1. **Type Safety First**: Leverage TypeScript throughout the stack
-2. **Schema Validation**: Validate all inputs at runtime
-3. **Layered Architecture**: Separate routes, services, and data access
-4. **Error Handling**: Consistent error responses across the API
-5. **Testing**: Comprehensive test coverage for reliability
-6. **Performance**: Optimize for speed and scalability
-7. **Security**: Follow OWASP guidelines and best practices
+### Health & Status
+- `GET /health` - System health check
+- `GET /health/live` - Liveness probe
+- `GET /health/ready` - Readiness probe
 
-## Getting Help
+### Sessions
+- `POST /api/claude-code/sessions` - Create session
+- `GET /api/claude-code/sessions` - List sessions
+- `GET /api/claude-code/sessions/:id` - Get session
+- `PATCH /api/claude-code/sessions/:id` - Update session
+- `DELETE /api/claude-code/sessions/:id` - Delete session
 
-1. **Check Documentation**: Start with the relevant guide in `/docs`
-2. **Read Tests**: Tests often show usage examples
-3. **Use Claude Code**: Ask for help with specific code challenges
-4. **Review Examples**: Look at existing implementations for patterns
+### Messages
+- `POST /api/claude-code/sessions/:id/messages` - Send message
+- `GET /api/claude-code/sessions/:id/messages` - Get messages
+
+### Files
+- `GET /api/claude-code/sessions/:id/files` - List files
+- `GET /api/claude-code/sessions/:id/files/*` - Read file
+- `POST /api/claude-code/sessions/:id/files/*` - Create file
+- `PUT /api/claude-code/sessions/:id/files/*` - Update file
+- `DELETE /api/claude-code/sessions/:id/files/*` - Delete file
+
+## Key Features
+
+### Asynchronous Processing
+- Redis-based job queue for Claude Code prompts
+- Worker processes for scalable AI processing
+- Real-time streaming via Redis pub/sub
+
+### Session Management
+- Project-based session isolation
+- Claude session resumption support
+- Conversation history persistence
+
+### Security
+- Input validation with TypeBox schemas
+- Rate limiting per endpoint
+- Path traversal prevention
+- CORS and security headers
+
+### Performance
+- Connection pooling for database and Redis
+- Efficient JSONL parsing
+- Optimized file operations
+- Response caching strategies
+
+## Development Commands
+
+```bash
+# Development
+bun run dev          # Start dev server with hot reload
+bun test            # Run tests
+bun run lint        # Lint code
+bun run typecheck   # Type checking
+
+# Database
+bun run db:generate  # Generate migration
+bun run db:migrate   # Apply migrations
+bun run db:studio    # Open database GUI
+
+# Production
+bun run build       # Build for production
+bun run start       # Start production server
+```
+
+## Environment Configuration
+
+Required environment variables:
+
+```env
+# Server
+NODE_ENV=development
+PORT=3001
+LOG_LEVEL=debug
+
+# Database
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=pokecode
+DB_USER=postgres
+DB_PASSWORD=password
+
+# Redis
+REDIS_URL=redis://localhost:6379
+
+# Claude Code
+CLAUDE_CODE_PATH=/usr/local/bin/claude
+GITHUB_REPOS_DIRECTORY=/path/to/repos
+
+# Optional
+ANTHROPIC_API_KEY=sk-ant-...  # For API mode
+```
+
+## Architecture Highlights
+
+### Service Layer Architecture
+The backend follows a clean service-oriented architecture with clear separation of concerns:
+- **Routes** handle HTTP requests and responses
+- **Services** contain business logic
+- **Workers** process background jobs
+- **Database** layer manages persistence
+
+### Worker Queue System
+Asynchronous processing ensures responsive API:
+- Jobs queued in Redis via BullMQ
+- Workers process Claude Code prompts
+- Real-time updates streamed to clients
+- Automatic retry with exponential backoff
+
+### JSONL Processing
+Sophisticated handling of Claude conversation data:
+- Line-by-line parsing with error recovery
+- Zod schema validation for type safety
+- Support for all Claude tool types
+- Hybrid storage (database + files)
 
 ## Contributing
 
-When contributing to this project:
-
-1. Follow the [Git Flow](./docs/git-flows.md) conventions
-2. Write tests for new features
-3. Update documentation as needed
-4. Ensure all checks pass before submitting PR
-5. Use conventional commits for clear history
-
-## Environment Variables
-
-Key environment variables (see `.env.example`):
-
-- `NODE_ENV`: Development/production mode
-- `PORT`: Server port (default: 3000)
-- `DATABASE_URL`: PostgreSQL connection string
-- `REDIS_URL`: Redis connection string
-- `JWT_SECRET`: Secret for JWT signing
-- `LOG_LEVEL`: Logging verbosity
-
-## API Documentation
-
-When running in development, access Swagger UI at:
-```
-http://localhost:3000/documentation
-```
+Please refer to the [Development Guide](./docs/development.md) for:
+- Setup instructions
+- Code style guidelines
+- Testing practices
+- Debugging tips
+- Security considerations
 
 ## Support
 
-For questions or issues:
-1. Check existing documentation
-2. Look for similar patterns in codebase
-3. Use Claude Code for guidance
-4. Create an issue with clear description
+For issues or questions:
+1. Check the documentation in `/docs`
+2. Review existing GitHub issues
+3. Contact the development team
+
+## License
+
+[License information here]

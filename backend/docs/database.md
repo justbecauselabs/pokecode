@@ -1,428 +1,420 @@
 # Database Documentation
 
-This guide covers database operations, migrations, and CRUD patterns using Drizzle ORM with PostgreSQL.
+## Overview
 
-## Database Configuration
+The backend uses PostgreSQL with Drizzle ORM for type-safe database operations. The database design supports session management, message history, and file metadata with proper relationships and constraints.
 
-The database connection is configured in `/src/db/index.ts`:
+## Technology Stack
 
+- **Database**: PostgreSQL
+- **ORM**: Drizzle ORM v0.30.10
+- **Migrations**: Drizzle Kit
+- **Connection Pool**: Built-in PostgreSQL pooling
+- **Type Safety**: Full TypeScript integration
+
+## Database Schema
+
+### Sessions Table
+Primary table for managing Claude Code sessions.
+
+```sql
+CREATE TABLE sessions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  project_path TEXT NOT NULL,
+  claude_directory_path TEXT NOT NULL,
+  claude_code_session_id TEXT,
+  context TEXT,
+  status VARCHAR(10) NOT NULL DEFAULT 'active',
+  metadata JSONB DEFAULT '{}',
+  is_working BOOLEAN DEFAULT false,
+  current_job_id TEXT,
+  last_job_status TEXT,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW(),
+  last_accessed_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Indexes
+CREATE INDEX idx_sessions_status ON sessions(status);
+CREATE INDEX idx_sessions_last_accessed ON sessions(last_accessed_at);
+CREATE INDEX idx_sessions_project_path ON sessions(project_path);
+```
+
+**Fields:**
+- `id`: Unique session identifier (UUID)
+- `project_path`: Absolute path to project directory
+- `claude_directory_path`: Path to Claude configuration directory
+- `claude_code_session_id`: Claude's internal session ID for resumption
+- `context`: Optional session description (max 5000 chars)
+- `status`: Session state (`active`, `inactive`, `archived`)
+- `metadata`: JSON storage for flexible data
+- `is_working`: Indicates if session is processing
+- `current_job_id`: Active job identifier
+- `last_job_status`: Status of last job (`completed`, `failed`, etc.)
+
+### Session Messages Table
+Stores conversation history between users and Claude.
+
+```sql
+CREATE TABLE session_messages (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  session_id UUID NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
+  text TEXT NOT NULL,
+  type VARCHAR(10) NOT NULL,
+  claude_session_id TEXT,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Indexes
+CREATE INDEX idx_messages_session_id ON session_messages(session_id);
+CREATE INDEX idx_messages_created_at ON session_messages(created_at);
+CREATE INDEX idx_messages_claude_session ON session_messages(claude_session_id);
+```
+
+**Fields:**
+- `id`: Unique message identifier
+- `session_id`: Foreign key to sessions table
+- `text`: Message content
+- `type`: Message role (`user` or `assistant`)
+- `claude_session_id`: Links to JSONL file storage
+- `created_at`: Message timestamp
+
+### Files Table
+Tracks file metadata and content.
+
+```sql
+CREATE TABLE files (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  session_id UUID NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
+  path TEXT NOT NULL,
+  content TEXT,
+  encoding VARCHAR(20) DEFAULT 'utf-8',
+  size INTEGER,
+  mime_type VARCHAR(100),
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Indexes
+CREATE UNIQUE INDEX idx_files_session_path ON files(session_id, path);
+CREATE INDEX idx_files_session_id ON files(session_id);
+CREATE INDEX idx_files_updated_at ON files(updated_at);
+```
+
+**Fields:**
+- `id`: Unique file identifier
+- `session_id`: Foreign key to sessions table
+- `path`: Relative file path within project
+- `content`: File content (text files only)
+- `encoding`: Character encoding
+- `size`: File size in bytes
+- `mime_type`: MIME type for content
+- `created_at`: File creation timestamp
+- `updated_at`: Last modification timestamp
+
+## Drizzle ORM Configuration
+
+### Schema Definition (`src/db/schema.ts`)
+```typescript
+import { pgTable, uuid, text, timestamp, integer, boolean, jsonb } from 'drizzle-orm/pg-core';
+
+export const sessions = pgTable('sessions', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  projectPath: text('project_path').notNull(),
+  claudeDirectoryPath: text('claude_directory_path').notNull(),
+  claudeCodeSessionId: text('claude_code_session_id'),
+  context: text('context'),
+  status: text('status').notNull().default('active'),
+  metadata: jsonb('metadata').default({}),
+  isWorking: boolean('is_working').default(false),
+  currentJobId: text('current_job_id'),
+  lastJobStatus: text('last_job_status'),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+  lastAccessedAt: timestamp('last_accessed_at').defaultNow()
+});
+
+export const sessionMessages = pgTable('session_messages', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  sessionId: uuid('session_id')
+    .notNull()
+    .references(() => sessions.id, { onDelete: 'cascade' }),
+  text: text('text').notNull(),
+  type: text('type').notNull(),
+  claudeSessionId: text('claude_session_id'),
+  createdAt: timestamp('created_at').defaultNow()
+});
+```
+
+### Database Connection (`src/db/index.ts`)
 ```typescript
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
-import { getDatabaseUrl } from '@/config';
-import * as schema from './schema';
 
-const sql = postgres(getDatabaseUrl());
-export const db = drizzle(sql, { schema });
+const queryClient = postgres({
+  host: process.env.DB_HOST,
+  port: process.env.DB_PORT,
+  database: process.env.DB_NAME,
+  username: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  max: 20, // Connection pool size
+  idle_timeout: 30
+});
+
+export const db = drizzle(queryClient, { schema });
 ```
 
-## Schema Definition
+## Migrations
 
-Schemas are defined using Drizzle's PostgreSQL schema builder in `/src/db/schema/`:
+### Running Migrations
+```bash
+# Generate migration from schema changes
+bun run db:generate
 
-### Example Schema (users.ts)
+# Apply migrations to database
+bun run db:migrate
 
+# Open Drizzle Studio for visual management
+bun run db:studio
+```
+
+### Migration Files
+Located in `/drizzle` directory with timestamp prefixes:
+```
+drizzle/
+├── 0000_initial_schema.sql
+├── 0001_add_session_messages.sql
+├── 0002_add_file_tracking.sql
+└── meta/
+    └── _journal.json
+```
+
+## Query Patterns
+
+### Session Operations
 ```typescript
-import { index, jsonb, pgTable, text, timestamp } from 'drizzle-orm/pg-core';
-
-export const users = pgTable(
-  'claude_code_users',
-  {
-    id: text('id').primaryKey(),
-    email: text('email').notNull().unique(),
-    name: text('name'),
-    metadata: jsonb('metadata').$type<{
-      preferences?: Record<string, any>;
-      lastDevice?: string;
-    }>(),
-    createdAt: timestamp('created_at').defaultNow().notNull(),
-    lastLoginAt: timestamp('last_login_at').defaultNow().notNull(),
-  },
-  (table) => ({
-    emailIdx: index('idx_users_email').on(table.email),
-  }),
-);
-
-// Type inference
-export type User = typeof users.$inferSelect;
-export type NewUser = typeof users.$inferInsert;
-```
-
-## Migration Procedures
-
-### Generate a Migration
-
-After modifying schema files, generate a migration:
-
-```bash
-bun migrate:generate
-```
-
-This creates a new migration file in the `/drizzle` directory.
-
-### Run Migrations
-
-Apply pending migrations to the database:
-
-```bash
-bun migrate
-```
-
-Or use the migration script directly:
-
-```typescript
-// scripts/migrate.ts
-import { migrate } from 'drizzle-orm/postgres-js/migrator';
-
-await migrate(db, { migrationsFolder: './drizzle' });
-```
-
-### Push Schema Changes (Development)
-
-For rapid development, push schema changes directly without migrations:
-
-```bash
-bun migrate:push
-```
-
-⚠️ **Warning**: Only use in development. This can cause data loss.
-
-### Database Studio
-
-Explore your database with Drizzle Studio:
-
-```bash
-bun migrate:studio
-```
-
-## CRUD Operations
-
-### Create (INSERT)
-
-```typescript
-import { db } from '@/db';
-import { users } from '@/db/schema';
-
-// Single insert
-const newUser = await db.insert(users).values({
-  id: 'user_123',
-  email: 'user@example.com',
-  name: 'John Doe'
+// Create session
+const session = await db.insert(sessions).values({
+  projectPath: '/path/to/project',
+  claudeDirectoryPath: '/home/.claude/project',
+  context: 'Working on feature X',
+  metadata: { repository: 'my-repo' }
 }).returning();
 
-// Bulk insert
-const newUsers = await db.insert(users).values([
-  { id: 'user_1', email: 'user1@example.com', name: 'User 1' },
-  { id: 'user_2', email: 'user2@example.com', name: 'User 2' }
-]).returning();
-
-// Insert with conflict handling
-const user = await db.insert(users)
-  .values({ id, email, name })
-  .onConflictDoUpdate({
-    target: users.email,
-    set: { name, lastLoginAt: new Date() }
-  })
-  .returning();
-```
-
-### Read (SELECT)
-
-```typescript
-import { db } from '@/db';
-import { users, sessions } from '@/db/schema';
-import { eq, and, desc, like, gte } from 'drizzle-orm';
-
-// Find by ID
-const user = await db.query.users.findFirst({
-  where: eq(users.id, userId)
+// Find active sessions
+const activeSessions = await db.query.sessions.findMany({
+  where: eq(sessions.status, 'active'),
+  orderBy: [desc(sessions.lastAccessedAt)],
+  limit: 20
 });
 
-// Find with conditions
-const activeUsers = await db.select()
-  .from(users)
-  .where(
-    and(
-      gte(users.lastLoginAt, new Date('2024-01-01')),
-      like(users.email, '%@company.com')
-    )
-  )
-  .orderBy(desc(users.createdAt));
+// Update session state
+await db.update(sessions)
+  .set({ 
+    isWorking: true,
+    currentJobId: jobId,
+    updatedAt: new Date()
+  })
+  .where(eq(sessions.id, sessionId));
+```
 
-// With relations
-const userWithSessions = await db.query.users.findFirst({
-  where: eq(users.id, userId),
-  with: {
-    sessions: {
-      orderBy: desc(sessions.createdAt),
-      limit: 10
-    }
+### Message Operations
+```typescript
+// Store message
+await db.insert(sessionMessages).values({
+  sessionId,
+  text: messageContent,
+  type: 'user',
+  claudeSessionId
+});
+
+// Get conversation history
+const messages = await db.query.sessionMessages.findMany({
+  where: eq(sessionMessages.sessionId, sessionId),
+  orderBy: [asc(sessionMessages.createdAt)]
+});
+
+// Count messages
+const messageCount = await db
+  .select({ count: count() })
+  .from(sessionMessages)
+  .where(eq(sessionMessages.sessionId, sessionId));
+```
+
+### File Operations
+```typescript
+// Track file
+await db.insert(files).values({
+  sessionId,
+  path: 'src/index.js',
+  content: fileContent,
+  size: Buffer.byteLength(fileContent),
+  mimeType: 'text/javascript'
+});
+
+// List files
+const projectFiles = await db.query.files.findMany({
+  where: eq(files.sessionId, sessionId),
+  orderBy: [asc(files.path)]
+});
+```
+
+## Relationships
+
+### Entity Relationships
+```
+sessions (1) ─────┬──── (N) session_messages
+                  │
+                  └──── (N) files
+```
+
+### Cascade Deletes
+- Deleting a session automatically deletes:
+  - All associated messages
+  - All tracked files
+  - Related job data
+
+## Indexes and Performance
+
+### Index Strategy
+1. **Primary Keys**: UUID with B-tree indexes
+2. **Foreign Keys**: Indexed for join performance
+3. **Query Patterns**: Indexes on commonly filtered columns
+4. **Timestamp Indexes**: For time-based queries
+
+### Query Optimization
+```typescript
+// Use selective queries
+const session = await db.query.sessions.findFirst({
+  where: eq(sessions.id, id),
+  columns: {
+    id: true,
+    projectPath: true,
+    isWorking: true
   }
 });
 
-// Pagination
-const page = 1;
-const limit = 20;
-const offset = (page - 1) * limit;
+// Batch operations
+await db.insert(sessionMessages).values(messages);
 
-const paginatedUsers = await db.select()
-  .from(users)
-  .limit(limit)
-  .offset(offset);
-
-// Count total
-const [{ count }] = await db.select({ 
-  count: sql<number>`count(*)::int` 
-})
-.from(users);
-```
-
-### Update
-
-```typescript
-import { db } from '@/db';
-import { users } from '@/db/schema';
-import { eq } from 'drizzle-orm';
-
-// Update single record
-const updatedUser = await db.update(users)
-  .set({ 
-    name: 'New Name',
-    lastLoginAt: new Date()
-  })
-  .where(eq(users.id, userId))
-  .returning();
-
-// Update with JSON operations
-const updated = await db.update(users)
-  .set({
-    metadata: sql`
-      jsonb_set(
-        COALESCE(metadata, '{}'::jsonb),
-        '{preferences,theme}',
-        '"dark"'
-      )
-    `
-  })
-  .where(eq(users.id, userId))
-  .returning();
-
-// Conditional update
-const result = await db.update(users)
-  .set({ refreshToken: newToken })
-  .where(
-    and(
-      eq(users.id, userId),
-      eq(users.refreshToken, oldToken)
-    )
-  )
-  .returning();
-
-if (result.length === 0) {
-  throw new Error('Token mismatch');
-}
-```
-
-### Delete
-
-```typescript
-import { db } from '@/db';
-import { users, sessions } from '@/db/schema';
-import { eq, lt } from 'drizzle-orm';
-
-// Delete single record
-const deletedUser = await db.delete(users)
-  .where(eq(users.id, userId))
-  .returning();
-
-// Delete with conditions
-const deletedSessions = await db.delete(sessions)
-  .where(
-    and(
-      eq(sessions.userId, userId),
-      lt(sessions.lastActiveAt, thirtyDaysAgo)
-    )
-  );
-
-// Cascade delete (if not handled by foreign keys)
+// Use transactions for consistency
 await db.transaction(async (tx) => {
-  await tx.delete(sessions).where(eq(sessions.userId, userId));
-  await tx.delete(users).where(eq(users.id, userId));
+  await tx.update(sessions).set({ isWorking: true });
+  await tx.insert(sessionMessages).values(message);
 });
 ```
 
-## Transactions
+## Connection Pooling
 
-Use transactions for atomic operations:
-
+### Configuration
 ```typescript
-import { db } from '@/db';
-
-const result = await db.transaction(async (tx) => {
-  // Create user
-  const [user] = await tx.insert(users)
-    .values({ id, email, name })
-    .returning();
-
-  // Create initial session
-  const [session] = await tx.insert(sessions)
-    .values({
-      id: generateId(),
-      userId: user.id,
-      title: 'Welcome Session'
-    })
-    .returning();
-
-  // Create welcome prompt
-  await tx.insert(prompts)
-    .values({
-      id: generateId(),
-      sessionId: session.id,
-      userId: user.id,
-      content: 'Welcome to Claude Code!'
-    });
-
-  return { user, session };
-});
-
-// Transaction with rollback
-try {
-  await db.transaction(async (tx) => {
-    await tx.insert(users).values(userData);
-    
-    if (someCondition) {
-      tx.rollback(); // Manually rollback
-    }
-    
-    await tx.insert(sessions).values(sessionData);
-  });
-} catch (error) {
-  // Transaction rolled back
-  console.error('Transaction failed:', error);
+{
+  max: 20,              // Maximum connections
+  idleTimeoutMillis: 30000,  // Idle timeout
+  connectionTimeoutMillis: 2000  // Connection timeout
 }
 ```
 
-## Raw SQL Queries
+### Best Practices
+- Use connection pool for all queries
+- Avoid long-running transactions
+- Release connections promptly
+- Monitor pool statistics
 
-When needed, use raw SQL with type safety:
+## Backup and Recovery
 
-```typescript
-import { sql } from 'drizzle-orm';
+### Backup Strategy
+```bash
+# Manual backup
+pg_dump -h localhost -U user -d pokecode > backup.sql
 
-// Raw query with parameters
-const result = await db.execute(sql`
-  SELECT u.*, COUNT(s.id) as session_count
-  FROM claude_code_users u
-  LEFT JOIN claude_code_sessions s ON u.id = s.user_id
-  WHERE u.created_at >= ${startDate}
-  GROUP BY u.id
-  ORDER BY session_count DESC
-  LIMIT ${limit}
-`);
-
-// Type the result
-interface UserStats {
-  id: string;
-  email: string;
-  session_count: number;
-}
-
-const stats = result.rows as UserStats[];
+# Scheduled backup (cron)
+0 2 * * * pg_dump -h localhost -U user -d pokecode > /backups/pokecode_$(date +\%Y\%m\%d).sql
 ```
 
-## Database Helpers
+### Recovery
+```bash
+# Restore from backup
+psql -h localhost -U user -d pokecode < backup.sql
 
-### Connection Health Check
+# Point-in-time recovery
+pg_restore -h localhost -U user -d pokecode backup.dump
+```
 
+## Monitoring
+
+### Health Checks
 ```typescript
-export async function checkDatabaseHealth(): Promise<boolean> {
+// Database health check
+async checkDatabaseHealth() {
   try {
     const result = await db.execute(sql`SELECT 1`);
-    return result.rows.length > 0;
+    return { status: 'healthy' };
   } catch (error) {
-    console.error('Database health check failed:', error);
-    return false;
+    return { status: 'unhealthy', error };
   }
 }
 ```
 
-### Migration Status
+### Performance Monitoring
+```sql
+-- Slow query log
+SELECT query, calls, mean_exec_time
+FROM pg_stat_statements
+WHERE mean_exec_time > 100
+ORDER BY mean_exec_time DESC;
 
-```typescript
-export async function getMigrationStatus() {
-  const applied = await db.execute(sql`
-    SELECT * FROM drizzle_migrations 
-    ORDER BY created_at DESC
-  `);
-  
-  return applied.rows;
-}
+-- Connection stats
+SELECT count(*) as connections,
+       state
+FROM pg_stat_activity
+GROUP BY state;
+
+-- Table sizes
+SELECT schemaname,
+       tablename,
+       pg_size_pretty(pg_total_relation_size(schemaname||'.'||tablename)) AS size
+FROM pg_tables
+ORDER BY pg_total_relation_size(schemaname||'.'||tablename) DESC;
 ```
 
-## Best Practices
+## Security
 
-1. **Use TypeScript Types**: Leverage Drizzle's type inference
-   ```typescript
-   type User = typeof users.$inferSelect;
-   type NewUser = typeof users.$inferInsert;
-   ```
+### Access Control
+- Use environment variables for credentials
+- Implement row-level security where needed
+- Sanitize all user inputs
+- Use parameterized queries (handled by Drizzle)
 
-2. **Index Strategy**: Add indexes for frequently queried columns
-   ```typescript
-   emailIdx: index('idx_users_email').on(table.email)
-   ```
-
-3. **Transaction Usage**: Use transactions for related operations
-4. **Error Handling**: Always handle database errors appropriately
-5. **Connection Pooling**: PostgreSQL.js handles this automatically
-6. **Query Optimization**: Use `EXPLAIN ANALYZE` for slow queries
-7. **Data Validation**: Validate data before database operations
-
-## Common Patterns
-
-### Upsert Pattern
-
+### Data Protection
 ```typescript
-const upserted = await db.insert(users)
-  .values(userData)
-  .onConflictDoUpdate({
-    target: users.email,
-    set: {
-      name: userData.name,
-      lastLoginAt: new Date()
-    }
-  })
-  .returning();
-```
+// Never log sensitive data
+logger.info({ sessionId }, 'Session created'); // Good
+logger.info({ password }, 'User login'); // Bad
 
-### Soft Delete Pattern
-
-```typescript
-// Add deletedAt column to schema
-deletedAt: timestamp('deleted_at'),
-
-// Soft delete
-await db.update(users)
-  .set({ deletedAt: new Date() })
-  .where(eq(users.id, userId));
-
-// Query non-deleted
-const activeUsers = await db.select()
-  .from(users)
-  .where(isNull(users.deletedAt));
-```
-
-### Audit Trail Pattern
-
-```typescript
-// Create audit log entry
-await db.insert(auditLogs).values({
-  id: generateId(),
-  userId: currentUser.id,
-  action: 'UPDATE',
-  tableName: 'users',
-  recordId: userId,
-  changes: JSON.stringify(changes),
-  createdAt: new Date()
+// Encrypt sensitive fields if needed
+const encrypted = await encrypt(sensitiveData);
+await db.insert(sessions).values({
+  metadata: { encrypted }
 });
+```
+
+## Maintenance
+
+### Regular Tasks
+1. **Vacuum**: Run `VACUUM ANALYZE` weekly
+2. **Reindex**: Rebuild indexes monthly
+3. **Archive**: Move old sessions to archive tables
+4. **Cleanup**: Remove orphaned records
+
+### Archive Strategy
+```sql
+-- Archive old sessions
+INSERT INTO archived_sessions
+SELECT * FROM sessions
+WHERE last_accessed_at < NOW() - INTERVAL '90 days';
+
+-- Delete archived sessions
+DELETE FROM sessions
+WHERE last_accessed_at < NOW() - INTERVAL '90 days';
 ```

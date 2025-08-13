@@ -1,14 +1,14 @@
 import { EventEmitter } from 'node:events';
 import { constants as fsConstants, promises as fsPromises } from 'node:fs';
-import { type Options, query, type SDKMessage } from '@anthropic-ai/claude-code';
+import { type Options, Query, query, type SDKMessage } from '@anthropic-ai/claude-code';
+import type { Citation, ClaudeCodeMessage, MessageContent } from '@/types';
+// These imports are for future use when we integrate with message service
 import { createChildLogger } from '@/utils/logger';
 
 const logger = createChildLogger('claude-code-sdk');
 
-export interface ClaudeCodeMessage {
-  type: string;
-  [key: string]: any;
-}
+// Re-export from types for backward compatibility
+export type { ClaudeCodeMessage } from '@/types';
 
 export interface ClaudeCodeOptions {
   sessionId: string;
@@ -23,7 +23,7 @@ interface StreamingState {
     {
       type: string;
       content: string;
-      citations?: any[];
+      citations?: Citation[];
       thinking?: string;
       signature?: string;
     }
@@ -63,7 +63,7 @@ export class ClaudeCodeSDKService extends EventEmitter {
   private startTime: number = 0;
   private sessionId: string;
   private isProcessing = false;
-  private currentQuery: any = null;
+  private currentQuery: Query | null = null;
   private pathToClaudeCodeExecutable: string;
   private streamingState: StreamingState = {
     activeBlocks: new Map(),
@@ -183,7 +183,10 @@ export class ClaudeCodeSDKService extends EventEmitter {
               message: errorMessage,
               stack: error instanceof Error ? error.stack : undefined,
               name: error instanceof Error ? error.name : undefined,
-              code: (error as any)?.code,
+              code:
+                error && typeof error === 'object' && 'code' in error
+                  ? (error as { code: unknown }).code
+                  : undefined,
             },
           },
           'Claude Code SDK query failed',
@@ -242,7 +245,7 @@ export class ClaudeCodeSDKService extends EventEmitter {
    */
   private handleSDKMessage(message: SDKMessage): void {
     // Convert SDK message to our format and store it
-    const convertedMessage: ClaudeCodeMessage = message as any;
+    const convertedMessage: ClaudeCodeMessage = message as ClaudeCodeMessage;
     this.messages.push(convertedMessage);
 
     // Debug: Log first few messages to see the structure
@@ -252,7 +255,7 @@ export class ClaudeCodeSDKService extends EventEmitter {
           messageNumber: this.messages.length,
           messageType: message.type,
           messageKeys: Object.keys(message),
-          hasSessionId: !!(message as any).session_id,
+          hasSessionId: !!(message && typeof message === 'object' && 'session_id' in message),
           message: JSON.stringify(message).substring(0, 500),
         },
         'Debug: SDK message structure',
@@ -260,8 +263,14 @@ export class ClaudeCodeSDKService extends EventEmitter {
     }
 
     // Capture Claude Code session ID from first message that has it
-    if (!this.capturedClaudeSessionId && (message as any).session_id) {
-      this.capturedClaudeSessionId = (message as any).session_id;
+    if (
+      !this.capturedClaudeSessionId &&
+      message &&
+      typeof message === 'object' &&
+      'session_id' in message &&
+      typeof message.session_id === 'string'
+    ) {
+      this.capturedClaudeSessionId = message.session_id;
       logger.info(
         {
           databaseSessionId: this.sessionId,
@@ -286,8 +295,21 @@ export class ClaudeCodeSDKService extends EventEmitter {
         // Assistant response message
         if (message.message.content) {
           const textContent = message.message.content
-            .filter((c: any) => c.type === 'text')
-            .map((c: any) => c.text)
+            .filter(
+              (c: unknown): c is MessageContent =>
+                !!(
+                  c &&
+                  typeof c === 'object' &&
+                  'type' in c &&
+                  (c as { type: string }).type === 'text'
+                ),
+            )
+            .map((c: MessageContent) => {
+              if (c.type === 'text') {
+                return (c as { type: 'text'; text: string }).text;
+              }
+              return '';
+            })
             .join('\n');
 
           if (textContent) {
@@ -300,17 +322,32 @@ export class ClaudeCodeSDKService extends EventEmitter {
           }
 
           // Count tool uses
-          const toolUses = message.message.content.filter((c: any) => c.type === 'tool_use');
+          const toolUses = message.message.content.filter(
+            (c: unknown): c is MessageContent =>
+              !!(
+                c &&
+                typeof c === 'object' &&
+                'type' in c &&
+                (c as { type: string }).type === 'tool_use'
+              ),
+          );
           this.toolCallCount += toolUses.length;
 
           // Emit tool use events
           for (const toolUse of toolUses) {
-            this.emit('tool_use', {
-              type: 'tool_use',
-              tool: toolUse.name,
-              params: toolUse.input,
-              timestamp: new Date().toISOString(),
-            });
+            if (toolUse.type === 'tool_use') {
+              const toolUseContent = toolUse as {
+                type: 'tool_use';
+                name: string;
+                input: Record<string, unknown>;
+              };
+              this.emit('tool_use', {
+                type: 'tool_use',
+                tool: toolUseContent.name,
+                params: toolUseContent.input,
+                timestamp: new Date().toISOString(),
+              });
+            }
           }
         }
         break;
@@ -318,14 +355,29 @@ export class ClaudeCodeSDKService extends EventEmitter {
       case 'user':
         // User message (tool results)
         if (message.message.content) {
-          const toolResults = message.message.content.filter((c: any) => c.type === 'tool_result');
+          const toolResults = message.message.content.filter(
+            (c: unknown): c is MessageContent =>
+              !!(
+                c &&
+                typeof c === 'object' &&
+                'type' in c &&
+                (c as { type: string }).type === 'tool_result'
+              ),
+          );
           for (const result of toolResults) {
-            this.emit('tool_result', {
-              type: 'tool_result',
-              tool: result.tool_use_id,
-              result: this.truncateResult(result.content || ''),
-              timestamp: new Date().toISOString(),
-            });
+            if (result.type === 'tool_result') {
+              const toolResultContent = result as {
+                type: 'tool_result';
+                tool_use_id: string;
+                content?: string;
+              };
+              this.emit('tool_result', {
+                type: 'tool_result',
+                tool: toolResultContent.tool_use_id,
+                result: this.truncateResult(toolResultContent.content || ''),
+                timestamp: new Date().toISOString(),
+              });
+            }
           }
         }
         break;

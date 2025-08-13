@@ -1,13 +1,16 @@
-import React, { useEffect } from 'react';
-import { Stack } from 'expo-router';
+
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { Stack } from 'expo-router';
+import * as SplashScreen from 'expo-splash-screen';
+import { useEffect } from 'react';
+import { useColorScheme } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { ErrorBoundary } from '@/components/shared/ErrorBoundary';
-import { useAuthStore } from '@/stores/authStore';
+import { darkTheme, lightTheme } from '@/constants/theme';
 import { useUIStore } from '@/stores/uiStore';
-import { lightTheme, darkTheme } from '@/constants/theme';
-import { useColorScheme } from 'react-native';
-import * as SplashScreen from 'expo-splash-screen';
+
+// @ts-ignore - global.css is not a module
+import '../global.css';
 
 // Keep the splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync();
@@ -24,14 +27,10 @@ const queryClient = new QueryClient({
 export default function RootLayout() {
   const colorScheme = useColorScheme();
   const { theme } = useUIStore();
-  const { checkAuth } = useAuthStore();
-
+  
   useEffect(() => {
-    // Check authentication status on app start
-    checkAuth().finally(() => {
-      // Hide splash screen after auth check
-      SplashScreen.hideAsync();
-    });
+    // Hide splash screen after app loads
+    SplashScreen.hideAsync();
   }, []);
 
   const isDark = theme === 'dark' || (theme === 'system' && colorScheme === 'dark');
@@ -40,7 +39,9 @@ export default function RootLayout() {
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <GestureHandlerRootView style={{ flex: 1, backgroundColor: currentTheme.colors.background }}>
+        <GestureHandlerRootView
+          style={{ flex: 1, backgroundColor: currentTheme.colors.background }}
+        >
           <Stack
             screenOptions={{
               headerStyle: {
@@ -55,8 +56,7 @@ export default function RootLayout() {
               },
             }}
           >
-            <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen name="index" options={{ title: 'Pokecode' }} />
             <Stack.Screen name="+not-found" options={{ title: 'Not Found' }} />
           </Stack>
         </GestureHandlerRootView>

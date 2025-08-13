@@ -1,11 +1,5 @@
-import React, { Component, ErrorInfo, ReactNode } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-} from 'react-native';
+import { Component, type ErrorInfo, type ReactNode } from 'react';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { lightTheme } from '@/constants/theme';
 
 interface Props {
@@ -29,8 +23,7 @@ export class ErrorBoundary extends Component<Props, State> {
     return { hasError: true, error, errorInfo: null };
   }
 
-  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('ErrorBoundary caught an error:', error, errorInfo);
+  override componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     this.setState({
       error,
       errorInfo,
@@ -41,7 +34,7 @@ export class ErrorBoundary extends Component<Props, State> {
     this.setState({ hasError: false, error: null, errorInfo: null });
   };
 
-  render() {
+  override render() {
     if (this.state.hasError) {
       if (this.props.fallback) {
         return <>{this.props.fallback}</>;
@@ -54,25 +47,23 @@ export class ErrorBoundary extends Component<Props, State> {
             <Text style={styles.subtitle}>
               We're sorry for the inconvenience. Please try again.
             </Text>
-            
+
             {__DEV__ && this.state.error && (
               <View style={styles.errorDetails}>
                 <Text style={styles.errorTitle}>Error Details:</Text>
                 <Text style={styles.errorMessage}>{this.state.error.toString()}</Text>
-                
+
                 {this.state.errorInfo && (
                   <View style={styles.stackContainer}>
                     <Text style={styles.stackTitle}>Component Stack:</Text>
                     <ScrollView horizontal>
-                      <Text style={styles.stackTrace}>
-                        {this.state.errorInfo.componentStack}
-                      </Text>
+                      <Text style={styles.stackTrace}>{this.state.errorInfo.componentStack}</Text>
                     </ScrollView>
                   </View>
                 )}
               </View>
             )}
-            
+
             <TouchableOpacity style={styles.resetButton} onPress={this.handleReset}>
               <Text style={styles.resetButtonText}>Try Again</Text>
             </TouchableOpacity>

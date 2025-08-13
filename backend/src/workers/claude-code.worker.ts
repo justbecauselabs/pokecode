@@ -6,9 +6,9 @@ import { db } from '@/db';
 import { sessions } from '@/db/schema';
 import { ClaudeCodeSDKService } from '@/services/claude-code-sdk.service';
 import { messageService } from '@/services/message.service';
-import { promptService } from '@/services/prompt.service';
 import type { PromptJobData } from '@/types';
 import { createChildLogger } from '@/utils/logger';
+import { extractClaudeSessionId, extractFinalContent } from '@/utils/message-parser';
 
 const logger = createChildLogger('claude-code-worker');
 
@@ -73,7 +73,6 @@ export class ClaudeCodeWorker {
     logger.info({ promptId, sessionId }, 'Processing prompt');
 
     try {
-      await this.markPromptAsProcessing(promptId);
       await this.publishStartEvent(channel);
 
       // Look up existing Claude Code session ID (if any) and update working state
@@ -145,32 +144,37 @@ export class ClaudeCodeWorker {
 
       // Handle result based on success/failure
       if (result.success) {
-        await this.savePromptResult(promptId, result);
         await this.publishCompleteEvent(channel, result);
 
-        // Create assistant message if messageId is provided
-        if (messageId) {
+        // Save assistant message after Claude responds
+        if (messageId && result.response) {
           try {
-            const assistantMessage = await messageService.createMessage({
-              sessionId,
-              text: result.response || 'Command completed successfully',
-              type: 'assistant',
-              ...((
-                await db.query.sessions.findFirst({
-                  where: eq(sessions.id, sessionId),
-                  columns: { claudeCodeSessionId: true },
-                })
-              )?.claudeCodeSessionId && {
-                claudeSessionId: (await db.query.sessions.findFirst({
-                  where: eq(sessions.id, sessionId),
-                  columns: { claudeCodeSessionId: true },
-                }))!.claudeCodeSessionId,
-              }),
+            // Get the Claude session ID from the SDK result or session
+            const sessionData = await db.query.sessions.findFirst({
+              where: eq(sessions.id, sessionId),
+              columns: { claudeCodeSessionId: true },
             });
-            logger.debug(
-              { messageId, assistantMessageId: assistantMessage.id },
-              'Created assistant message for completed prompt',
-            );
+
+            const claudeSessionId =
+              sessionData?.claudeCodeSessionId || extractClaudeSessionId(result);
+
+            if (claudeSessionId) {
+              // Extract final content from the result
+              const finalContent = extractFinalContent(result) || result.response;
+
+              // Save assistant message with Claude session ID
+              await messageService.saveAssistantMessage(sessionId, claudeSessionId, finalContent);
+
+              logger.debug(
+                { messageId, sessionId, claudeSessionId },
+                'Saved assistant message after Claude response',
+              );
+            } else {
+              logger.warn(
+                { messageId, sessionId },
+                'No Claude session ID available for assistant message',
+              );
+            }
           } catch (error) {
             logger.warn(
               {
@@ -178,7 +182,7 @@ export class ClaudeCodeWorker {
                 sessionId,
                 error: error instanceof Error ? error.message : String(error),
               },
-              'Failed to create assistant message',
+              'Failed to save assistant message',
             );
           }
         }
@@ -381,15 +385,6 @@ export class ClaudeCodeWorker {
   }
 
   /**
-   * Updates prompt status to processing (placeholder - prompts now in Claude directory)
-   */
-  private async markPromptAsProcessing(promptId: string): Promise<void> {
-    // Note: Prompts are now stored in Claude directory, not database
-    // Status tracking is handled via job status
-    logger.info({ promptId }, 'Marking prompt as processing');
-  }
-
-  /**
    * Publishes the start event to Redis
    */
   private async publishStartEvent(channel: string): Promise<void> {
@@ -399,65 +394,6 @@ export class ClaudeCodeWorker {
         type: 'message',
         content: 'Initializing Claude Code SDK...',
         timestamp: new Date().toISOString(),
-      },
-    });
-  }
-
-  /**
-   * Saves the prompt result to the database
-   * Note: Actual response content is stored by Claude Code SDK in ~/.claude directory
-   */
-  private async savePromptResult(
-    promptId: string,
-    result: {
-      success: true;
-      response: string;
-      duration: number;
-      toolCallCount: number;
-      messages: any[];
-      stopReason?: any;
-      totalTokens?: number;
-    },
-  ): Promise<void> {
-    // Extract tool calls from messages
-    const toolCalls: any[] = [];
-    let thinking: string | undefined;
-    const citations: any[] = [];
-
-    for (const msg of result.messages) {
-      if (msg.type === 'tool_use') {
-        toolCalls.push({
-          tool: msg.name || msg.tool,
-          params: msg.input || msg.params,
-        });
-      } else if (msg.type === 'thinking') {
-        if (msg.data?.thinking) {
-          thinking = msg.data.thinking;
-        }
-      } else if (msg.type === 'citations_delta') {
-        if (msg.data?.citation) {
-          citations.push(msg.data.citation);
-        }
-      }
-    }
-
-    // Save job completion metadata only - actual content stored in Claude directory
-    await promptService.updatePromptResult(promptId, {
-      status: 'completed' as const,
-      metadata: {
-        toolCalls,
-        duration: result.duration,
-        toolCallCount: result.toolCallCount,
-        tokenCount: result.totalTokens,
-        stopReason: result.stopReason,
-        thinking,
-        citations: citations.length > 0 ? citations : undefined,
-        // Reference to Claude directory - actual content stored there
-        hasClaudeDirectoryContent: true,
-        responseSummary:
-          result.response.length > 200
-            ? `${result.response.substring(0, 200)}...`
-            : result.response,
       },
     });
   }
@@ -517,18 +453,6 @@ export class ClaudeCodeWorker {
       })
       .where(eq(sessions.id, sessionId));
 
-    await promptService.updatePromptResult(promptId, {
-      error: error.message,
-      status: 'failed' as const,
-      metadata: {
-        errorDetails: {
-          message: error.message,
-          stack: error.stack,
-          timestamp: new Date().toISOString(),
-        },
-      },
-    });
-
     await this.publishEvent(channel, {
       type: 'error',
       data: {
@@ -550,14 +474,21 @@ export class ClaudeCodeWorker {
         await this.redis.publish(channel, serializedEvent);
       } else {
         logger.warn(
-          { channel, eventType: event?.type },
+          {
+            channel,
+            eventType: event?.type || 'unknown',
+          },
           'Failed to serialize event - skipping publish',
         );
       }
     } catch (error) {
       // Log error but don't throw - stream may have already disconnected
       logger.warn(
-        { channel, error, eventType: event?.type },
+        {
+          channel,
+          error,
+          eventType: event?.type || 'unknown',
+        },
         'Failed to publish event (client may have disconnected)',
       );
     }
@@ -589,6 +520,7 @@ export class ClaudeCodeWorker {
       // Check message size and truncate if necessary
       if (result.length > maxSize) {
         logger.warn(`Event too large (${result.length} chars), truncating...`);
+
         const truncated = {
           ...obj,
           data:

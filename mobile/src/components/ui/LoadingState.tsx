@@ -1,52 +1,28 @@
-import React from 'react';
-import {
-  View,
-  ActivityIndicator,
-  Text,
-  StyleSheet,
-  ViewStyle,
-} from 'react-native';
+import type React from 'react';
+import { ActivityIndicator, StyleSheet, Text, useColorScheme, View } from 'react-native';
+import { darkTheme, lightTheme } from '@/constants/theme';
 import { useUIStore } from '@/stores/uiStore';
-import { lightTheme, darkTheme } from '@/constants/theme';
 
 interface LoadingStateProps {
+  message?: string;
   size?: 'small' | 'large';
-  text?: string;
-  fullScreen?: boolean;
-  style?: ViewStyle;
 }
 
 export const LoadingState: React.FC<LoadingStateProps> = ({
+  message = 'Loading...',
   size = 'large',
-  text,
-  fullScreen = false,
-  style,
 }) => {
-  const isDark = useUIStore((state) => state.isDark());
-  const theme = isDark ? darkTheme : lightTheme;
+  const colorScheme = useColorScheme();
+  const { theme } = useUIStore();
+  const isDark = theme === 'dark' || (theme === 'system' && colorScheme === 'dark');
+  const currentTheme = isDark ? darkTheme : lightTheme;
 
   return (
-    <View
-      style={[
-        styles.container,
-        fullScreen && styles.fullScreen,
-        { backgroundColor: fullScreen ? theme.colors.background : 'transparent' },
-        style,
-      ]}
-    >
-      <ActivityIndicator
-        size={size}
-        color={theme.colors.primary}
-      />
-      {text && (
-        <Text
-          style={[
-            styles.text,
-            { color: theme.colors.textSecondary },
-            theme.typography.body,
-          ]}
-        >
-          {text}
+    <View style={styles.container}>
+      <ActivityIndicator size={size} color={currentTheme.colors.primary} />
+      {message && (
+        <Text style={[styles.message, { color: currentTheme.colors.textSecondary }]}>
+          {message}
         </Text>
       )}
     </View>
@@ -55,15 +31,14 @@ export const LoadingState: React.FC<LoadingStateProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    alignItems: 'center',
+    flex: 1,
     justifyContent: 'center',
+    alignItems: 'center',
     padding: 20,
   },
-  fullScreen: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  text: {
+  message: {
     marginTop: 12,
+    fontSize: 16,
     textAlign: 'center',
   },
 });

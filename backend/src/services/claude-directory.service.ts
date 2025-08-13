@@ -85,45 +85,6 @@ export class ClaudeDirectoryService {
     }
   }
 
-  // SQLite methods commented out until better-sqlite3 dependency is added
-  // TODO: Uncomment and implement SQLite methods once better-sqlite3 is added to dependencies
-
-  /*
-  private getDatabase(): Database.Database {
-    if (!existsSync(this.sqliteDbPath)) {
-      throw new Error(`Claude SQLite database not found at ${this.sqliteDbPath}`);
-    }
-    return new Database(this.sqliteDbPath, { readonly: true });
-  }
-
-  getConversationSessions(): Array<{
-    id: string;
-    working_directory?: string;
-    created_at: string;
-    updated_at: string;
-  }> {
-    // Implementation using SQLite queries
-  }
-
-  getConversationMessages(conversationId: string): Array<{
-    id: string;
-    role: 'user' | 'assistant';
-    content: string;
-    created_at: string;
-    metadata?: any;
-  }> {
-    // Implementation using SQLite queries  
-  }
-
-  getConversationByWorkingDirectory(workingDirectory: string): Array<{
-    id: string;
-    working_directory?: string;
-    created_at: string;
-  }> {
-    // Implementation using SQLite queries
-  }
-  */
-
   /**
    * Get project-based conversation files (JSONL format)
    */
@@ -314,8 +275,6 @@ export class ClaudeDirectoryService {
           },
           'Skipping conversation file due to validation error',
         );
-        // Skip invalid files but continue processing others
-        continue;
       }
     }
 

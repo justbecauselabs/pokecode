@@ -23,7 +23,7 @@ const rateLimitPlugin: FastifyPluginAsync = async (fastify) => {
         code: 'RATE_LIMIT_ERROR',
         rateLimit: {
           limit: context.max,
-          remaining: (context as any).remaining || 0,
+          remaining: 'remaining' in context ? (context.remaining as number) : 0,
           reset: new Date(Date.now() + context.ttl).toISOString(),
         },
       };

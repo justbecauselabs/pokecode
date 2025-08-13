@@ -11,6 +11,11 @@ import {
 import { fileService } from '@/services/file.service';
 import { sessionService } from '@/services/session.service';
 
+// Type guard for API errors
+function isApiError(error: unknown): error is { name: string; message: string; code?: string } {
+  return error instanceof Error && 'name' in error && 'message' in error;
+}
+
 const fileRoutes: FastifyPluginAsync = async (fastify) => {
   // Helper to verify session access
   async function verifySessionAccess(sessionId: string) {
@@ -47,24 +52,26 @@ const fileRoutes: FastifyPluginAsync = async (fastify) => {
           ...(pattern !== undefined && { pattern }),
         });
         return reply.send(result);
-      } catch (error: any) {
-        if (error.name === 'NotFoundError') {
-          return reply.code(404).send({
-            error: error.message,
-            code: error.code,
-          });
-        }
-        if (error.name === 'ValidationError') {
-          return reply.code(400).send({
-            error: error.message,
-            code: error.code,
-          });
-        }
-        if (error.name === 'AuthorizationError') {
-          return reply.code(403).send({
-            error: error.message,
-            code: error.code,
-          });
+      } catch (error) {
+        if (isApiError(error)) {
+          if (error.name === 'NotFoundError') {
+            return reply.code(404).send({
+              error: error.message,
+              code: error.code,
+            });
+          }
+          if (error.name === 'ValidationError') {
+            return reply.code(400).send({
+              error: error.message,
+              code: error.code,
+            });
+          }
+          if (error.name === 'AuthorizationError') {
+            return reply.code(403).send({
+              error: error.message,
+              code: error.code,
+            });
+          }
         }
         throw error;
       }
@@ -98,24 +105,26 @@ const fileRoutes: FastifyPluginAsync = async (fastify) => {
         const projectPath = await verifySessionAccess(sessionId);
         const file = await fileService.readFile(sessionId, projectPath, filePath);
         return reply.send(file);
-      } catch (error: any) {
-        if (error.name === 'NotFoundError') {
-          return reply.code(404).send({
-            error: error.message,
-            code: error.code,
-          });
-        }
-        if (error.name === 'ValidationError') {
-          return reply.code(400).send({
-            error: error.message,
-            code: error.code,
-          });
-        }
-        if (error.name === 'AuthorizationError') {
-          return reply.code(403).send({
-            error: error.message,
-            code: error.code,
-          });
+      } catch (error) {
+        if (isApiError(error)) {
+          if (error.name === 'NotFoundError') {
+            return reply.code(404).send({
+              error: error.message,
+              code: error.code,
+            });
+          }
+          if (error.name === 'ValidationError') {
+            return reply.code(400).send({
+              error: error.message,
+              code: error.code,
+            });
+          }
+          if (error.name === 'AuthorizationError') {
+            return reply.code(403).send({
+              error: error.message,
+              code: error.code,
+            });
+          }
         }
         throw error;
       }
@@ -158,24 +167,26 @@ const fileRoutes: FastifyPluginAsync = async (fastify) => {
           encoding,
         );
         return reply.code(201).send(result);
-      } catch (error: any) {
-        if (error.name === 'ConflictError') {
+      } catch (error) {
+        if (isApiError(error) && error.name === 'ConflictError') {
           return reply.code(409).send({
             error: error.message,
             code: error.code,
           });
         }
-        if (error.name === 'ValidationError') {
-          return reply.code(400).send({
-            error: error.message,
-            code: error.code,
-          });
-        }
-        if (error.name === 'AuthorizationError') {
-          return reply.code(403).send({
-            error: error.message,
-            code: error.code,
-          });
+        if (isApiError(error)) {
+          if (error.name === 'ValidationError') {
+            return reply.code(400).send({
+              error: error.message,
+              code: error.code,
+            });
+          }
+          if (error.name === 'AuthorizationError') {
+            return reply.code(403).send({
+              error: error.message,
+              code: error.code,
+            });
+          }
         }
         throw error;
       }
@@ -218,24 +229,26 @@ const fileRoutes: FastifyPluginAsync = async (fastify) => {
           encoding,
         );
         return reply.send(result);
-      } catch (error: any) {
-        if (error.name === 'NotFoundError') {
-          return reply.code(404).send({
-            error: error.message,
-            code: error.code,
-          });
-        }
-        if (error.name === 'ValidationError') {
-          return reply.code(400).send({
-            error: error.message,
-            code: error.code,
-          });
-        }
-        if (error.name === 'AuthorizationError') {
-          return reply.code(403).send({
-            error: error.message,
-            code: error.code,
-          });
+      } catch (error) {
+        if (isApiError(error)) {
+          if (error.name === 'NotFoundError') {
+            return reply.code(404).send({
+              error: error.message,
+              code: error.code,
+            });
+          }
+          if (error.name === 'ValidationError') {
+            return reply.code(400).send({
+              error: error.message,
+              code: error.code,
+            });
+          }
+          if (error.name === 'AuthorizationError') {
+            return reply.code(403).send({
+              error: error.message,
+              code: error.code,
+            });
+          }
         }
         throw error;
       }
@@ -269,24 +282,26 @@ const fileRoutes: FastifyPluginAsync = async (fastify) => {
         const projectPath = await verifySessionAccess(sessionId);
         const result = await fileService.deleteFile(sessionId, projectPath, filePath);
         return reply.send(result);
-      } catch (error: any) {
-        if (error.name === 'NotFoundError') {
-          return reply.code(404).send({
-            error: error.message,
-            code: error.code,
-          });
-        }
-        if (error.name === 'ValidationError') {
-          return reply.code(400).send({
-            error: error.message,
-            code: error.code,
-          });
-        }
-        if (error.name === 'AuthorizationError') {
-          return reply.code(403).send({
-            error: error.message,
-            code: error.code,
-          });
+      } catch (error) {
+        if (isApiError(error)) {
+          if (error.name === 'NotFoundError') {
+            return reply.code(404).send({
+              error: error.message,
+              code: error.code,
+            });
+          }
+          if (error.name === 'ValidationError') {
+            return reply.code(400).send({
+              error: error.message,
+              code: error.code,
+            });
+          }
+          if (error.name === 'AuthorizationError') {
+            return reply.code(403).send({
+              error: error.message,
+              code: error.code,
+            });
+          }
         }
         throw error;
       }

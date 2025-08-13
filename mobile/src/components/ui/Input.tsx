@@ -1,78 +1,48 @@
-import React, { forwardRef } from 'react';
+import type React from 'react';
 import {
-  TextInput,
-  TextInputProps,
-  View,
-  Text,
   StyleSheet,
-  TouchableOpacity,
+  Text,
+  TextInput,
+  type TextInputProps,
+  useColorScheme,
+  View,
+  type ViewStyle,
 } from 'react-native';
+import { darkTheme, lightTheme } from '@/constants/theme';
 import { useUIStore } from '@/stores/uiStore';
-import { lightTheme, darkTheme } from '@/constants/theme';
 
 interface InputProps extends TextInputProps {
   label?: string;
   error?: string;
-  leftIcon?: React.ReactNode;
-  rightIcon?: React.ReactNode;
-  onRightIconPress?: () => void;
+  containerStyle?: ViewStyle;
 }
 
-export const Input = forwardRef<TextInput, InputProps>(
-  ({ label, error, leftIcon, rightIcon, onRightIconPress, style, ...props }, ref) => {
-    const isDark = useUIStore((state) => state.isDark());
-    const theme = isDark ? darkTheme : lightTheme;
+export const Input: React.FC<InputProps> = ({ label, error, containerStyle, style, ...props }) => {
+  const colorScheme = useColorScheme();
+  const { theme } = useUIStore();
+  const isDark = theme === 'dark' || (theme === 'system' && colorScheme === 'dark');
+  const currentTheme = isDark ? darkTheme : lightTheme;
 
-    return (
-      <View style={styles.container}>
-        {label && (
-          <Text style={[styles.label, { color: theme.colors.text }]}>{label}</Text>
-        )}
-        <View
-          style={[
-            styles.inputContainer,
-            {
-              backgroundColor: theme.colors.surface,
-              borderColor: error ? theme.colors.error : theme.colors.border,
-            },
-          ]}
-        >
-          {leftIcon && <View style={styles.leftIcon}>{leftIcon}</View>}
-          <TextInput
-            ref={ref}
-            style={[
-              styles.input,
-              {
-                color: theme.colors.text,
-                ...theme.typography.body,
-              },
-              leftIcon ? styles.inputWithLeftIcon : undefined,
-              rightIcon ? styles.inputWithRightIcon : undefined,
-              style,
-            ]}
-            placeholderTextColor={theme.colors.textSecondary}
-            selectionColor={theme.colors.primary}
-            {...props}
-          />
-          {rightIcon && (
-            <TouchableOpacity
-              onPress={onRightIconPress}
-              style={styles.rightIcon}
-              disabled={!onRightIconPress}
-            >
-              {rightIcon}
-            </TouchableOpacity>
-          )}
-        </View>
-        {error && (
-          <Text style={[styles.error, { color: theme.colors.error }]}>{error}</Text>
-        )}
-      </View>
-    );
-  }
-);
-
-Input.displayName = 'Input';
+  return (
+    <View style={[styles.container, containerStyle]}>
+      {label && <Text style={[styles.label, { color: currentTheme.colors.text }]}>{label}</Text>}
+      <TextInput
+        style={[
+          styles.input,
+          {
+            backgroundColor: currentTheme.colors.inputBackground,
+            color: currentTheme.colors.text,
+            borderColor: error ? currentTheme.colors.error : currentTheme.colors.border,
+          },
+          style,
+        ]}
+        placeholderTextColor={currentTheme.colors.textTertiary}
+        {...props}
+      />
+      {error && <Text style={[styles.error, { color: currentTheme.colors.error }]}>{error}</Text>}
+    </View>
+  );
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -81,31 +51,14 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: '600',
-    marginBottom: 8,
-  },
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderRadius: 8,
-    minHeight: 48,
+    marginBottom: 6,
   },
   input: {
-    flex: 1,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  inputWithLeftIcon: {
-    paddingLeft: 8,
-  },
-  inputWithRightIcon: {
-    paddingRight: 8,
-  },
-  leftIcon: {
-    paddingLeft: 12,
-  },
-  rightIcon: {
-    paddingRight: 12,
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 16,
   },
   error: {
     fontSize: 12,

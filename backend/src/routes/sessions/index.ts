@@ -10,6 +10,11 @@ import {
 } from '@/schemas/session.schema';
 import { sessionService } from '@/services/session.service';
 
+// Type guard for API errors
+function isApiError(error: unknown): error is { name: string; message: string; code?: string } {
+  return error instanceof Error && 'name' in error && 'message' in error;
+}
+
 const sessionRoutes: FastifyPluginAsync = async (fastify) => {
   // Create session
   fastify.post<{
@@ -32,8 +37,8 @@ const sessionRoutes: FastifyPluginAsync = async (fastify) => {
       try {
         const session = await sessionService.createSession(request.body);
         return reply.code(201).send(session);
-      } catch (error: any) {
-        if (error.name === 'ValidationError') {
+      } catch (error) {
+        if (isApiError(error) && error.name === 'ValidationError') {
           return reply.code(400).send({
             error: error.message,
             code: error.code,
@@ -86,8 +91,8 @@ const sessionRoutes: FastifyPluginAsync = async (fastify) => {
       try {
         const session = await sessionService.getSession(sessionId);
         return reply.send(session);
-      } catch (error: any) {
-        if (error.name === 'NotFoundError') {
+      } catch (error) {
+        if (isApiError(error) && error.name === 'NotFoundError') {
           return reply.code(404).send({
             error: error.message,
             code: error.code,
@@ -127,8 +132,8 @@ const sessionRoutes: FastifyPluginAsync = async (fastify) => {
       try {
         const session = await sessionService.updateSession(sessionId, request.body);
         return reply.send(session);
-      } catch (error: any) {
-        if (error.name === 'NotFoundError') {
+      } catch (error) {
+        if (isApiError(error) && error.name === 'NotFoundError') {
           return reply.code(404).send({
             error: error.message,
             code: error.code,
@@ -162,8 +167,8 @@ const sessionRoutes: FastifyPluginAsync = async (fastify) => {
       try {
         const result = await sessionService.deleteSession(sessionId);
         return reply.send(result);
-      } catch (error: any) {
-        if (error.name === 'NotFoundError') {
+      } catch (error) {
+        if (isApiError(error) && error.name === 'NotFoundError') {
           return reply.code(404).send({
             error: error.message,
             code: error.code,
@@ -174,8 +179,8 @@ const sessionRoutes: FastifyPluginAsync = async (fastify) => {
     },
   );
 
-  // Register prompt routes
-  fastify.register(import('./prompts'), { prefix: '/:sessionId/prompts' });
+  // Register message routes (was prompts)
+  fastify.register(import('./messages'), { prefix: '/:sessionId' });
 
   // Register file routes
   fastify.register(import('./files'), { prefix: '/:sessionId/files' });

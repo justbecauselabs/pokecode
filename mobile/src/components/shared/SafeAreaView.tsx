@@ -1,41 +1,41 @@
-import React from 'react';
+import type React from 'react';
 import {
   SafeAreaView as RNSafeAreaView,
-  StyleSheet,
   StatusBar,
-  Platform,
-  ViewStyle,
+  StyleSheet,
+  useColorScheme,
+  type ViewStyle,
 } from 'react-native';
+import { darkTheme, lightTheme } from '@/constants/theme';
 import { useUIStore } from '@/stores/uiStore';
-import { lightTheme, darkTheme } from '@/constants/theme';
 
 interface CustomSafeAreaViewProps {
-  edges?: Array<'top' | 'right' | 'bottom' | 'left'>;
+  edges?: ('top' | 'right' | 'bottom' | 'left')[];
   children?: React.ReactNode;
   style?: ViewStyle;
+  className?: string;
 }
 
 export const SafeAreaView: React.FC<CustomSafeAreaViewProps> = ({
   children,
   style,
-  edges = ['top', 'right', 'bottom', 'left'],
+  className,
   ...props
 }) => {
-  const isDark = useUIStore((state) => state.isDark());
-  const theme = isDark ? darkTheme : lightTheme;
+  const colorScheme = useColorScheme();
+  const { theme } = useUIStore();
+  const isDark = theme === 'dark' || (theme === 'system' && colorScheme === 'dark');
+  const currentTheme = isDark ? darkTheme : lightTheme;
 
   return (
     <>
       <StatusBar
         barStyle={isDark ? 'light-content' : 'dark-content'}
-        backgroundColor={theme.colors.background}
+        backgroundColor={currentTheme.colors.background}
       />
       <RNSafeAreaView
-        style={[
-          styles.container,
-          { backgroundColor: theme.colors.background },
-          style,
-        ]}
+        className={className}
+        style={[styles.container, { backgroundColor: currentTheme.colors.background }, style]}
         {...props}
       >
         {children}

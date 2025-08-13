@@ -4,7 +4,7 @@ import { Redis } from 'ioredis';
 import { config } from '@/config';
 import { db } from '@/db';
 import { sessions } from '@/db/schema';
-import type { PromptJobData } from '@/types';
+import type { CompleteEvent, ErrorEvent, PromptJobData } from '@/types';
 
 export class QueueService {
   private queue: Queue<PromptJobData>;
@@ -82,19 +82,16 @@ export class QueueService {
     if (sessionId) {
       await this.publishEvent(sessionId, promptId, {
         type: 'complete',
-        data: {
-          type: 'complete',
-          summary: {
-            duration: 0,
-            toolCallCount: 0,
-          },
-          timestamp: new Date().toISOString(),
+        summary: {
+          duration: 0,
+          toolCallCount: 0,
         },
+        timestamp: new Date().toISOString(),
       });
     }
   }
 
-  async publishEvent(sessionId: string, promptId: string, event: any) {
+  async publishEvent(sessionId: string, promptId: string, event: CompleteEvent | ErrorEvent) {
     const channel = `claude-code:${sessionId}:${promptId}`;
     await this.redis.publish(channel, JSON.stringify(event));
   }

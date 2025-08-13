@@ -6,6 +6,7 @@ import { Badge } from "../ui/Badge";
 import { CodeBlock } from "../ui/CodeBlock";
 import { ErrorDisplay } from "../ui/ErrorDisplay";
 import { FileOperationDisplay } from "../ui/FileOperationDisplay";
+import { MarkdownRenderer } from "../ui/MarkdownRenderer";
 import { ToolDisplay } from "../ui/ToolDisplay";
 import { CitationDisplay, parseTextWithCitations } from "./CitationDisplay";
 import { ThinkingDisplay } from "./ThinkingDisplay";
@@ -206,11 +207,11 @@ function MessageContent({
 					case "text":
 					default:
 						return (
-							<div key={index} className="whitespace-pre-wrap break-words text-left">
+							<div key={index} className="text-left">
 								{citations && citations.length > 0 ? (
 									<div>{parseTextWithCitations(block.content, citations)}</div>
 								) : (
-									block.content
+									<MarkdownRenderer content={block.content} />
 								)}
 							</div>
 						);

@@ -11,11 +11,13 @@ export const lightTheme = {
     textTertiary: '#999999',
     border: '#E0E0E0',
     borderLight: '#F0F0F0',
+    card: '#FFFFFF',
+    inputBackground: '#F8F8F8',
     error: '#DC3545',
     success: '#28A745',
     warning: '#FFC107',
     info: '#17A2B8',
-    
+
     // Code syntax colors
     syntax: {
       keyword: '#0066CC',
@@ -92,7 +94,9 @@ export const darkTheme = {
     textTertiary: '#999999',
     border: '#333333',
     borderLight: '#2A2A2A',
-    
+    card: '#1A1A1A',
+    inputBackground: '#2A2A2A',
+
     // Code syntax colors for dark mode
     syntax: {
       keyword: '#4A9EFF',

@@ -56,6 +56,29 @@ const GlobToolInputSchema = z.object({
   path: z.string().optional(),
 });
 
+// TodoWrite-specific schema for todo items
+const TodoItemSchema = z.object({
+  id: z.string(),
+  content: z.string(),
+  status: z.enum(['pending', 'in_progress', 'completed']),
+});
+
+const TodoWriteInputSchema = z.object({
+  todos: z.array(TodoItemSchema),
+});
+
+// MultiEdit-specific schema for edit operations
+const MultiEditItemSchema = z.object({
+  old_string: z.string(),
+  new_string: z.string(),
+  replace_all: z.boolean().optional(),
+});
+
+const MultiEditInputSchema = z.object({
+  file_path: z.string(),
+  edits: z.array(MultiEditItemSchema),
+});
+
 // Generic tool input for other tools - but strongly typed
 const GenericToolInputSchema = z.record(
   z.string(),
@@ -65,7 +88,12 @@ const GenericToolInputSchema = z.record(
     z.boolean(),
     z.array(z.string()),
     z.array(z.number()),
-    z.object({}), // Empty object for complex but unknown tool inputs
+    z.array(z.object({
+      id: z.string().optional(),
+      content: z.string().optional(),
+      status: z.string().optional(),
+    }).passthrough()), // Allow arrays of objects with flexible structure
+    z.object({}).passthrough(), // Allow objects with any structure
   ]),
 );
 
@@ -75,9 +103,11 @@ const ToolInputSchema = z.union([
   ReadToolInputSchema,
   WriteToolInputSchema,
   EditToolInputSchema,
+  MultiEditInputSchema,
   BashToolInputSchema,
   GrepToolInputSchema,
   GlobToolInputSchema,
+  TodoWriteInputSchema,
   GenericToolInputSchema,
 ]);
 
@@ -127,7 +157,7 @@ const UserMessageSchema = z.object({
 const AssistantMessageSchema = z.object({
   role: z.literal('assistant'),
   content: z.array(MessageContentSchema), // Always array in assistant messages
-  id: z.string().startsWith('msg_'),
+  id: z.string(), // Relaxed - some messages don't start with msg_
   type: z.literal('message'),
   model: z.string(), // e.g., "claude-sonnet-4-20250514"
   stop_reason: z.string().nullable(),
@@ -137,7 +167,7 @@ const AssistantMessageSchema = z.object({
     cache_creation_input_tokens: z.number().optional(),
     cache_read_input_tokens: z.number(),
     output_tokens: z.number(),
-    service_tier: z.enum(['standard']), // Based on observed values
+    service_tier: z.string(), // Relaxed - allow any string value
   }),
 });
 
@@ -172,7 +202,7 @@ const UserJsonlMessageSchema = BaseJsonlMessageSchema.extend({
 const AssistantJsonlMessageSchema = BaseJsonlMessageSchema.extend({
   type: z.literal('assistant'),
   message: AssistantMessageSchema,
-  requestId: z.string().startsWith('req_'), // Request ID format
+  requestId: z.string().optional(), // Optional - some messages don't have this
   toolUseResult: z.string().optional(), // Optional tool result text
 });
 
@@ -210,9 +240,11 @@ export type LSToolInput = z.infer<typeof LSToolInputSchema>;
 export type ReadToolInput = z.infer<typeof ReadToolInputSchema>;
 export type WriteToolInput = z.infer<typeof WriteToolInputSchema>;
 export type EditToolInput = z.infer<typeof EditToolInputSchema>;
+export type MultiEditInput = z.infer<typeof MultiEditInputSchema>;
 export type BashToolInput = z.infer<typeof BashToolInputSchema>;
 export type GrepToolInput = z.infer<typeof GrepToolInputSchema>;
 export type GlobToolInput = z.infer<typeof GlobToolInputSchema>;
+export type TodoWriteInput = z.infer<typeof TodoWriteInputSchema>;
 export type GenericToolInput = z.infer<typeof GenericToolInputSchema>;
 export type ToolInput = z.infer<typeof ToolInputSchema>;
 

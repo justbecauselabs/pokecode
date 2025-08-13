@@ -13,10 +13,10 @@ declare module 'fastify' {
   }
 
   interface FastifyInstance {
-    authenticate: (request: FastifyRequest, reply: any) => Promise<void>;
+    authenticate: (request: FastifyRequest, reply: unknown) => Promise<void>;
     metrics?: {
-      promptsTotal: any;
-      activeSessionsGauge: any;
+      promptsTotal: MetricsCounter;
+      activeSessionsGauge: MetricsGauge;
     };
     rateLimits?: {
       prompt: { max: number; timeWindow: string };
@@ -33,36 +33,13 @@ export interface SessionResponse {
   projectPath: string;
   context?: string;
   status: 'active' | 'inactive' | 'archived';
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   createdAt: string;
   updatedAt: string;
   lastAccessedAt: string;
 }
 
-export interface PromptResponse {
-  id: string;
-  sessionId: string;
-  prompt: string;
-  status: 'queued' | 'processing' | 'completed' | 'failed' | 'cancelled';
-  jobId?: string;
-  createdAt: string;
-}
-
-export interface PromptDetailResponse extends PromptResponse {
-  response?: string;
-  error?: string;
-  metadata?: {
-    allowedTools?: string[];
-    toolCalls?: Array<{ tool: string; params: any; result?: any }>;
-    duration?: number;
-    tokenCount?: number;
-    toolCallCount?: number;
-    stop_reason?: StopReason;
-    thinking?: string;
-    citations?: Citation[];
-  };
-  completedAt?: string;
-}
+// Prompt types removed - using message-based API now
 
 export interface FileInfo {
   path: string;
@@ -94,6 +71,95 @@ export type StopReason =
   | 'tool_use'
   | 'pause_turn'
   | 'refusal';
+
+// Message Content Types
+export interface TextContent {
+  type: 'text';
+  text: string;
+}
+
+export interface ToolUseContent {
+  type: 'tool_use';
+  id: string;
+  name: string;
+  input: Record<string, any>;
+}
+
+export interface ToolResultContent {
+  type: 'tool_result';
+  tool_use_id: string;
+  content?: string;
+  is_error?: boolean;
+}
+
+export interface ThinkingContent {
+  type: 'thinking';
+  thinking: string;
+}
+
+export type MessageContent = TextContent | ToolUseContent | ToolResultContent | ThinkingContent;
+
+// Claude Code Message Types
+export interface BaseClaudeMessage {
+  type: string;
+  timestamp?: string;
+}
+
+export interface AssistantMessage extends BaseClaudeMessage {
+  type: 'assistant';
+  message: {
+    content: MessageContent[];
+    role: 'assistant';
+  };
+}
+
+export interface UserMessage extends BaseClaudeMessage {
+  type: 'user';
+  message: {
+    content: MessageContent[];
+    role: 'user';
+  };
+}
+
+export interface ThinkingMessage extends BaseClaudeMessage {
+  type: 'thinking';
+  data: {
+    thinking: string;
+  };
+}
+
+export interface CitationsDeltaMessage extends BaseClaudeMessage {
+  type: 'citations_delta';
+  data: {
+    citation: Citation;
+  };
+}
+
+export interface ToolUseMessage extends BaseClaudeMessage {
+  type: 'tool_use';
+  name: string;
+  input: Record<string, any>;
+}
+
+export type ClaudeCodeMessage =
+  | AssistantMessage
+  | UserMessage
+  | ThinkingMessage
+  | CitationsDeltaMessage
+  | ToolUseMessage;
+
+// JSONL Message Types and IntermediateMessage are now imported from @/types/claude-messages
+
+// Metrics Types
+export interface MetricsCounter {
+  inc(labels?: Record<string, string>): void;
+}
+
+export interface MetricsGauge {
+  set(value: number, labels?: Record<string, string>): void;
+  inc(labels?: Record<string, string>): void;
+  dec(labels?: Record<string, string>): void;
+}
 
 // Citation Types
 export interface CharLocationCitation {
@@ -166,21 +232,21 @@ export interface ThinkingContentBlock {
 
 export interface RedactedThinkingContentBlock {
   type: 'redacted_thinking';
-  data: any;
+  data: unknown;
 }
 
 export interface ToolUseContentBlock {
   type: 'tool_use';
   id: string;
   name: string;
-  input: Record<string, any>;
+  input: Record<string, unknown>;
 }
 
 export interface ServerToolUseContentBlock {
   type: 'server_tool_use';
   id: string;
   name: 'web_search';
-  input: Record<string, any>;
+  input: Record<string, unknown>;
 }
 
 export interface WebSearchResult {
@@ -344,7 +410,7 @@ export interface CitationsEvent {
 export interface ToolUseEvent {
   type: 'tool_use';
   tool: string;
-  params: Record<string, any>;
+  params: Record<string, unknown>;
   timestamp: string;
 }
 
@@ -405,7 +471,7 @@ export class ApiError extends Error {
 export class ValidationError extends ApiError {
   constructor(
     message: string,
-    public errors?: any,
+    public errors?: unknown,
   ) {
     super(400, message, 'VALIDATION_ERROR');
   }

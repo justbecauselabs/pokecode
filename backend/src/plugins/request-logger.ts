@@ -78,7 +78,7 @@ const requestLoggerPlugin: FastifyPluginAsync = async (fastify) => {
       return;
     }
 
-    const body = (request as any).body;
+    const body = 'body' in request ? request.body : undefined;
     if (body === undefined) {
       return;
     }

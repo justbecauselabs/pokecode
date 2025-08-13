@@ -12,7 +12,7 @@ export class SessionService {
     projectPath?: string;
     folderName?: string;
     context?: string;
-    metadata?: any;
+    metadata?: Record<string, unknown>;
   }) {
     // Validate that either projectPath or folderName is provided
     if (!data.projectPath && !data.folderName) {
@@ -36,8 +36,9 @@ export class SessionService {
         if (!validation.exists) {
           throw new ValidationError(`Repository folder '${data.folderName}' does not exist`);
         }
-      } catch (error: any) {
-        throw new ValidationError(`Invalid repository folder: ${error.message}`);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        throw new ValidationError(`Invalid repository folder: ${message}`);
       }
     } else if (data.projectPath) {
       // Use existing projectPath validation
@@ -55,7 +56,7 @@ export class SessionService {
     );
 
     // Create the session with all required data in a single operation
-    const [session] = await db
+    const result = await db
       .insert(sessions)
       .values({
         id: sessionId,
@@ -66,6 +67,11 @@ export class SessionService {
         ...(data.metadata !== undefined && { metadata: data.metadata }),
       })
       .returning();
+
+    const session = result[0];
+    if (!session) {
+      throw new ValidationError('Failed to create session');
+    }
 
     return this.formatSession(session);
   }
@@ -125,7 +131,7 @@ export class SessionService {
     data: {
       context?: string;
       status?: 'active' | 'inactive' | 'archived';
-      metadata?: any;
+      metadata?: Record<string, unknown>;
     },
   ) {
     // Verify session exists
@@ -138,7 +144,7 @@ export class SessionService {
     }
 
     // Update session
-    const updateData: any = {
+    const updateData: Partial<typeof sessions.$inferInsert> = {
       updatedAt: new Date(),
     };
 
@@ -152,11 +158,16 @@ export class SessionService {
       updateData.metadata = { ...session.metadata, ...data.metadata };
     }
 
-    const [updated] = await db
+    const result = await db
       .update(sessions)
       .set(updateData)
       .where(eq(sessions.id, sessionId))
       .returning();
+
+    const updated = result[0];
+    if (!updated) {
+      throw new NotFoundError('Session');
+    }
 
     return this.formatSession(updated);
   }
@@ -206,6 +217,10 @@ export class SessionService {
   async getMostRecentConversation(sessionId: string) {
     const session = await this.getSession(sessionId);
 
+    if (!session.claudeDirectoryPath) {
+      throw new ValidationError('Session does not have Claude directory path configured');
+    }
+
     const claudeService = ClaudeDirectoryService.forSessionDirectory(session.claudeDirectoryPath);
     return claudeService.getMostRecentConversation(session.projectPath);
   }
@@ -224,7 +239,7 @@ export class SessionService {
     return claudeService.isInitialized();
   }
 
-  private formatSession(session: any) {
+  private formatSession(session: typeof sessions.$inferSelect) {
     return {
       id: session.id,
       projectPath: session.projectPath,

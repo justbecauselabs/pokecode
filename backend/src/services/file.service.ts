@@ -6,6 +6,14 @@ import { fileAccess } from '@/db/schema';
 import type { FileInfo, GetFileResponse } from '@/schemas/file.schema';
 import { AuthorizationError, ConflictError, NotFoundError, ValidationError } from '@/types';
 
+interface NodeJSError extends Error {
+  code?: string;
+}
+
+function isNodeJSError(error: unknown): error is NodeJSError {
+  return error instanceof Error && 'code' in error;
+}
+
 export class FileService {
   async validatePath(sessionPath: string, requestedPath: string): Promise<string> {
     // Normalize the requested path (must be relative to project root)
@@ -42,8 +50,8 @@ export class FileService {
       if (!stats.isDirectory()) {
         throw new ValidationError('Path is not a directory');
       }
-    } catch (error: any) {
-      if (error.code === 'ENOENT') {
+    } catch (error) {
+      if (isNodeJSError(error) && error.code === 'ENOENT') {
         throw new NotFoundError('Directory');
       }
       throw error;
@@ -125,8 +133,8 @@ export class FileService {
       if (stats.size > fileStorageConfig.maxFileSize) {
         throw new ValidationError(`File too large (max ${fileStorageConfig.maxFileSize} bytes)`);
       }
-    } catch (error: any) {
-      if (error.code === 'ENOENT') {
+    } catch (error) {
+      if (isNodeJSError(error) && error.code === 'ENOENT') {
         throw new NotFoundError('File');
       }
       throw error;
@@ -168,8 +176,8 @@ export class FileService {
     try {
       await fs.stat(validPath);
       throw new ConflictError('File already exists');
-    } catch (error: any) {
-      if (error.code !== 'ENOENT') {
+    } catch (error) {
+      if (error && typeof error === 'object' && 'code' in error && error.code !== 'ENOENT') {
         throw error;
       }
     }
@@ -204,8 +212,8 @@ export class FileService {
       if (!stats.isFile()) {
         throw new ValidationError('Path is not a file');
       }
-    } catch (error: any) {
-      if (error.code === 'ENOENT') {
+    } catch (error) {
+      if (isNodeJSError(error) && error.code === 'ENOENT') {
         throw new NotFoundError('File');
       }
       throw error;
@@ -232,8 +240,8 @@ export class FileService {
       if (stats.isDirectory()) {
         throw new ValidationError('Cannot delete directories');
       }
-    } catch (error: any) {
-      if (error.code === 'ENOENT') {
+    } catch (error) {
+      if (isNodeJSError(error) && error.code === 'ENOENT') {
         throw new NotFoundError('File');
       }
       throw error;

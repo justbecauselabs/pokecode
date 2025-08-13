@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef } from "react";
 import { useChatStore } from "../stores/chatStore";
 import { apiService } from "../services/api";
-import type { ChatMessage, MessagesResponse } from "../types/chat";
+import type { GetMessagesResponse } from "../types/api";
 
 interface UsePollingProps {
 	sessionId: string;
@@ -24,10 +24,10 @@ export function usePolling({ sessionId, enabled = true }: UsePollingProps) {
 	const poll = useCallback(async () => {
 		if (!sessionId) return;
 
-		const { addStreamMessage, setConnectionStatus, setWorkingState, addMessage, loadMessages } = actionsRef.current;
+		const { setConnectionStatus, setWorkingState, loadMessages } = actionsRef.current;
 
 		try {
-			const response = await apiService.get<MessagesResponse>(
+			const response = await apiService.get<GetMessagesResponse>(
 				`/api/claude-code/sessions/${sessionId}/messages`
 			);
 
@@ -38,14 +38,18 @@ export function usePolling({ sessionId, enabled = true }: UsePollingProps) {
 			// Use the new loadMessages method for the messages API
 			await loadMessages(sessionId, response);
 
-			// Check session working state and stop polling if not working
-			if (!response.session.isWorking && intervalRef.current) {
+			// Use the session's isWorking field to determine if we should continue polling
+			const stillWorking = response.session.isWorking;
+			
+			// Continue or stop polling based on session working state
+			if (!stillWorking && intervalRef.current) {
+				// Claude has finished working, stop polling
 				clearInterval(intervalRef.current);
 				intervalRef.current = null;
 				setWorkingState(false);
-			} else if (response.session.isWorking) {
-				// Update working state if session is working
-				setWorkingState(true, response.session.currentJobId);
+			} else if (stillWorking) {
+				// Keep polling - Claude is still working
+				setWorkingState(true, response.session.currentJobId || undefined);
 			}
 
 		} catch (error: unknown) {
