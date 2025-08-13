@@ -38,7 +38,6 @@ describe('ClaudeCodeWorker', () => {
     testSession = await createTestSession({
       projectPath: '/test/project',
       claudeDirectoryPath: '/test/claude/session',
-      claudeCodeSessionId: 'claude-session-123',
     });
 
     // Mock Redis
@@ -139,7 +138,7 @@ describe('ClaudeCodeWorker', () => {
       expect(ClaudeCodeSDKService).toHaveBeenCalledWith({
         sessionId: testSession.id,
         projectPath: testSession.projectPath,
-        claudeCodeSessionId: testSession.claudeCodeSessionId,
+        messageService: expect.any(Object),
       });
 
       expect(mockSDKService.execute).toHaveBeenCalledWith(jobData.prompt);
@@ -330,54 +329,6 @@ describe('ClaudeCodeWorker', () => {
     });
   });
 
-  describe('Session ID Backfill', () => {
-    it('should backfill Claude Code session ID when captured', async () => {
-      const mockJob = {
-        id: 'job-123',
-        data: {
-          sessionId: testSession.id,
-          promptId: 'prompt-123',
-          prompt: 'Test prompt',
-          projectPath: testSession.projectPath,
-        },
-        updateProgress: vi.fn(),
-      };
-
-      mockSDKService.execute.mockResolvedValue({
-        success: true,
-        response: 'Test',
-        duration: 1000,
-        toolCallCount: 0,
-        messages: [],
-      });
-
-      let claudeSessionHandler: Function;
-      mockSDKService.on.mockImplementation((event: string, handler: Function) => {
-        if (event === 'claude_session_captured') {
-          claudeSessionHandler = handler;
-        }
-      });
-
-      const processPrompt = (worker as any).processPrompt.bind(worker);
-      
-      await processPrompt(mockJob);
-
-      // Simulate session capture event
-      expect(claudeSessionHandler).toBeDefined();
-      await claudeSessionHandler({
-        databaseSessionId: testSession.id,
-        claudeCodeSessionId: 'new-claude-session-456',
-      });
-
-      // Check database update
-      const db = getTestDatabase();
-      const updatedSession = await db.query.sessions.findFirst({
-        where: (sessions, { eq }) => eq(sessions.id, testSession.id),
-      });
-
-      expect(updatedSession?.claudeCodeSessionId).toBe('new-claude-session-456');
-    });
-  });
 
   describe('Safe JSON Stringify', () => {
     it('should handle circular references', () => {

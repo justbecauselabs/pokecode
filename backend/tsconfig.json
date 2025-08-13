@@ -31,10 +31,12 @@
     
     // MODULE RESOLUTION AND INTEROP
     "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
     "allowJs": false,
     "checkJs": false,
+    "verbatimModuleSyntax": true,
     
     // OUTPUT AND DEBUGGING
     "declaration": true,

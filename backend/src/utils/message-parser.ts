@@ -138,28 +138,98 @@ function extractToolResults(
  * Validate and parse JSONB content data
  */
 export function validateJsonbContentData(contentData: unknown): JsonlMessage[] {
-  if (!Array.isArray(contentData)) {
-    logger.warn({ contentData }, 'Content data is not an array');
-    return [];
-  }
+  // Handle both single items and arrays
+  const items = Array.isArray(contentData) ? contentData : [contentData];
 
   const validatedMessages: JsonlMessage[] = [];
 
-  for (const [index, item] of contentData.entries()) {
+  for (const [index, item] of items.entries()) {
     try {
+      // Try to parse as standard JSONL message first
       const validated = JsonlMessageSchema.parse(item);
       validatedMessages.push(validated);
     } catch (error) {
-      logger.warn(
-        {
-          index,
-          error: error instanceof Error ? error.message : String(error),
-        },
-        'Failed to validate JSONB content data item',
-      );
-      // Skip invalid items
+      // If that fails, try to convert SDK format to JSONL format
+      try {
+        const converted = convertSdkToJsonl(item);
+        if (converted) {
+          const validated = JsonlMessageSchema.parse(converted);
+          validatedMessages.push(validated);
+        }
+      } catch (conversionError) {
+        logger.warn(
+          {
+            index,
+            error: error instanceof Error ? error.message : String(error),
+            conversionError:
+              conversionError instanceof Error ? conversionError.message : String(conversionError),
+          },
+          'Failed to validate or convert JSONB content data item',
+        );
+      }
     }
   }
 
   return validatedMessages;
+}
+
+/**
+ * Convert SDK message format to JSONL format
+ */
+function convertSdkToJsonl(sdkMessage: any): JsonlMessage | null {
+  if (!sdkMessage || typeof sdkMessage !== 'object') {
+    return null;
+  }
+
+  // Generate missing fields for SDK messages
+  const baseFields = {
+    uuid: sdkMessage.id || `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+    parentUuid: null,
+    sessionId: sdkMessage.session_id || '',
+    timestamp: sdkMessage.timestamp || new Date().toISOString(),
+    isSidechain: false,
+    userType: 'external' as const,
+    cwd: '/unknown',
+    version: '1.0.0',
+    gitBranch: 'main',
+  };
+
+  // Handle user messages
+  if (sdkMessage.type === 'user') {
+    return {
+      ...baseFields,
+      type: 'user' as const,
+      message: {
+        role: 'user' as const,
+        content: sdkMessage.content || sdkMessage.message?.content || '',
+      },
+    };
+  }
+
+  // Handle assistant messages
+  if (sdkMessage.type === 'assistant' && sdkMessage.message) {
+    return {
+      ...baseFields,
+      type: 'assistant' as const,
+      message: {
+        role: 'assistant' as const,
+        content: sdkMessage.message.content || [],
+        id: sdkMessage.message.id || baseFields.uuid,
+        type: 'message' as const,
+        model: sdkMessage.message.model || 'claude-unknown',
+        stop_reason: sdkMessage.message.stop_reason || null,
+        stop_sequence: sdkMessage.message.stop_sequence || null,
+        usage: sdkMessage.message.usage || {
+          input_tokens: 0,
+          cache_read_input_tokens: 0,
+          output_tokens: 0,
+          service_tier: null,
+        },
+      },
+      requestId: sdkMessage.requestId,
+      toolUseResult: sdkMessage.toolUseResult,
+    };
+  }
+
+  return null;
 }

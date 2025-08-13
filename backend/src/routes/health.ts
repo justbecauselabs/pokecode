@@ -1,9 +1,7 @@
 import { Type } from '@sinclair/typebox';
-import { Queue } from 'bullmq';
 import type { FastifyPluginAsync } from 'fastify';
-import { Redis } from 'ioredis';
-import { config } from '@/config';
 import { checkDatabaseHealth } from '@/db';
+import { sqliteQueueService } from '@/services/queue-sqlite.service';
 
 const healthRoute: FastifyPluginAsync = async (fastify) => {
   fastify.get(
@@ -16,11 +14,6 @@ const healthRoute: FastifyPluginAsync = async (fastify) => {
             timestamp: Type.String({ format: 'date-time' }),
             services: Type.Object({
               database: Type.Union([
-                Type.Literal('healthy'),
-                Type.Literal('unhealthy'),
-                Type.Literal('unknown'),
-              ]),
-              redis: Type.Union([
                 Type.Literal('healthy'),
                 Type.Literal('unhealthy'),
                 Type.Literal('unknown'),
@@ -43,11 +36,6 @@ const healthRoute: FastifyPluginAsync = async (fastify) => {
                 Type.Literal('unhealthy'),
                 Type.Literal('unknown'),
               ]),
-              redis: Type.Union([
-                Type.Literal('healthy'),
-                Type.Literal('unhealthy'),
-                Type.Literal('unknown'),
-              ]),
               queue: Type.Union([
                 Type.Literal('healthy'),
                 Type.Literal('unhealthy'),
@@ -64,7 +52,6 @@ const healthRoute: FastifyPluginAsync = async (fastify) => {
       const startTime = Date.now();
       const checks = {
         database: 'unknown' as 'healthy' | 'unhealthy' | 'unknown',
-        redis: 'unknown' as 'healthy' | 'unhealthy' | 'unknown',
         queue: 'unknown' as 'healthy' | 'unhealthy' | 'unknown',
       };
 
@@ -80,50 +67,17 @@ const healthRoute: FastifyPluginAsync = async (fastify) => {
         checks.database = 'unhealthy';
       }
 
-      // Check Redis with timeout
-      let redis: Redis | null = null;
+      // Check SQLite queue connectivity
       try {
-        redis = new Redis(config.REDIS_URL, {
-          lazyConnect: true,
-          connectTimeout: 5000,
-          commandTimeout: 5000,
-        });
-
-        await redis.connect();
-        const pong = await redis.ping();
-        checks.redis = pong === 'PONG' ? 'healthy' : 'unhealthy';
-      } catch (error) {
-        fastify.log.error('Redis health check failed:', error);
-        checks.redis = 'unhealthy';
-      } finally {
-        if (redis) {
-          await redis.quit();
-        }
-      }
-
-      // Check queue connectivity
-      let queue: Queue | null = null;
-      try {
-        const connection = new Redis(config.REDIS_URL, {
-          maxRetriesPerRequest: null,
-          connectTimeout: 5000,
-        });
-
-        queue = new Queue('claude-code-jobs', { connection });
-        const counts = await Promise.race([
-          queue.getJobCounts(),
+        const metrics = await Promise.race([
+          sqliteQueueService.getQueueMetrics(),
           new Promise<null>((resolve) => setTimeout(() => resolve(null), 5000)),
         ]);
 
-        checks.queue = counts !== null ? 'healthy' : 'unhealthy';
-        await connection.quit();
+        checks.queue = metrics !== null ? 'healthy' : 'unhealthy';
       } catch (error) {
         fastify.log.error('Queue health check failed:', error);
         checks.queue = 'unhealthy';
-      } finally {
-        if (queue) {
-          await queue.close();
-        }
       }
 
       const allHealthy = Object.values(checks).every((s) => s === 'healthy');

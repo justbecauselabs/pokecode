@@ -1,8 +1,9 @@
 import { randomUUID } from 'node:crypto';
+import fs from 'node:fs';
 import path from 'node:path';
 import { desc, eq, sql } from 'drizzle-orm';
 import { db } from '@/db';
-import { sessions } from '@/db/schema';
+import { sessions } from '@/db/schema-sqlite';
 import ClaudeDirectoryService from '@/services/claude-directory.service';
 import { repositoryService } from '@/services/repository.service';
 import { NotFoundError, ValidationError } from '@/types';
@@ -56,12 +57,16 @@ export class SessionService {
       sessionId,
     );
 
+    // Extract name from the project path (last path component)
+    const name = this.extractNameFromPath(projectPath);
+
     // Create the session with all required data in a single operation
     const result = await db
       .insert(sessions)
       .values({
         id: sessionId,
         projectPath,
+        name,
         claudeDirectoryPath,
         ...(data.context !== undefined && { context: data.context }),
         ...(data.metadata !== undefined && { metadata: data.metadata }),
@@ -100,8 +105,8 @@ export class SessionService {
     // Always enforce a maximum limit of 20 sessions
     const effectiveLimit = Math.min(limit, 20);
 
-    // Build where clause - only show sessions that have Claude Code session IDs
-    const whereClause = sql`${sessions.claudeCodeSessionId} IS NOT NULL`;
+    // Build where clause - show all sessions (including those without Claude Code session IDs yet)
+    const whereClause = sql`1=1`;
 
     // Get total count
     const countResult = await db
@@ -195,9 +200,7 @@ export class SessionService {
 
   async getActiveSessionCount(): Promise<number> {
     // Get all sessions and compute active ones based on updated_at
-    const allSessions = await db.query.sessions.findMany({
-      where: sql`${sessions.claudeCodeSessionId} IS NOT NULL`,
-    });
+    const allSessions = await db.query.sessions.findMany();
 
     const activeSessions = allSessions.filter(
       (session) => this.computeSessionStatus(session.updatedAt) === 'active',
@@ -217,7 +220,7 @@ export class SessionService {
     }
 
     const claudeService = ClaudeDirectoryService.forSessionDirectory(session.claudeDirectoryPath);
-    return claudeService.getProjectConversations(session.projectPath);
+    return await claudeService.getProjectConversations(session.projectPath);
   }
 
   /**
@@ -231,7 +234,7 @@ export class SessionService {
     }
 
     const claudeService = ClaudeDirectoryService.forSessionDirectory(session.claudeDirectoryPath);
-    return claudeService.getMostRecentConversation(session.projectPath);
+    return await claudeService.getMostRecentConversation(session.projectPath);
   }
 
   /**
@@ -245,15 +248,15 @@ export class SessionService {
     }
 
     const claudeService = ClaudeDirectoryService.forSessionDirectory(session.claudeDirectoryPath);
-    return claudeService.isInitialized();
+    return await claudeService.isInitialized();
   }
 
   private formatSession(session: typeof sessions.$inferSelect) {
     return {
       id: session.id,
       projectPath: session.projectPath,
+      name: session.name,
       claudeDirectoryPath: session.claudeDirectoryPath,
-      claudeCodeSessionId: session.claudeCodeSessionId,
       context: session.context,
       status: this.computeSessionStatus(session.updatedAt),
       metadata: session.metadata,
@@ -279,6 +282,51 @@ export class SessionService {
     } else {
       return 'expired';
     }
+  }
+
+  private extractNameFromPath(projectPath: string): string {
+    // Remove trailing slashes
+    const cleaned = projectPath.replace(/\/+$/, '');
+
+    // Try to find git repository root
+    const gitRoot = this.findGitRoot(cleaned);
+
+    if (gitRoot) {
+      // Get the repository name from the git root directory
+      const repoName = path.basename(gitRoot);
+
+      // If the project path is the same as git root, just use repo name
+      if (cleaned === gitRoot) {
+        return repoName;
+      }
+
+      // Otherwise, create relative path from git root
+      const relativePath = path.relative(gitRoot, cleaned);
+      return `${repoName}/${relativePath}`;
+    }
+
+    // Fallback to just the directory name if no git root found
+    const name = path.basename(cleaned);
+    return name || 'root';
+  }
+
+  private findGitRoot(startPath: string): string | null {
+    let currentPath = startPath;
+
+    // Walk up the directory tree looking for .git directory
+    while (currentPath !== path.dirname(currentPath)) {
+      try {
+        const gitPath = path.join(currentPath, '.git');
+        if (fs.existsSync(gitPath)) {
+          return currentPath;
+        }
+      } catch (_error) {
+        // Continue if we can't access the directory
+      }
+      currentPath = path.dirname(currentPath);
+    }
+
+    return null; // No git root found
   }
 
   private normalizeProjectPath(inputPath: string): string {

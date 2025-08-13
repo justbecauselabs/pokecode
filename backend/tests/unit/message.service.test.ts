@@ -274,39 +274,112 @@ describe('MessageService', () => {
     });
   });
 
-  describe('backward compatibility', () => {
-    it('should maintain backward compatibility with claudeSessionId field', async () => {
-      // Create a message with legacy claudeSessionId
-      const messageResult = await db.insert(sessionMessages).values({
+  describe('saveSDKMessage', () => {
+    it('should save SDK message with Claude session ID', async () => {
+      const mockSDKMessage = {
+        type: 'assistant' as const,
+        session_id: 'claude-session-123',
+        message: {
+          content: [{ type: 'text', text: 'Hello from Claude SDK' }]
+        }
+      };
+
+      await messageService.saveSDKMessage(testSessionId, mockSDKMessage, 'claude-session-123');
+
+      // Verify the message was saved with the Claude session ID
+      const messages = await db
+        .select()
+        .from(sessionMessages)
+        .where(eq(sessionMessages.sessionId, testSessionId));
+
+      expect(messages).toHaveLength(1);
+      expect(messages[0]).toMatchObject({
         sessionId: testSessionId,
-        text: 'Legacy message',
-        type: 'user',
-        claudeSessionId: 'legacy-session-id'
-      }).returning();
-
-      const messageId = messageResult[0]!.id;
-
-      // Update the claudeSessionId
-      await messageService.updateClaudeSessionId(messageId, 'updated-session-id');
-
-      const updatedMessage = await messageService.getMessageById(messageId);
-      expect(updatedMessage?.claudeSessionId).toBe('updated-session-id');
+        type: 'assistant',
+        claudeCodeSessionId: 'claude-session-123',
+        contentData: JSON.stringify(mockSDKMessage)
+      });
     });
 
-    it('should handle messages with both claudeSessionId and contentData', async () => {
-      const messageResult = await db.insert(sessionMessages).values({
-        sessionId: testSessionId,
-        text: 'Hybrid message',
-        type: 'assistant',
-        claudeSessionId: 'legacy-session-id',
-        contentData: mockJsonlMessages
-      }).returning();
+    it('should save SDK message without Claude session ID', async () => {
+      const mockSDKMessage = {
+        type: 'user' as const,
+        session_id: 'claude-session-456',
+        content: 'User message'
+      };
 
-      const messages = await messageService.getMessages(testSessionId);
-      
+      await messageService.saveSDKMessage(testSessionId, mockSDKMessage);
+
+      // Verify the message was saved without the Claude session ID
+      const messages = await db
+        .select()
+        .from(sessionMessages)
+        .where(eq(sessionMessages.sessionId, testSessionId));
+
       expect(messages).toHaveLength(1);
-      expect(messages[0]!.claudeSessionId).toBe('legacy-session-id');
-      expect(messages[0]!.children).toHaveLength(2); // From JSONB contentData
+      expect(messages[0]).toMatchObject({
+        sessionId: testSessionId,
+        type: 'user',
+        claudeCodeSessionId: null,
+        contentData: JSON.stringify(mockSDKMessage)
+      });
     });
   });
+
+  describe('getLastClaudeCodeSessionId', () => {
+    it('should return the most recent Claude session ID', async () => {
+      // Create multiple messages with different Claude session IDs
+      const mockMessage1 = { type: 'assistant' as const, session_id: 'claude-1' };
+      const mockMessage2 = { type: 'assistant' as const, session_id: 'claude-2' };
+      const mockMessage3 = { type: 'assistant' as const, session_id: 'claude-3' };
+
+      // Save messages in order (oldest first)
+      await messageService.saveSDKMessage(testSessionId, mockMessage1, 'claude-1');
+      await new Promise(resolve => setTimeout(resolve, 10)); // Small delay
+      await messageService.saveSDKMessage(testSessionId, mockMessage2, 'claude-2');
+      await new Promise(resolve => setTimeout(resolve, 10)); // Small delay  
+      await messageService.saveSDKMessage(testSessionId, mockMessage3, 'claude-3');
+
+      const lastSessionId = await messageService.getLastClaudeCodeSessionId(testSessionId);
+      
+      expect(lastSessionId).toBe('claude-3');
+    });
+
+    it('should return null when no Claude session IDs exist', async () => {
+      // Create a message without Claude session ID
+      const mockMessage = { type: 'user' as const, content: 'No Claude session' };
+      await messageService.saveSDKMessage(testSessionId, mockMessage);
+
+      const lastSessionId = await messageService.getLastClaudeCodeSessionId(testSessionId);
+      
+      expect(lastSessionId).toBe(null);
+    });
+
+    it('should skip null Claude session IDs and find the most recent non-null one', async () => {
+      // Create messages with mixed null and non-null Claude session IDs
+      const mockMessage1 = { type: 'assistant' as const, session_id: 'claude-1' };
+      const mockMessage2 = { type: 'user' as const, content: 'No session' };
+      const mockMessage3 = { type: 'assistant' as const, session_id: 'claude-3' };
+      const mockMessage4 = { type: 'user' as const, content: 'Another no session' };
+
+      await messageService.saveSDKMessage(testSessionId, mockMessage1, 'claude-1');
+      await new Promise(resolve => setTimeout(resolve, 10));
+      await messageService.saveSDKMessage(testSessionId, mockMessage2); // No Claude session ID
+      await new Promise(resolve => setTimeout(resolve, 10));
+      await messageService.saveSDKMessage(testSessionId, mockMessage3, 'claude-3');
+      await new Promise(resolve => setTimeout(resolve, 10));
+      await messageService.saveSDKMessage(testSessionId, mockMessage4); // No Claude session ID
+
+      const lastSessionId = await messageService.getLastClaudeCodeSessionId(testSessionId);
+      
+      expect(lastSessionId).toBe('claude-3');
+    });
+
+    it('should return null for non-existent session', async () => {
+      const lastSessionId = await messageService.getLastClaudeCodeSessionId('non-existent-session');
+      
+      expect(lastSessionId).toBe(null);
+    });
+  });
+
 });

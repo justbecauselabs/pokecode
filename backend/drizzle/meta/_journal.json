@@ -1,82 +1,12 @@
 {
   "version": "6",
-  "dialect": "postgresql",
+  "dialect": "sqlite",
   "entries": [
     {
       "idx": 0,
       "version": "6",
-      "when": 1754486262051,
-      "tag": "0000_ambiguous_lady_deathstrike",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "6",
-      "when": 1754926513495,
-      "tag": "0001_broad_bullseye",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "6",
-      "when": 1754928692424,
-      "tag": "0002_amazing_radioactive_man",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "6",
-      "when": 1754934885627,
-      "tag": "0003_sloppy_stick",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "6",
-      "when": 1754941794651,
-      "tag": "0004_normal_phalanx",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "6",
-      "when": 1754962764704,
-      "tag": "0005_rare_colossus",
-      "breakpoints": true
-    },
-    {
-      "idx": 6,
-      "version": "6",
-      "when": 1754976523293,
-      "tag": "0006_breezy_taskmaster",
-      "breakpoints": true
-    },
-    {
-      "idx": 7,
-      "version": "6",
-      "when": 1755049973695,
-      "tag": "0007_cynical_vampiro",
-      "breakpoints": true
-    },
-    {
-      "idx": 8,
-      "version": "6",
-      "when": 1755060358243,
-      "tag": "0008_fluffy_valkyrie",
-      "breakpoints": true
-    },
-    {
-      "idx": 9,
-      "version": "6",
-      "when": 1755063276192,
-      "tag": "0009_sour_warstar",
-      "breakpoints": true
-    },
-    {
-      "idx": 10,
-      "version": "6",
-      "when": 1755064361729,
-      "tag": "0010_ordinary_kabuki",
+      "when": 1755118902091,
+      "tag": "0000_famous_vampiro",
       "breakpoints": true
     }
   ]

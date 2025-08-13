@@ -1,7 +1,7 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Alert, Pressable, Text, TextInput, View } from 'react-native';
-import { SafeAreaView } from '@/components/shared/SafeAreaView';
+import { SafeAreaView } from '@/components/common';
 import { useSettingsStore } from '@/stores/settingsStore';
 import type { SettingsFormData } from '@/types/settings';
 
@@ -11,14 +11,14 @@ import type { SettingsFormData } from '@/types/settings';
 export default function SettingsScreen() {
   const router = useRouter();
   const { customApiBaseUrl, setCustomApiBaseUrl, resetSettings } = useSettingsStore();
-  
+
   const [formData, setFormData] = useState<SettingsFormData>({
     customApiBaseUrl: customApiBaseUrl || '',
   });
 
   const handleSave = () => {
     const trimmedUrl = formData.customApiBaseUrl.trim();
-    
+
     // Validate URL format if provided
     if (trimmedUrl && !isValidUrl(trimmedUrl)) {
       Alert.alert('Invalid URL', 'Please enter a valid URL (e.g., https://api.example.com)');
@@ -27,9 +27,9 @@ export default function SettingsScreen() {
 
     // Save to store
     setCustomApiBaseUrl(trimmedUrl || undefined);
-    
+
     Alert.alert('Settings Saved', 'Your settings have been updated successfully.', [
-      { text: 'OK', onPress: () => router.back() }
+      { text: 'OK', onPress: () => router.back() },
     ]);
   };
 
@@ -72,10 +72,7 @@ export default function SettingsScreen() {
             <Text className="text-2xl font-bold text-foreground mb-1">Settings</Text>
             <Text className="text-muted-foreground">Configure app preferences</Text>
           </View>
-          <Pressable
-            onPress={() => router.back()}
-            className="ml-4 p-2 rounded-lg bg-muted"
-          >
+          <Pressable onPress={() => router.back()} className="ml-4 p-2 rounded-lg bg-muted">
             <Text className="text-muted-foreground text-sm font-medium font-mono">Cancel</Text>
           </Pressable>
         </View>
@@ -122,17 +119,13 @@ export default function SettingsScreen() {
               <Pressable
                 onPress={handleSave}
                 disabled={!hasChanges}
-                className={`py-3 px-4 rounded-lg ${
-                  hasChanges 
-                    ? 'bg-primary' 
-                    : 'bg-muted'
-                }`}
+                className={`py-3 px-4 rounded-lg ${hasChanges ? 'bg-primary' : 'bg-muted'}`}
               >
-                <Text className={`text-center font-medium font-mono ${
-                  hasChanges 
-                    ? 'text-primary-foreground' 
-                    : 'text-muted-foreground'
-                }`}>
+                <Text
+                  className={`text-center font-medium font-mono ${
+                    hasChanges ? 'text-primary-foreground' : 'text-muted-foreground'
+                  }`}
+                >
                   Save Changes
                 </Text>
               </Pressable>

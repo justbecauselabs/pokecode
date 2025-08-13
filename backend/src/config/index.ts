@@ -6,12 +6,6 @@ export const isDevelopment = config.NODE_ENV === 'development';
 export const isProduction = config.NODE_ENV === 'production';
 export const isTest = config.NODE_ENV === 'test';
 
-// Database connection string
-export const getDatabaseUrl = () => {
-  const { DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD } = config;
-  return `postgres://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}`;
-};
-
 // Rate limit configurations
 export const rateLimitConfig = {
   prompt: {

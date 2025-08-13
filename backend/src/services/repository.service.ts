@@ -1,45 +1,44 @@
-import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { config } from '@/config';
 import type { ListRepositoriesResponse, RepositoryResponse } from '@/schemas/repository.schema';
+import { fileService } from '@/services/file.service';
 
 export class RepositoryService {
   /**
-   * List all git repositories in the GITHUB_REPOS_DIRECTORY
+   * List all git repositories in the GITHUB_REPOS_DIRECTORY using File Service
    */
   async listRepositories(): Promise<ListRepositoriesResponse> {
     const githubReposDirectory = config.GITHUB_REPOS_DIRECTORY;
 
     try {
-      // Read all items in the directory
-      const items = await fs.readdir(githubReposDirectory, { withFileTypes: true });
+      // Check if the github repos directory exists
+      if (!(await fileService.systemDirectoryExists(githubReposDirectory))) {
+        throw new Error(`Directory does not exist: ${githubReposDirectory}`);
+      }
+
+      // Use File Service to list directory contents
+      const items = await fileService.systemListDirectory(githubReposDirectory, {
+        includeHidden: false,
+      });
 
       // Filter for directories only
-      const directories = items.filter((item) => item.isDirectory());
+      const directories = items.filter((item) => item.isDirectory);
 
       const repositories: RepositoryResponse[] = [];
 
-      // Check each directory for a .git folder
+      // Check each directory for git repository status
       for (const dir of directories) {
         const folderPath = path.join(githubReposDirectory, dir.name);
-        const gitPath = path.join(folderPath, '.git');
 
-        try {
-          // Check if .git exists and is a directory
-          const gitStat = await fs.stat(gitPath);
-          const isGitRepository = gitStat.isDirectory();
+        // Use the dedicated git validation method
+        const { exists, isGitRepository } =
+          await fileService.systemValidateGitRepository(folderPath);
 
+        if (exists) {
           repositories.push({
             folderName: dir.name,
             path: folderPath,
             isGitRepository,
-          });
-        } catch (_error) {
-          // .git doesn't exist, but still include the folder
-          repositories.push({
-            folderName: dir.name,
-            path: folderPath,
-            isGitRepository: false,
           });
         }
       }
@@ -75,32 +74,17 @@ export class RepositoryService {
   }
 
   /**
-   * Check if a folder exists and is a git repository
+   * Check if a folder exists and is a git repository using File Service
    */
   async validateRepository(
     folderName: string,
   ): Promise<{ exists: boolean; isGitRepository: boolean }> {
     try {
       const folderPath = this.resolveFolderPath(folderName);
-      const gitPath = path.join(folderPath, '.git');
-
-      // Check if folder exists
-      const folderStat = await fs.stat(folderPath);
-      if (!folderStat.isDirectory()) {
-        return { exists: false, isGitRepository: false };
-      }
-
-      // Check if .git exists
-      try {
-        const gitStat = await fs.stat(gitPath);
-        return {
-          exists: true,
-          isGitRepository: gitStat.isDirectory(),
-        };
-      } catch {
-        return { exists: true, isGitRepository: false };
-      }
-    } catch {
+      return await fileService.systemValidateGitRepository(folderPath);
+    } catch (error) {
+      // Log validation error but don't throw, just return false
+      console.error(`Repository validation error for ${folderName}:`, error);
       return { exists: false, isGitRepository: false };
     }
   }

@@ -25,7 +25,10 @@ mobile/
 │   ├── (modals)/       # Modal screens
 │   └── _layout.tsx     # Root layout
 ├── src/
-│   ├── components/     # Reusable components
+│   ├── components/     # Component organization
+│   │   ├── common/     # All reusable components
+│   │   ├── session/    # Session-specific components
+│   │   └── debug/      # Development components
 │   ├── hooks/          # Custom hooks
 │   ├── api/            # API client and endpoints
 │   ├── stores/         # State management (Zustand)
@@ -65,6 +68,14 @@ export default function Screen() {
 - If we end up having shared screens across multiple routes, we can reevaluate for those
 - This approach reduces unnecessary abstractions and keeps screen logic close to the route
 
+### Component Reuse Rule
+**CRITICAL**: Before creating any new UI component, ALWAYS check the existing components directory structure first:
+- `src/components/common/` - All reusable components (buttons, inputs, pills, cards, modals, etc.)
+- `src/components/session/` - Session-specific components  
+- `src/components/debug/` - Development and debugging components
+
+If a similar component already exists, use it instead of creating a duplicate. If you need slight modifications, extend the existing component with new props or variants rather than creating a new one. This ensures consistency and reduces code duplication.
+
 ### Component Best Practices
 - Create functional components with TypeScript
 - Use React.memo for expensive components
@@ -76,10 +87,12 @@ export default function Screen() {
 - Use theme constants for consistent styling
 
 ### Styling with NativeWind
+**CRITICAL RULE**: Always prioritize Tailwind CSS over manual inline styles. Only use inline styles for dynamic values that cannot be expressed with Tailwind utilities.
+
 Use Tailwind utility classes via `className` on React Native components. Keep classes as string literals; for conditional cases, concatenate known class names.
 
 ```tsx
-// Before
+// Before - DON'T DO THIS
 import { View, Text, StyleSheet } from 'react-native';
 
 const styles = StyleSheet.create({
@@ -90,20 +103,30 @@ const styles = StyleSheet.create({
 export function Example() {
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Hello</Text>
+      <Text style={[styles.title, { color: dynamicColor }]}>Hello</Text>
     </View>
   );
 }
 
-// After
+// After - DO THIS
 export function Example() {
   return (
     <View className="flex-1 px-4 pt-6">
-      <Text className="text-2xl font-bold mb-3">Hello</Text>
+      <Text className="text-2xl font-bold mb-3" style={{ color: dynamicColor }}>Hello</Text>
     </View>
   );
 }
 ```
+
+**Styling Priority Order:**
+1. **First**: Use Tailwind utility classes (`className`)
+2. **Second**: Use Tailwind config extensions for custom values
+3. **Last Resort**: Use inline `style` only for truly dynamic values (colors from API, calculated dimensions, etc.)
+
+**Never do:**
+- Mix multiple styling approaches for the same property
+- Use inline styles for static values that could be Tailwind classes
+- Define font families, colors, or spacing in inline styles
 
 Tokens are defined in `tailwind.config.js` (`theme.extend`). Avoid hardcoding colors/sizes; reference tokens like `bg-background`, `text-primary`, etc.
 

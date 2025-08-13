@@ -6,9 +6,9 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { Pressable, Text } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { ErrorBoundary } from '@/components/shared/ErrorBoundary';
+import { ErrorBoundary } from '@/components/common';
 
-// @ts-ignore - global.css is not a module
+// @ts-expect-error - global.css is not a module
 import '../global.css';
 
 // Keep the splash screen visible while we fetch resources
@@ -27,20 +27,25 @@ function HeaderButtons() {
   const router = useRouter();
 
   return (
-    <>
-      <Pressable
-        onPress={() => router.push('/settings')}
-        className="w-10 h-10 bg-muted rounded-full items-center justify-center mr-2"
-      >
-        <Text className="text-muted-foreground text-lg font-mono">⚙</Text>
-      </Pressable>
-      <Pressable
-        onPress={() => router.push('/repositories')}
-        className="w-10 h-10 bg-primary rounded-full items-center justify-center"
-      >
-        <Text className="text-primary-foreground text-xl font-bold font-mono">+</Text>
-      </Pressable>
-    </>
+    <Pressable
+      onPress={() => router.push('/repositories')}
+      className="w-10 h-10 items-center justify-center"
+    >
+      <Text className="text-foreground text-xl font-bold font-mono">+</Text>
+    </Pressable>
+  );
+}
+
+function HeaderLeftButton() {
+  const router = useRouter();
+
+  return (
+    <Pressable
+      onPress={() => router.push('/settings')}
+      className="w-10 h-10 items-center justify-center ml-2"
+    >
+      <Text className="text-foreground text-lg font-mono">⚙</Text>
+    </Pressable>
   );
 }
 
@@ -78,6 +83,7 @@ export default function RootLayout() {
                 name="index"
                 options={{
                   title: 'Sessions',
+                  headerLeft: () => <HeaderLeftButton />,
                   headerRight: () => <HeaderButtons />,
                 }}
               />

@@ -82,7 +82,7 @@ export interface ToolUseContent {
   type: 'tool_use';
   id: string;
   name: string;
-  input: Record<string, any>;
+  input: Record<string, unknown>;
 }
 
 export interface ToolResultContent {
@@ -138,7 +138,7 @@ export interface CitationsDeltaMessage extends BaseClaudeMessage {
 export interface ToolUseMessage extends BaseClaudeMessage {
   type: 'tool_use';
   name: string;
-  input: Record<string, any>;
+  input: Record<string, unknown>;
 }
 
 export type ClaudeCodeMessage =

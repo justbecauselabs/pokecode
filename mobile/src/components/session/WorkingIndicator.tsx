@@ -1,4 +1,3 @@
-import React from 'react';
 import { ActivityIndicator, Text, View } from 'react-native';
 
 export function WorkingIndicator(params: { isWorking: boolean }) {

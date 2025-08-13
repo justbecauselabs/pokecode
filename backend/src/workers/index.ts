@@ -2,12 +2,12 @@ import { sql } from 'drizzle-orm';
 import { config } from '@/config';
 import { db } from '@/db';
 import { createChildLogger } from '@/utils/logger';
-import { ClaudeCodeWorker } from './claude-code.worker';
+import { ClaudeCodeSQLiteWorker } from './claude-code-sqlite.worker';
 
 const logger = createChildLogger('worker-main');
 
 // Export for testing
-export { ClaudeCodeWorker };
+export { ClaudeCodeSQLiteWorker };
 
 /**
  * Verifies database connection before starting worker
@@ -23,41 +23,39 @@ async function verifyDatabaseConnection(): Promise<void> {
 }
 
 /**
- * Verifies Redis connection through worker
- */
-async function verifyRedisConnection(): Promise<void> {
-  try {
-    // Redis connection is verified when worker is created
-    logger.info('Redis connection verified');
-  } catch (error) {
-    logger.error({ error }, 'Redis connection failed');
-    throw error;
-  }
-}
-
-/**
  * Main worker startup function
  */
-async function startWorker(): Promise<ClaudeCodeWorker> {
-  logger.info({ environment: config.NODE_ENV }, 'Starting Claude Code Worker...');
+async function startWorker(): Promise<ClaudeCodeSQLiteWorker> {
+  logger.info({ environment: config.NODE_ENV }, 'Starting Claude Code SQLite Worker...');
 
-  // Verify connections
+  // Verify database connection
   await verifyDatabaseConnection();
-  await verifyRedisConnection();
 
   // Create and start worker
-  const worker = new ClaudeCodeWorker();
+  const worker = new ClaudeCodeSQLiteWorker();
   await worker.start();
 
   const metrics = await worker.getMetrics();
   logger.info(
     {
-      queue: 'claude-code-jobs',
+      queue: 'sqlite-jobs',
       concurrency: metrics.concurrency,
       status: 'Running',
     },
-    'Claude Code Worker started successfully',
+    'Claude Code SQLite Worker started successfully',
   );
+
+  // Setup cleanup job (run every hour)
+  const cleanupInterval = setInterval(async () => {
+    try {
+      await worker.cleanup();
+    } catch (error) {
+      logger.error({ error }, 'Error during cleanup');
+    }
+  }, 60 * 60 * 1000); // 1 hour
+
+  // Store cleanup interval on worker for shutdown
+  (worker as any).cleanupInterval = cleanupInterval;
 
   return worker;
 }
@@ -65,10 +63,16 @@ async function startWorker(): Promise<ClaudeCodeWorker> {
 /**
  * Graceful shutdown handler
  */
-async function handleShutdown(signal: string, worker: ClaudeCodeWorker): Promise<void> {
+async function handleShutdown(signal: string, worker: ClaudeCodeSQLiteWorker): Promise<void> {
   logger.info({ signal }, 'Received signal, initiating graceful shutdown...');
 
   try {
+    // Clear cleanup interval if it exists
+    const cleanupInterval = (worker as any).cleanupInterval;
+    if (cleanupInterval) {
+      clearInterval(cleanupInterval);
+    }
+
     await worker.shutdown();
     logger.info('Shutdown complete');
     process.exit(0);
@@ -79,8 +83,8 @@ async function handleShutdown(signal: string, worker: ClaudeCodeWorker): Promise
 }
 
 // Only start worker if this file is run directly
-if (require.main === module) {
-  let worker: ClaudeCodeWorker | null = null;
+if (import.meta.main) {
+  let worker: ClaudeCodeSQLiteWorker | null = null;
 
   // Start the worker
   startWorker()

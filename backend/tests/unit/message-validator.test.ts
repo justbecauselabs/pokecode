@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { MessageValidator } from '../../src/utils/message-validator';
+import { parseJsonlMessage, extractContent, toIntermediateMessage } from '../../src/utils/message-validator';
 import { validateJsonbContentData } from '../../src/utils/message-parser';
 
 describe('MessageValidator', () => {
@@ -22,7 +22,7 @@ describe('MessageValidator', () => {
         gitBranch: 'main',
       };
 
-      const result = MessageValidator.parseJsonlMessage(validUserMessage, 0, '/test/file.jsonl');
+      const result = parseJsonlMessage(validUserMessage, 0, '/test/file.jsonl');
 
       expect(result.type).toBe('user');
       expect(result.uuid).toBe('12345-abcde');
@@ -64,7 +64,7 @@ describe('MessageValidator', () => {
         gitBranch: 'main',
       };
 
-      const result = MessageValidator.parseJsonlMessage(validAssistantMessage, 1, '/test/file.jsonl');
+      const result = parseJsonlMessage(validAssistantMessage, 1, '/test/file.jsonl');
 
       expect(result.type).toBe('assistant');
       expect(result.uuid).toBe('67890-fghij');
@@ -78,7 +78,7 @@ describe('MessageValidator', () => {
         leafUuid: 'leaf-123',
       };
 
-      const result = MessageValidator.parseJsonlMessage(validSummaryMessage, 0, '/test/file.jsonl');
+      const result = parseJsonlMessage(validSummaryMessage, 0, '/test/file.jsonl');
 
       expect(result.type).toBe('summary');
       expect(result.summary).toBe('This is a conversation summary');
@@ -92,7 +92,7 @@ describe('MessageValidator', () => {
       };
 
       expect(() => {
-        MessageValidator.parseJsonlMessage(invalidMessage, 0, '/test/file.jsonl');
+        parseJsonlMessage(invalidMessage, 0, '/test/file.jsonl');
       }).toThrow('Invalid JSONL message format at line 0 in file /test/file.jsonl');
     });
 
@@ -100,7 +100,7 @@ describe('MessageValidator', () => {
       const malformedData = 'not-an-object';
 
       expect(() => {
-        MessageValidator.parseJsonlMessage(malformedData, 0, '/test/file.jsonl');
+        parseJsonlMessage(malformedData, 0, '/test/file.jsonl');
       }).toThrow('Invalid JSONL message format at line 0 in file /test/file.jsonl');
     });
   });
@@ -124,8 +124,8 @@ describe('MessageValidator', () => {
         gitBranch: 'main',
       };
 
-      const parseResult = MessageValidator.parseJsonlMessage(validMessage);
-      const content = MessageValidator.extractContent(parseResult);
+      const parseResult = parseJsonlMessage(validMessage);
+      const content = extractContent(parseResult);
 
       expect(content).toBe('Hello, world!');
     });
@@ -164,8 +164,8 @@ describe('MessageValidator', () => {
         gitBranch: 'main',
       };
 
-      const parseResult = MessageValidator.parseJsonlMessage(validMessage);
-      const content = MessageValidator.extractContent(parseResult);
+      const parseResult = parseJsonlMessage(validMessage);
+      const content = extractContent(parseResult);
 
       expect(content).toBe('I can help you with that. [Tool: calculator]\n\n[Tool Result]\nResult: 42');
     });
@@ -177,8 +177,8 @@ describe('MessageValidator', () => {
         leafUuid: 'leaf-123',
       };
 
-      const parseResult = MessageValidator.parseJsonlMessage(summaryMessage);
-      const content = MessageValidator.extractContent(parseResult);
+      const parseResult = parseJsonlMessage(summaryMessage);
+      const content = extractContent(parseResult);
 
       expect(content).toBe('This is a conversation summary');
     });
@@ -192,7 +192,7 @@ describe('MessageValidator', () => {
       };
 
       expect(() => {
-        MessageValidator.parseJsonlMessage(invalidMessage);
+        parseJsonlMessage(invalidMessage);
       }).toThrow('Invalid JSONL message format');
     });
   });
@@ -216,8 +216,8 @@ describe('MessageValidator', () => {
         gitBranch: 'main',
       };
 
-      const parseResult = MessageValidator.parseJsonlMessage(validMessage);
-      const intermediateMessage = MessageValidator.toIntermediateMessage(parseResult);
+      const parseResult = parseJsonlMessage(validMessage);
+      const intermediateMessage = toIntermediateMessage(parseResult);
 
       expect(intermediateMessage.id).toBe('12345');
       expect(intermediateMessage.content).toBe('Hello, world!');
@@ -236,8 +236,8 @@ describe('MessageValidator', () => {
         leafUuid: 'leaf-123',
       };
 
-      const parseResult = MessageValidator.parseJsonlMessage(summaryMessage);
-      const intermediateMessage = MessageValidator.toIntermediateMessage(parseResult);
+      const parseResult = parseJsonlMessage(summaryMessage);
+      const intermediateMessage = toIntermediateMessage(parseResult);
 
       expect(intermediateMessage.id).toBe('leaf-123');
       expect(intermediateMessage.content).toBe('This is a conversation summary');
@@ -253,7 +253,7 @@ describe('MessageValidator', () => {
       };
 
       expect(() => {
-        MessageValidator.parseJsonlMessage(invalidMessage);
+        parseJsonlMessage(invalidMessage);
       }).toThrow('Invalid JSONL message format');
     });
   });

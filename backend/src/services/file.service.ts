@@ -1,8 +1,9 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { parse as parseYaml } from 'yaml';
 import { fileStorageConfig } from '@/config';
 import { db } from '@/db';
-import { fileAccess } from '@/db/schema';
+import { fileAccess } from '@/db/schema-sqlite';
 import type { FileInfo, GetFileResponse } from '@/schemas/file.schema';
 import { AuthorizationError, ConflictError, NotFoundError, ValidationError } from '@/types';
 
@@ -15,6 +16,234 @@ function isNodeJSError(error: unknown): error is NodeJSError {
 }
 
 export class FileService {
+  // ============================================================================
+  // SYSTEM-LEVEL OPERATIONS (No session validation, no database logging)
+  // ============================================================================
+
+  /**
+   * Check if a directory exists using Bun APIs (system-level operation)
+   */
+  async systemDirectoryExists(dirPath: string): Promise<boolean> {
+    try {
+      // Use Bun.Glob to check if we can scan the directory with onlyFiles: false
+      const glob = new Bun.Glob('*');
+      Array.from(glob.scanSync({ cwd: dirPath, onlyFiles: false }));
+      return true; // If we can scan it, it's a directory
+    } catch (_error) {
+      return false; // If we can't scan it, it doesn't exist or isn't a directory
+    }
+  }
+
+  /**
+   * List directory contents using Bun APIs (system-level operation)
+   */
+  async systemListDirectory(
+    dirPath: string,
+    options: { includeHidden?: boolean } = {},
+  ): Promise<
+    Array<{
+      name: string;
+      path: string;
+      isDirectory: boolean;
+      isFile: boolean;
+    }>
+  > {
+    if (!(await this.systemDirectoryExists(dirPath))) {
+      return [];
+    }
+
+    try {
+      // Use Bun.Glob with onlyFiles: false to get both files and directories
+      const glob = new Bun.Glob(options.includeHidden ? '*' : '[!.]*');
+      const items = Array.from(
+        glob.scanSync({
+          cwd: dirPath,
+          onlyFiles: false,
+        }),
+      );
+
+      const results = [];
+      for (const item of items) {
+        const fullPath = path.join(dirPath, item);
+        const pathInfo = await this.systemPathExists(fullPath);
+
+        results.push({
+          name: item,
+          path: fullPath,
+          isDirectory: pathInfo.isDirectory,
+          isFile: pathInfo.isFile,
+        });
+      }
+
+      return results;
+    } catch (_error) {
+      return [];
+    }
+  }
+
+  /**
+   * Check if a path exists (file or directory) using Bun APIs (system-level operation)
+   */
+  async systemPathExists(targetPath: string): Promise<{
+    exists: boolean;
+    isDirectory: boolean;
+    isFile: boolean;
+  }> {
+    try {
+      // First check if it's a directory by trying to scan it
+      const isDirectory = await this.systemDirectoryExists(targetPath);
+      if (isDirectory) {
+        return { exists: true, isDirectory: true, isFile: false };
+      }
+
+      // If not a directory, check if it's a file using Bun.file()
+      const file = Bun.file(targetPath);
+      const exists = await file.exists();
+      if (exists) {
+        return { exists: true, isDirectory: false, isFile: true };
+      }
+
+      return { exists: false, isDirectory: false, isFile: false };
+    } catch (_error) {
+      return { exists: false, isDirectory: false, isFile: false };
+    }
+  }
+
+  /**
+   * Find files matching a glob pattern using Bun APIs (system-level operation)
+   */
+  async systemFindFiles(
+    basePath: string,
+    pattern: string,
+    options: { absolute?: boolean } = {},
+  ): Promise<string[]> {
+    try {
+      const glob = new Bun.Glob(pattern);
+      const files = Array.from(glob.scanSync({ cwd: basePath, onlyFiles: false }));
+
+      if (options.absolute) {
+        return files.map((file) => path.join(basePath, file));
+      }
+      return files;
+    } catch (_error) {
+      return [];
+    }
+  }
+
+  /**
+   * Find markdown files in a directory (system-level operation)
+   */
+  async systemFindMarkdownFiles(dirPath: string): Promise<string[]> {
+    return this.systemFindFiles(dirPath, '*.md', { absolute: true });
+  }
+
+  /**
+   * Read file content as text using Bun APIs (system-level operation)
+   */
+  async systemReadFileContent(filePath: string): Promise<string> {
+    const pathInfo = await this.systemPathExists(filePath);
+
+    if (!pathInfo.exists) {
+      throw new NotFoundError('File');
+    }
+
+    if (!pathInfo.isFile) {
+      throw new ValidationError('Path is not a file');
+    }
+
+    try {
+      return await Bun.file(filePath).text();
+    } catch (error) {
+      throw new Error(
+        `Failed to read file: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+  }
+
+  /**
+   * Check if path is a git repository (system-level operation)
+   */
+  async systemValidateGitRepository(repoPath: string): Promise<{
+    exists: boolean;
+    isGitRepository: boolean;
+  }> {
+    const pathInfo = await this.systemPathExists(repoPath);
+    if (!pathInfo.exists || !pathInfo.isDirectory) {
+      return { exists: false, isGitRepository: false };
+    }
+
+    const gitPath = path.join(repoPath, '.git');
+    const gitInfo = await this.systemPathExists(gitPath);
+
+    return {
+      exists: true,
+      isGitRepository: gitInfo.exists && gitInfo.isDirectory,
+    };
+  }
+
+  /**
+   * Parse YAML frontmatter from markdown content (system-level operation)
+   */
+  systemParseFrontMatter(content: string): {
+    frontMatter: Record<string, unknown>;
+    content: string;
+  } {
+    const frontMatterMatch = content.match(/^---\s*\n(.*?)\n---\s*\n(.*)/s);
+
+    if (!frontMatterMatch) {
+      return {
+        frontMatter: {},
+        content: content.trim(),
+      };
+    }
+
+    try {
+      const frontMatterYaml = frontMatterMatch[1];
+      const mainContent = frontMatterMatch[2];
+
+      if (!frontMatterYaml || !mainContent) {
+        return {
+          frontMatter: {},
+          content: content.trim(),
+        };
+      }
+
+      const frontMatter = parseYaml(frontMatterYaml) || {};
+
+      return {
+        frontMatter,
+        content: mainContent.trim(),
+      };
+    } catch (_error) {
+      return {
+        frontMatter: {},
+        content: content.trim(),
+      };
+    }
+  }
+
+  /**
+   * Read and parse a markdown file with YAML frontmatter (system-level operation)
+   */
+  async systemReadMarkdownFile(filePath: string): Promise<{
+    frontMatter: Record<string, unknown>;
+    content: string;
+    fileName: string;
+  }> {
+    const rawContent = await this.systemReadFileContent(filePath);
+    const parsed = this.systemParseFrontMatter(rawContent);
+    const fileName = path.basename(filePath, path.extname(filePath));
+
+    return {
+      frontMatter: parsed.frontMatter,
+      content: parsed.content,
+      fileName,
+    };
+  }
+
+  // ============================================================================
+  // SESSION-BASED OPERATIONS (Original methods with session validation and logging)
+  // ============================================================================
   async validatePath(sessionPath: string, requestedPath: string): Promise<string> {
     // Normalize the requested path (must be relative to project root)
     const normalizedPath = path.normalize(requestedPath);

@@ -1,5 +1,5 @@
-import { constants as fsConstants, promises as fsPromises } from 'node:fs';
 import { type Options, type Query, query, type SDKMessage } from '@anthropic-ai/claude-code';
+import { fileService } from '@/services/file.service';
 import { createChildLogger } from '@/utils/logger';
 import type { MessageService } from './message.service';
 
@@ -8,7 +8,6 @@ const logger = createChildLogger('claude-code-sdk');
 export interface ClaudeCodeOptions {
   sessionId: string;
   projectPath: string;
-  claudeCodeSessionId?: string | null;
   messageService: MessageService;
 }
 
@@ -48,6 +47,7 @@ export class ClaudeCodeSDKService {
   /**
    * Execute a prompt using Claude Code SDK
    * Saves messages directly to database as they arrive
+   * Supports session resumption by finding the last Claude session ID
    */
   async execute(prompt: string): Promise<ClaudeCodeResult> {
     if (this.isProcessing) {
@@ -58,23 +58,24 @@ export class ClaudeCodeSDKService {
     this.startTime = Date.now();
 
     try {
-      const claudeCodeSessionId = this.options.claudeCodeSessionId ?? null;
-      const shouldResume = claudeCodeSessionId !== null && claudeCodeSessionId !== undefined;
+      // Check for existing Claude session ID for resumption
+      const lastClaudeSessionId = await this.messageService.getLastClaudeCodeSessionId(
+        this.sessionId,
+      );
 
       logger.info(
         {
           sessionId: this.sessionId,
           prompt: prompt.substring(0, 100),
           cwd: this.options.projectPath,
-          resuming: shouldResume,
+          resumingSessionId: lastClaudeSessionId,
         },
         'Starting Claude Code SDK query',
       );
 
-      // Validate project path exists
-      try {
-        await fsPromises.access(this.options.projectPath, fsConstants.F_OK);
-      } catch (_error) {
+      // Validate project path exists using File Service
+      const pathExists = await fileService.systemDirectoryExists(this.options.projectPath);
+      if (!pathExists) {
         const errorMessage = `Project path does not exist: ${this.options.projectPath}`;
         logger.error(
           { sessionId: this.sessionId, projectPath: this.options.projectPath },
@@ -87,13 +88,13 @@ export class ClaudeCodeSDKService {
         };
       }
 
-      // Configure SDK options
+      // Configure SDK options with resumption support
       const sdkOptions: Options = {
         cwd: this.options.projectPath,
-        ...(shouldResume && { resume: claudeCodeSessionId }),
         permissionMode: 'bypassPermissions',
         pathToClaudeCodeExecutable: this.pathToClaudeCodeExecutable,
         executable: 'node',
+        ...(lastClaudeSessionId && { resume: lastClaudeSessionId }),
       };
 
       this.currentQuery = query({ prompt, options: sdkOptions });
@@ -145,14 +146,19 @@ export class ClaudeCodeSDKService {
    * Handle a message from the SDK and save directly to database
    */
   private async handleSDKMessage(message: SDKMessage): Promise<void> {
-    // Save message directly to database as JSON string
+    // Save message directly to database as JSON string, including Claude session ID
     try {
-      await this.messageService.saveSDKMessage(this.sessionId, message);
+      await this.messageService.saveSDKMessage(
+        this.sessionId,
+        message,
+        message.session_id, // Extract Claude SDK session ID
+      );
     } catch (error) {
       logger.error(
         {
           sessionId: this.sessionId,
           messageType: message.type,
+          claudeSessionId: message.session_id,
           error: error instanceof Error ? error.message : String(error),
         },
         'Failed to save SDK message to database',

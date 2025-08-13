@@ -3,21 +3,19 @@ import type React from 'react';
 import { useEffect, useMemo, useRef } from 'react';
 import { Text, View } from 'react-native';
 import type { Message } from '../../types/messages';
-import { LoadingState } from '../ui/LoadingState';
-import { MessageBubble } from './MessageBubble';
+import { LoadingState } from '../common';
+import { EnhancedMessageBubble } from './EnhancedMessageBubble';
 
 interface MessageListProps {
   messages: Message[];
   isLoading: boolean;
   error: Error | null;
-  onShowChildMessages?: (message: Message) => void;
 }
 
 export const MessageList: React.FC<MessageListProps> = ({
   messages,
   isLoading,
   error,
-  onShowChildMessages,
 }) => {
   const flashListRef = useRef<FlashList<Message>>(null);
   const isInitialLoad = useRef(true);
@@ -37,7 +35,7 @@ export const MessageList: React.FC<MessageListProps> = ({
   }, [messages]);
 
   const renderMessage = ({ item }: { item: Message }) => (
-    <MessageBubble message={item} onShowChildMessages={onShowChildMessages} />
+    <EnhancedMessageBubble message={item} />
   );
 
   const renderEmpty = () => (
@@ -49,7 +47,9 @@ export const MessageList: React.FC<MessageListProps> = ({
   const renderError = () => (
     <View className="flex-1 justify-center items-center p-8">
       <Text className="text-center mb-2 font-mono text-destructive">Error loading messages</Text>
-      <Text className="text-center text-sm font-mono text-muted-foreground">{error?.message || 'Unknown error occurred'}</Text>
+      <Text className="text-center text-sm font-mono text-muted-foreground">
+        {error?.message || 'Unknown error occurred'}
+      </Text>
     </View>
   );
 

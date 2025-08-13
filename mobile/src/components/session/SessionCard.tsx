@@ -47,7 +47,7 @@ export const SessionCard = memo(({ session, onPress, onDelete }: SessionCardProp
 
   const truncatePath = (path: string, maxLength: number = 40) => {
     if (path.length <= maxLength) return path;
-    return '...' + path.slice(-(maxLength - 3));
+    return `...${path.slice(-(maxLength - 3))}`;
   };
 
   const handleLongPress = () => {
@@ -108,7 +108,10 @@ export const SessionCard = memo(({ session, onPress, onDelete }: SessionCardProp
         {/* Header with project path and status */}
         <View className="flex-row items-start justify-between">
           <View className="flex-1 mr-2">
-            <Text className="text-base font-semibold text-card-foreground font-mono" numberOfLines={1}>
+            <Text
+              className="text-base font-semibold text-card-foreground font-mono"
+              numberOfLines={1}
+            >
               {truncatePath(session.projectPath)}
             </Text>
             {session.context && (

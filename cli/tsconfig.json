@@ -35,6 +35,7 @@
     "moduleResolution": "node",
     "resolveJsonModule": true,
     "allowSyntheticDefaultImports": true,
+    "verbatimModuleSyntax": true,
     
     "types": ["bun-types"],
     "rootDir": "./src",

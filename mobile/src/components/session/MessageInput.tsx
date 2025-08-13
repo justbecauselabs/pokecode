@@ -1,7 +1,7 @@
+import { Feather } from '@expo/vector-icons';
 import { forwardRef, useImperativeHandle, useRef, useState } from 'react';
-import { Alert, Keyboard, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { Button } from '../ui/Button';
-import { Card } from '../ui/Card';
+import { Alert, Keyboard, type TextInput, TouchableOpacity, View } from 'react-native';
+import { Pill, TextField } from '../common';
 
 interface MessageInputRef {
   insertCommand: (params: { commandName: string }) => void;
@@ -18,14 +18,13 @@ interface MessageInputProps {
 export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>((props, ref) => {
   const { onSendMessage, onShowSlashCommands, isSending = false, disabled } = props;
   const [message, setMessage] = useState('');
+  const [selectedCommand, setSelectedCommand] = useState<string | null>(null);
   const inputRef = useRef<TextInput>(null);
 
   const insertCommand = (params: { commandName: string }) => {
-    const commandText = `/${params.commandName}`;
-    const newMessage = commandText + (message ? ` ${message}` : '');
-    setMessage(newMessage);
-    
-    // Focus the input after inserting the command
+    setSelectedCommand(params.commandName);
+
+    // Focus the input after selecting the command
     setTimeout(() => {
       inputRef.current?.focus();
     }, 100);
@@ -43,8 +42,13 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>((prop
     Keyboard.dismiss();
 
     try {
-      await onSendMessage({ content: trimmedMessage });
+      // Prepend the selected command if one is active
+      const finalMessage = selectedCommand
+        ? `/${selectedCommand} ${trimmedMessage}`
+        : trimmedMessage;
+      await onSendMessage({ content: finalMessage });
       setMessage('');
+      setSelectedCommand(null); // Clear the selected command after sending
     } catch (error) {
       console.error('Failed to send message:', error);
       Alert.alert('Error', 'Failed to send message. Please try again.');
@@ -53,47 +57,53 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>((prop
 
   return (
     <View className="border-t border-border bg-background p-4">
-      <Card padding="small" className="bg-input">
-        <View className="flex-row items-end gap-3">
-          <View className="flex-1">
-            <TextInput
-              ref={inputRef}
-              value={message}
-              onChangeText={setMessage}
-              placeholder="Enter your message..."
-              placeholderTextColor="#9da5b4"
-              multiline
-              textAlignVertical="top"
-              className="max-h-32 min-h-10 text-base text-foreground font-mono"
-              style={{
-                fontFamily: 'JetBrains Mono, Fira Code, SF Mono, Monaco, Menlo, Courier New, monospace',
-                color: '#abb2bf',
-              }}
-              editable={!disabled && !isSending}
-              onSubmitEditing={handleSend}
-              blurOnSubmit={false}
-            />
-          </View>
-
-          {/* Slash Commands Button */}
-          <TouchableOpacity
-            className="w-8 h-8 rounded-md bg-yellow-500 items-center justify-center mr-2 active:opacity-70"
-            onPress={onShowSlashCommands}
-            disabled={disabled || isSending}
-            activeOpacity={0.7}
-          >
-            <Text className="text-black text-base font-bold font-mono">/</Text>
-          </TouchableOpacity>
-
-          <Button
-            title="Send"
-            size="small"
-            disabled={disabled || !message.trim() || isSending}
-            loading={isSending}
-            onPress={handleSend}
+      <View className="flex-row items-end gap-3">
+        <View className="flex-1">
+          <TextField
+            ref={inputRef}
+            value={message}
+            onChangeText={setMessage}
+            placeholder="Enter your message..."
+            multiline
+            textAlignVertical="top"
+            className="max-h-32"
+            editable={!disabled && !isSending}
+            onSubmitEditing={handleSend}
+            blurOnSubmit={false}
           />
         </View>
-      </Card>
+
+        {/* Send Button with Up Arrow */}
+        <TouchableOpacity
+          className={`w-8 h-8 rounded-full items-center justify-center active:opacity-70 ${
+            disabled || !message.trim() || isSending ? 'bg-gray-500' : 'bg-white'
+          }`}
+          onPress={handleSend}
+          disabled={disabled || !message.trim() || isSending}
+          activeOpacity={0.7}
+        >
+          {isSending ? (
+            <View className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
+          ) : (
+            <Feather
+              name="arrow-up"
+              size={16}
+              color={disabled || !message.trim() || isSending ? '#9ca3af' : '#282c34'}
+            />
+          )}
+        </TouchableOpacity>
+      </View>
+
+      {/* Slash Command Button Below Input */}
+      <View className="mt-3 items-start">
+        <Pill
+          variant={selectedCommand ? 'active' : 'default'}
+          onPress={selectedCommand ? () => setSelectedCommand(null) : onShowSlashCommands}
+          disabled={disabled || isSending}
+        >
+          {selectedCommand ? `/${selectedCommand}` : 'slash command'}
+        </Pill>
+      </View>
     </View>
   );
 });

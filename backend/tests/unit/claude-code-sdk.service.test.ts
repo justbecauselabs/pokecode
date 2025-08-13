@@ -60,10 +60,15 @@ describe('ClaudeCodeSDKService', () => {
       },
     }));
 
+    const mockMessageService = {
+      saveSDKMessage: vi.fn(),
+      saveUserMessage: vi.fn(),
+    };
+    
     service = new ClaudeCodeSDKService({
       sessionId: 'db-session-id',
       projectPath: '/test/project',
-      claudeCodeSessionId: 'test-session-id',
+      messageService: mockMessageService as any,
     });
   });
 
@@ -72,8 +77,8 @@ describe('ClaudeCodeSDKService', () => {
     delete process.env.CLAUDE_CODE_PATH;
   });
 
-  describe('Session Continuity', () => {
-    it('should include resume parameter when claudeCodeSessionId is provided', async () => {
+  describe('Basic Functionality', () => {
+    it('should execute prompts correctly', async () => {
       // Override the query mock to capture options
       let capturedOptions: any;
       const { query } = await import('@anthropic-ai/claude-code');
@@ -92,7 +97,7 @@ describe('ClaudeCodeSDKService', () => {
               message: {
                 content: [{
                   type: 'text',
-                  text: 'Resumed session response',
+                  text: 'Test response',
                 }],
               },
             };
@@ -107,63 +112,13 @@ describe('ClaudeCodeSDKService', () => {
         };
       });
 
-      const result = await service.execute('Test prompt for resumed session');
+      const result = await service.execute('Test prompt');
 
       expect(result.success).toBe(true);
       expect(capturedOptions).toBeDefined();
-      expect(capturedOptions.resume).toBe('test-session-id');
       expect(capturedOptions.cwd).toBe('/test/project');
       expect(capturedOptions.permissionMode).toBe('bypassPermissions');
-    });
-
-    it('should not include resume parameter when claudeCodeSessionId is not provided', async () => {
-      const serviceWithoutSession = new ClaudeCodeSDKService({
-        sessionId: 'db-session-id',
-        projectPath: '/test/project',
-      });
-
-      const mockQuery = vi.fn(() => ({
-        async *[Symbol.asyncIterator]() {
-          yield {
-            type: 'assistant',
-            message: {
-              content: [{
-                type: 'text',
-                text: 'New session response',
-              }],
-            },
-          };
-          yield {
-            type: 'result',
-            subtype: 'success',
-            result: 'Success',
-          };
-        },
-      }));
-
-      let capturedOptions: any;
-      const { query } = await import('@anthropic-ai/claude-code');
-      (query as any).mockImplementation(({ prompt, options }: any) => {
-        capturedOptions = options;
-        return mockQuery();
-      });
-
-      const result = await serviceWithoutSession.execute('Test prompt for new session');
-
-      expect(result.success).toBe(true);
-      expect(capturedOptions).toBeDefined();
       expect(capturedOptions.resume).toBeUndefined();
-      expect(capturedOptions.cwd).toBe('/test/project');
-    });
-
-    it('should log resuming status correctly', async () => {
-      // This test verifies the logging is working by checking the actual behavior
-      // The logger output is visible in the test output showing resuming: true
-      const result = await service.execute('Test prompt with logging');
-
-      expect(result.success).toBe(true);
-      // The logging behavior is validated by the visible output in test run
-      // which shows "resuming: true" in the log entries
     });
   });
 

@@ -4,7 +4,9 @@
 
 /* Global font defaults */
 @layer base {
-  html, body {
-    font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', 'Monaco', 'Menlo', 'Courier New', monospace;
+  html,
+  body {
+    font-family:
+      "JetBrains Mono", "Fira Code", "SF Mono", "Monaco", "Menlo", "Courier New", monospace;
   }
 }

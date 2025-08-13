@@ -62,8 +62,6 @@ export async function createSession(options: SessionFactoryOptions = {}): Promis
     claudeDirectoryPath: options.claudeDirectoryPath || `/tmp/test-claude/session-${Date.now()}`,
     context: options.context || null,
     metadata: options.metadata || null,
-    status: options.status || 'active',
-    claudeCodeSessionId: options.claudeCodeSessionId || null,
     isWorking: options.isWorking || false,
     currentJobId: options.currentJobId || null,
     lastJobStatus: options.lastJobStatus || null,

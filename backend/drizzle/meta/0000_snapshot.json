@@ -1,63 +1,60 @@
 {
-  "id": "48f4ffc0-baf4-4580-8436-b2cbceeb8763",
-  "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "6",
-  "dialect": "postgresql",
+  "dialect": "sqlite",
+  "id": "b0828a85-116f-4c76-ab7a-0081e42bb1ae",
+  "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
-    "public.claude_code_file_access": {
+    "claude_code_file_access": {
       "name": "claude_code_file_access",
-      "schema": "",
       "columns": {
         "id": {
           "name": "id",
-          "type": "uuid",
+          "type": "text",
           "primaryKey": true,
           "notNull": true,
-          "default": "gen_random_uuid()"
+          "autoincrement": false
         },
         "session_id": {
           "name": "session_id",
-          "type": "uuid",
+          "type": "text",
           "primaryKey": false,
-          "notNull": true
-        },
-        "prompt_id": {
-          "name": "prompt_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
+          "notNull": true,
+          "autoincrement": false
         },
         "file_path": {
           "name": "file_path",
           "type": "text",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         },
         "access_type": {
           "name": "access_type",
-          "type": "file_access_type",
-          "typeSchema": "public",
+          "type": "text",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         },
         "content": {
           "name": "content",
           "type": "text",
           "primaryKey": false,
-          "notNull": false
+          "notNull": false,
+          "autoincrement": false
         },
         "metadata": {
           "name": "metadata",
-          "type": "jsonb",
+          "type": "text",
           "primaryKey": false,
-          "notNull": false
+          "notNull": false,
+          "autoincrement": false
         },
         "created_at": {
           "name": "created_at",
-          "type": "timestamp",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
-          "default": "now()"
+          "autoincrement": false
         }
       },
       "indexes": {
@@ -65,13 +62,6 @@
           "name": "idx_file_access_session_id",
           "columns": [
             "session_id"
-          ],
-          "isUnique": false
-        },
-        "idx_file_access_prompt_id": {
-          "name": "idx_file_access_prompt_id",
-          "columns": [
-            "prompt_id"
           ],
           "isUnique": false
         },
@@ -96,120 +86,216 @@
           ],
           "onDelete": "cascade",
           "onUpdate": "no action"
-        },
-        "claude_code_file_access_prompt_id_claude_code_prompts_id_fk": {
-          "name": "claude_code_file_access_prompt_id_claude_code_prompts_id_fk",
-          "tableFrom": "claude_code_file_access",
-          "tableTo": "claude_code_prompts",
-          "columnsFrom": [
-            "prompt_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {}
     },
-    "public.claude_code_prompts": {
-      "name": "claude_code_prompts",
-      "schema": "",
+    "job_queue": {
+      "name": "job_queue",
       "columns": {
         "id": {
           "name": "id",
-          "type": "uuid",
+          "type": "text",
           "primaryKey": true,
           "notNull": true,
-          "default": "gen_random_uuid()"
+          "autoincrement": false
         },
         "session_id": {
           "name": "session_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "prompt": {
-          "name": "prompt",
           "type": "text",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         },
-        "response": {
-          "name": "response",
+        "prompt_id": {
+          "name": "prompt_id",
           "type": "text",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true,
+          "autoincrement": false
         },
         "status": {
           "name": "status",
-          "type": "prompt_status",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'queued'"
-        },
-        "job_id": {
-          "name": "job_id",
           "type": "text",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'pending'"
+        },
+        "data": {
+          "name": "data",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "attempts": {
+          "name": "attempts",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
+        },
+        "max_attempts": {
+          "name": "max_attempts",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 3
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "started_at": {
+          "name": "started_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "completed_at": {
+          "name": "completed_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
         },
         "error": {
           "name": "error",
           "type": "text",
           "primaryKey": false,
-          "notNull": false
+          "notNull": false,
+          "autoincrement": false
         },
-        "metadata": {
-          "name": "metadata",
-          "type": "jsonb",
+        "next_retry_at": {
+          "name": "next_retry_at",
+          "type": "integer",
           "primaryKey": false,
-          "notNull": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "completed_at": {
-          "name": "completed_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": false
+          "notNull": false,
+          "autoincrement": false
         }
       },
       "indexes": {
-        "idx_prompts_session_id": {
-          "name": "idx_prompts_session_id",
-          "columns": [
-            "session_id"
-          ],
-          "isUnique": false
-        },
-        "idx_prompts_status": {
-          "name": "idx_prompts_status",
+        "idx_job_queue_status": {
+          "name": "idx_job_queue_status",
           "columns": [
             "status"
           ],
           "isUnique": false
         },
-        "idx_prompts_job_id": {
-          "name": "idx_prompts_job_id",
+        "idx_job_queue_next_retry": {
+          "name": "idx_job_queue_next_retry",
           "columns": [
-            "job_id"
+            "next_retry_at"
+          ],
+          "isUnique": false
+        },
+        "idx_job_queue_session_id": {
+          "name": "idx_job_queue_session_id",
+          "columns": [
+            "session_id"
+          ],
+          "isUnique": false
+        },
+        "idx_job_queue_created_at": {
+          "name": "idx_job_queue_created_at",
+          "columns": [
+            "created_at"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {}
+    },
+    "session_messages": {
+      "name": "session_messages",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "session_id": {
+          "name": "session_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "type": {
+          "name": "type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "content_data": {
+          "name": "content_data",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "claude_code_session_id": {
+          "name": "claude_code_session_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "idx_session_messages_session_id": {
+          "name": "idx_session_messages_session_id",
+          "columns": [
+            "session_id"
+          ],
+          "isUnique": false
+        },
+        "idx_session_messages_type": {
+          "name": "idx_session_messages_type",
+          "columns": [
+            "type"
+          ],
+          "isUnique": false
+        },
+        "idx_session_messages_created_at": {
+          "name": "idx_session_messages_created_at",
+          "columns": [
+            "created_at"
+          ],
+          "isUnique": false
+        },
+        "idx_session_messages_claude_code_session_id": {
+          "name": "idx_session_messages_claude_code_session_id",
+          "columns": [
+            "claude_code_session_id"
           ],
           "isUnique": false
         }
       },
       "foreignKeys": {
-        "claude_code_prompts_session_id_claude_code_sessions_id_fk": {
-          "name": "claude_code_prompts_session_id_claude_code_sessions_id_fk",
-          "tableFrom": "claude_code_prompts",
+        "session_messages_session_id_claude_code_sessions_id_fk": {
+          "name": "session_messages_session_id_claude_code_sessions_id_fk",
+          "tableFrom": "session_messages",
           "tableTo": "claude_code_sessions",
           "columnsFrom": [
             "session_id"
@@ -224,90 +310,107 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {}
     },
-    "public.claude_code_sessions": {
+    "claude_code_sessions": {
       "name": "claude_code_sessions",
-      "schema": "",
       "columns": {
         "id": {
           "name": "id",
-          "type": "uuid",
+          "type": "text",
           "primaryKey": true,
           "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "user_id": {
-          "name": "user_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
+          "autoincrement": false
         },
         "project_path": {
           "name": "project_path",
           "type": "text",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
         },
         "context": {
           "name": "context",
           "type": "text",
           "primaryKey": false,
-          "notNull": false
+          "notNull": false,
+          "autoincrement": false
         },
-        "status": {
-          "name": "status",
-          "type": "session_status",
-          "typeSchema": "public",
+        "claude_directory_path": {
+          "name": "claude_directory_path",
+          "type": "text",
           "primaryKey": false,
-          "notNull": true,
-          "default": "'active'"
+          "notNull": false,
+          "autoincrement": false
         },
         "metadata": {
           "name": "metadata",
-          "type": "jsonb",
+          "type": "text",
           "primaryKey": false,
-          "notNull": false
+          "notNull": false,
+          "autoincrement": false
         },
         "created_at": {
           "name": "created_at",
-          "type": "timestamp",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
-          "default": "now()"
+          "autoincrement": false
         },
         "updated_at": {
           "name": "updated_at",
-          "type": "timestamp",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
-          "default": "now()"
+          "autoincrement": false
         },
         "last_accessed_at": {
           "name": "last_accessed_at",
-          "type": "timestamp",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
-          "default": "now()"
+          "autoincrement": false
+        },
+        "is_working": {
+          "name": "is_working",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
+        },
+        "current_job_id": {
+          "name": "current_job_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "last_job_status": {
+          "name": "last_job_status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
         }
       },
       "indexes": {
-        "idx_sessions_user_id": {
-          "name": "idx_sessions_user_id",
-          "columns": [
-            "user_id"
-          ],
-          "isUnique": false
-        },
-        "idx_sessions_status": {
-          "name": "idx_sessions_status",
-          "columns": [
-            "status"
-          ],
-          "isUnique": false
-        },
         "idx_sessions_last_accessed": {
           "name": "idx_sessions_last_accessed",
           "columns": [
             "last_accessed_at"
+          ],
+          "isUnique": false
+        },
+        "idx_sessions_is_working": {
+          "name": "idx_sessions_is_working",
+          "columns": [
+            "is_working"
           ],
           "isUnique": false
         }
@@ -315,114 +418,12 @@
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {}
-    },
-    "public.claude_code_users": {
-      "name": "claude_code_users",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "text",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "email": {
-          "name": "email",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "name": {
-          "name": "name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "refresh_token": {
-          "name": "refresh_token",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "metadata": {
-          "name": "metadata",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "last_login_at": {
-          "name": "last_login_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {
-        "idx_users_email": {
-          "name": "idx_users_email",
-          "columns": [
-            "email"
-          ],
-          "isUnique": false
-        }
-      },
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "claude_code_users_email_unique": {
-          "name": "claude_code_users_email_unique",
-          "nullsNotDistinct": false,
-          "columns": [
-            "email"
-          ]
-        }
-      }
     }
   },
-  "enums": {
-    "public.file_access_type": {
-      "name": "file_access_type",
-      "schema": "public",
-      "values": [
-        "read",
-        "write",
-        "create",
-        "delete"
-      ]
-    },
-    "public.prompt_status": {
-      "name": "prompt_status",
-      "schema": "public",
-      "values": [
-        "queued",
-        "processing",
-        "completed",
-        "failed",
-        "cancelled"
-      ]
-    },
-    "public.session_status": {
-      "name": "session_status",
-      "schema": "public",
-      "values": [
-        "active",
-        "inactive",
-        "archived"
-      ]
-    }
-  },
-  "schemas": {},
+  "enums": {},
   "_meta": {
-    "columns": {},
     "schemas": {},
-    "tables": {}
+    "tables": {},
+    "columns": {}
   }
 }

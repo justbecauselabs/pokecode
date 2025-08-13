@@ -18,9 +18,9 @@ export const useSettingsStore = create<SettingsStore>()(
     (set) => ({
       ...defaultSettings,
 
-      setCustomApiBaseUrl: (customApiBaseUrl: string | undefined) => 
+      setCustomApiBaseUrl: (customApiBaseUrl: string | undefined) =>
         set({ customApiBaseUrl: customApiBaseUrl || undefined }),
-      
+
       resetSettings: () => set(defaultSettings),
     }),
     {

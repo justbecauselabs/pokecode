@@ -15,26 +15,16 @@ export const ToolResultSchema = Type.Object({
   content: Type.String(),
 });
 
-// Child message schema (parsed from JSONB content data)
-export const ApiChildMessageSchema = Type.Object({
-  id: Type.String(),
-  role: MessageRoleSchema,
-  content: Type.String(),
-  timestamp: Type.String(),
-  toolCalls: Type.Optional(Type.Array(ToolCallSchema)),
-  toolResults: Type.Optional(Type.Array(ToolResultSchema)),
-  thinking: Type.Optional(Type.String()),
-});
-
-// Main API message schema (DB messages with nested JSONB content)
+// Main API message schema (flattened messages with tool data)
 export const ApiMessageSchema = Type.Object({
   id: Type.String(),
   sessionId: Type.String(),
   role: MessageRoleSchema,
   content: Type.String(),
   timestamp: Type.String(),
-  claudeSessionId: Type.Optional(Type.String()),
-  children: Type.Array(ApiChildMessageSchema),
+  toolCalls: Type.Optional(Type.Array(ToolCallSchema)),
+  toolResults: Type.Optional(Type.Array(ToolResultSchema)),
+  thinking: Type.Optional(Type.String()),
 });
 
 // Request body for creating a message
@@ -51,6 +41,7 @@ export const CreateMessageResponseSchema = Type.Object({
 // Session info schema for response
 export const SessionInfoSchema = Type.Object({
   id: Type.String(),
+  name: Type.String(),
   isWorking: Type.Boolean(),
   currentJobId: Type.Optional(Type.Union([Type.String(), Type.Null()])),
   lastJobStatus: Type.Optional(Type.Union([Type.String(), Type.Null()])),
@@ -75,7 +66,6 @@ export const SessionIdParamsSchema = Type.Object({
 
 // Export TypeScript types derived from schemas
 export type ApiMessage = Static<typeof ApiMessageSchema>;
-export type ApiChildMessage = Static<typeof ApiChildMessageSchema>;
 export type SessionInfo = Static<typeof SessionInfoSchema>;
 export type CreateMessageRequest = Static<typeof CreateMessageBodySchema>;
 export type CreateMessageResponse = Static<typeof CreateMessageResponseSchema>;

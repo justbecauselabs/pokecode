@@ -22,7 +22,6 @@ CREATE TABLE sessions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   project_path TEXT NOT NULL,
   claude_directory_path TEXT NOT NULL,
-  claude_code_session_id TEXT,
   context TEXT,
   status VARCHAR(10) NOT NULL DEFAULT 'active',
   metadata JSONB DEFAULT '{}',
@@ -44,7 +43,6 @@ CREATE INDEX idx_sessions_project_path ON sessions(project_path);
 - `id`: Unique session identifier (UUID)
 - `project_path`: Absolute path to project directory
 - `claude_directory_path`: Path to Claude configuration directory
-- `claude_code_session_id`: Claude's internal session ID for resumption
 - `context`: Optional session description (max 5000 chars)
 - `status`: Session state (`active`, `inactive`, `archived`)
 - `metadata`: JSON storage for flexible data
@@ -61,14 +59,12 @@ CREATE TABLE session_messages (
   session_id UUID NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
   text TEXT NOT NULL,
   type VARCHAR(10) NOT NULL,
-  claude_session_id TEXT,
   created_at TIMESTAMP DEFAULT NOW()
 );
 
 -- Indexes
 CREATE INDEX idx_messages_session_id ON session_messages(session_id);
 CREATE INDEX idx_messages_created_at ON session_messages(created_at);
-CREATE INDEX idx_messages_claude_session ON session_messages(claude_session_id);
 ```
 
 **Fields:**
@@ -76,7 +72,6 @@ CREATE INDEX idx_messages_claude_session ON session_messages(claude_session_id);
 - `session_id`: Foreign key to sessions table
 - `text`: Message content
 - `type`: Message role (`user` or `assistant`)
-- `claude_session_id`: Links to JSONL file storage
 - `created_at`: Message timestamp
 
 ### Files Table
@@ -122,7 +117,6 @@ export const sessions = pgTable('sessions', {
   id: uuid('id').primaryKey().defaultRandom(),
   projectPath: text('project_path').notNull(),
   claudeDirectoryPath: text('claude_directory_path').notNull(),
-  claudeCodeSessionId: text('claude_code_session_id'),
   context: text('context'),
   status: text('status').notNull().default('active'),
   metadata: jsonb('metadata').default({}),
@@ -141,7 +135,6 @@ export const sessionMessages = pgTable('session_messages', {
     .references(() => sessions.id, { onDelete: 'cascade' }),
   text: text('text').notNull(),
   type: text('type').notNull(),
-  claudeSessionId: text('claude_session_id'),
   createdAt: timestamp('created_at').defaultNow()
 });
 ```

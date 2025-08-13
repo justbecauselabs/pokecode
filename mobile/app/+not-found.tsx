@@ -1,7 +1,6 @@
 import { Link } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from '@/components/shared/SafeAreaView';
-import { Button } from '@/components/ui/Button';
+import { Button, SafeAreaView } from '@/components/common';
 
 export default function NotFoundScreen() {
   // Using system appearance via `dark:` className variants

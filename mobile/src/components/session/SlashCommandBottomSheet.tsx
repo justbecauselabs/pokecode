@@ -86,9 +86,7 @@ export const SlashCommandBottomSheet = forwardRef<BottomSheetModal, SlashCommand
       if (error) {
         return (
           <View className="justify-center items-center py-8">
-            <Text className="text-center text-destructive font-mono">
-              Failed to load commands
-            </Text>
+            <Text className="text-center text-destructive font-mono">Failed to load commands</Text>
             <Text className="text-center text-muted-foreground font-mono text-sm mt-2">
               {error.message}
             </Text>
@@ -99,7 +97,9 @@ export const SlashCommandBottomSheet = forwardRef<BottomSheetModal, SlashCommand
       if (commands.length === 0) {
         return (
           <View className="justify-center items-center py-8">
-            <Text className="text-center text-muted-foreground font-mono">No slash commands found</Text>
+            <Text className="text-center text-muted-foreground font-mono">
+              No slash commands found
+            </Text>
             <Text className="text-center text-muted-foreground font-mono text-sm mt-2">
               Add .md files to ~/.claude/commands/ or project/commands/
             </Text>

@@ -6,15 +6,8 @@ export const envSchema = z.object({
   PORT: z.string().pipe(z.coerce.number()).default(3001),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
 
-  // Database Configuration
-  DB_HOST: z.string(),
-  DB_PORT: z.string().pipe(z.coerce.number()).default(5432),
-  DB_NAME: z.string(),
-  DB_USER: z.string(),
-  DB_PASSWORD: z.string(),
-
-  // Redis Configuration
-  REDIS_URL: z.string().url(),
+  // SQLite Database Configuration
+  SQLITE_DB_PATH: z.string().optional(), // Defaults to './data/pokecode.db'
 
   // Claude Configuration - OPTIONAL
   // If set, uses API key billing. If not set, uses local Claude Max account
@@ -22,8 +15,6 @@ export const envSchema = z.object({
 
   // Claude Code CLI Path - REQUIRED for worker functionality
   CLAUDE_CODE_PATH: z.string().min(1),
-
-  // File Storage (no base dir; paths are absolute)
 
   // GitHub Repositories Directory (required)
   GITHUB_REPOS_DIRECTORY: z.string().min(1),

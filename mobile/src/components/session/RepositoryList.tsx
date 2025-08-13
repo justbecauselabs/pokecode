@@ -21,21 +21,12 @@ const RepositoryItem = memo(({ repository, onPress, isCreating }: RepositoryItem
     <Pressable
       onPress={() => onPress(repository)}
       disabled={isCreating}
-      className="flex-row items-center p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg mb-3 active:bg-gray-50 dark:active:bg-gray-700"
+      className="flex-row items-center py-3 px-4 active:bg-gray-50 dark:active:bg-gray-700"
     >
-      {/* Repository Icon */}
-      <View className="mr-3">
-        <View className="w-10 h-10 bg-blue-100 dark:bg-blue-900 rounded-lg items-center justify-center">
-          <Text className="text-blue-600 dark:text-blue-400 text-lg">
-            {repository.isGitRepository ? '📁' : '📂'}
-          </Text>
-        </View>
-      </View>
-
       {/* Repository Info */}
       <View className="flex-1">
         <View className="flex-row items-center mb-1">
-          <Text className="text-lg font-semibold text-gray-900 dark:text-white mr-2">
+          <Text className="text-lg font-medium text-gray-900 dark:text-white mr-2">
             {repository.folderName}
           </Text>
           {repository.isGitRepository && (
@@ -132,8 +123,8 @@ export const RepositoryList = memo(
           data={repositories}
           keyExtractor={(item) => item.path}
           renderItem={renderRepository}
+          ItemSeparatorComponent={() => <View className="h-px bg-gray-200 dark:bg-gray-700 ml-4" />}
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ padding: 16 }}
           refreshing={isLoading}
           onRefresh={onRefresh}
           extraData={createSessionMutation.isPending}

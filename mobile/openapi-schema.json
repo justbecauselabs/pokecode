@@ -1,1 +1,1266 @@
-{"openapi":"3.0.3","info":{"title":"Claude Code Mobile API","description":"Backend API for Claude Code Mobile application","version":"1.0.0"},"components":{"securitySchemes":{"bearerAuth":{"type":"http","scheme":"bearer","bearerFormat":"JWT"}},"schemas":{}},"paths":{"/health/":{"get":{"responses":{"200":{"description":"Default Response","content":{"application/json":{"schema":{"type":"object","properties":{"status":{"anyOf":[{"type":"string","enum":["healthy"]},{"type":"string","enum":["unhealthy"]}]},"timestamp":{"format":"date-time","type":"string"},"services":{"type":"object","properties":{"database":{"anyOf":[{"type":"string","enum":["healthy"]},{"type":"string","enum":["unhealthy"]},{"type":"string","enum":["unknown"]}]},"redis":{"anyOf":[{"type":"string","enum":["healthy"]},{"type":"string","enum":["unhealthy"]},{"type":"string","enum":["unknown"]}]},"queue":{"anyOf":[{"type":"string","enum":["healthy"]},{"type":"string","enum":["unhealthy"]},{"type":"string","enum":["unknown"]}]}},"required":["database","redis","queue"]},"version":{"type":"string"},"uptime":{"type":"number"}},"required":["status","timestamp","services","version","uptime"]}}}},"503":{"description":"Default Response","content":{"application/json":{"schema":{"type":"object","properties":{"status":{"anyOf":[{"type":"string","enum":["healthy"]},{"type":"string","enum":["unhealthy"]}]},"timestamp":{"format":"date-time","type":"string"},"services":{"type":"object","properties":{"database":{"anyOf":[{"type":"string","enum":["healthy"]},{"type":"string","enum":["unhealthy"]},{"type":"string","enum":["unknown"]}]},"redis":{"anyOf":[{"type":"string","enum":["healthy"]},{"type":"string","enum":["unhealthy"]},{"type":"string","enum":["unknown"]}]},"queue":{"anyOf":[{"type":"string","enum":["healthy"]},{"type":"string","enum":["unhealthy"]},{"type":"string","enum":["unknown"]}]}},"required":["database","redis","queue"]},"version":{"type":"string"},"uptime":{"type":"number"}},"required":["status","timestamp","services","version","uptime"]}}}}}}},"/health/live":{"get":{"responses":{"200":{"description":"Default Response","content":{"application/json":{"schema":{"type":"object","properties":{"status":{"type":"string","enum":["ok"]},"timestamp":{"type":"string"}},"required":["status","timestamp"]}}}}}}},"/health/ready":{"get":{"responses":{"200":{"description":"Default Response","content":{"application/json":{"schema":{"type":"object","properties":{"status":{"type":"string","enum":["ready"]},"timestamp":{"type":"string"}},"required":["status","timestamp"]}}}},"503":{"description":"Default Response","content":{"application/json":{"schema":{"type":"object","properties":{"status":{"type":"string","enum":["not_ready"]},"timestamp":{"type":"string"},"reason":{"type":"string"}},"required":["status","timestamp","reason"]}}}}}}},"/api/claude-code/repositories/":{"get":{"responses":{"200":{"description":"Default Response","content":{"application/json":{"schema":{"type":"object","properties":{"repositories":{"type":"array","items":{"type":"object","properties":{"folderName":{"minLength":1,"description":"The folder name of the repository","type":"string"},"path":{"description":"The absolute path to the repository","type":"string"},"isGitRepository":{"description":"Whether the folder contains a .git directory","type":"boolean"}},"required":["folderName","path","isGitRepository"]}},"total":{"type":"integer"},"githubReposDirectory":{"description":"The configured GITHUB_REPOS_DIRECTORY","type":"string"}},"required":["repositories","total","githubReposDirectory"]}}}},"500":{"description":"Default Response","content":{"application/json":{"schema":{"type":"object","properties":{"error":{"type":"string"},"code":{"type":"string"}},"required":["error"]}}}}}}},"/api/claude-code/sessions/":{"post":{"requestBody":{"content":{"application/json":{"schema":{"type":"object","properties":{"projectPath":{"pattern":"^[a-zA-Z0-9._/-]+$","minLength":1,"maxLength":255,"type":"string"},"folderName":{"pattern":"^[a-zA-Z0-9._-]+$","minLength":1,"maxLength":100,"type":"string"},"context":{"maxLength":5000,"type":"string"},"metadata":{"type":"object","properties":{"repository":{"type":"string"},"branch":{"type":"string"},"allowedTools":{"type":"array","items":{"type":"string"}}}}}}}}},"responses":{"201":{"description":"Default Response","content":{"application/json":{"schema":{"type":"object","properties":{"id":{"format":"uuid","type":"string"},"projectPath":{"type":"string"},"claudeDirectoryPath":{"type":"string"},"claudeCodeSessionId":{"type":"string"},"context":{"type":"string"},"status":{"anyOf":[{"type":"string","enum":["active"]},{"type":"string","enum":["idle"]},{"type":"string","enum":["expired"]}]},"metadata":{},"createdAt":{"format":"date-time","type":"string"},"updatedAt":{"format":"date-time","type":"string"},"lastAccessedAt":{"format":"date-time","type":"string"},"isWorking":{"type":"boolean"},"currentJobId":{"type":"string"},"lastJobStatus":{"type":"string"}},"required":["id","projectPath","status","createdAt","updatedAt","lastAccessedAt","isWorking"]}}}},"400":{"description":"Default Response","content":{"application/json":{"schema":{"type":"object","properties":{"error":{"type":"string"},"code":{"type":"string"}},"required":["error"]}}}}}},"get":{"parameters":[{"schema":{"anyOf":[{"type":"string","enum":["active"]},{"type":"string","enum":["idle"]},{"type":"string","enum":["expired"]}]},"in":"query","name":"status","required":false},{"schema":{"minimum":1,"maximum":100,"default":20,"type":"integer"},"in":"query","name":"limit","required":false},{"schema":{"minimum":0,"default":0,"type":"integer"},"in":"query","name":"offset","required":false}],"responses":{"200":{"description":"Default Response","content":{"application/json":{"schema":{"type":"object","properties":{"sessions":{"type":"array","items":{"type":"object","properties":{"id":{"format":"uuid","type":"string"},"projectPath":{"type":"string"},"claudeDirectoryPath":{"type":"string"},"claudeCodeSessionId":{"type":"string"},"context":{"type":"string"},"status":{"anyOf":[{"type":"string","enum":["active"]},{"type":"string","enum":["idle"]},{"type":"string","enum":["expired"]}]},"metadata":{},"createdAt":{"format":"date-time","type":"string"},"updatedAt":{"format":"date-time","type":"string"},"lastAccessedAt":{"format":"date-time","type":"string"},"isWorking":{"type":"boolean"},"currentJobId":{"type":"string"},"lastJobStatus":{"type":"string"}},"required":["id","projectPath","status","createdAt","updatedAt","lastAccessedAt","isWorking"]}},"total":{"type":"integer"},"limit":{"type":"integer"},"offset":{"type":"integer"}},"required":["sessions","total","limit","offset"]}}}}}}},"/api/claude-code/sessions/{sessionId}":{"get":{"parameters":[{"schema":{"format":"uuid","type":"string"},"in":"path","name":"sessionId","required":true}],"responses":{"200":{"description":"Default Response","content":{"application/json":{"schema":{"type":"object","properties":{"id":{"format":"uuid","type":"string"},"projectPath":{"type":"string"},"claudeDirectoryPath":{"type":"string"},"claudeCodeSessionId":{"type":"string"},"context":{"type":"string"},"status":{"anyOf":[{"type":"string","enum":["active"]},{"type":"string","enum":["idle"]},{"type":"string","enum":["expired"]}]},"metadata":{},"createdAt":{"format":"date-time","type":"string"},"updatedAt":{"format":"date-time","type":"string"},"lastAccessedAt":{"format":"date-time","type":"string"},"isWorking":{"type":"boolean"},"currentJobId":{"type":"string"},"lastJobStatus":{"type":"string"}},"required":["id","projectPath","status","createdAt","updatedAt","lastAccessedAt","isWorking"]}}}},"404":{"description":"Default Response","content":{"application/json":{"schema":{"type":"object","properties":{"error":{"type":"string"},"code":{"type":"string"}},"required":["error"]}}}}}},"patch":{"requestBody":{"content":{"application/json":{"schema":{"type":"object","properties":{"context":{"maxLength":5000,"type":"string"},"metadata":{}}}}}},"parameters":[{"schema":{"format":"uuid","type":"string"},"in":"path","name":"sessionId","required":true}],"responses":{"200":{"description":"Default Response","content":{"application/json":{"schema":{"type":"object","properties":{"id":{"format":"uuid","type":"string"},"projectPath":{"type":"string"},"claudeDirectoryPath":{"type":"string"},"claudeCodeSessionId":{"type":"string"},"context":{"type":"string"},"status":{"anyOf":[{"type":"string","enum":["active"]},{"type":"string","enum":["idle"]},{"type":"string","enum":["expired"]}]},"metadata":{},"createdAt":{"format":"date-time","type":"string"},"updatedAt":{"format":"date-time","type":"string"},"lastAccessedAt":{"format":"date-time","type":"string"},"isWorking":{"type":"boolean"},"currentJobId":{"type":"string"},"lastJobStatus":{"type":"string"}},"required":["id","projectPath","status","createdAt","updatedAt","lastAccessedAt","isWorking"]}}}},"400":{"description":"Default Response","content":{"application/json":{"schema":{"type":"object","properties":{"error":{"type":"string"},"code":{"type":"string"}},"required":["error"]}}}},"404":{"description":"Default Response","content":{"application/json":{"schema":{"type":"object","properties":{"error":{"type":"string"},"code":{"type":"string"}},"required":["error"]}}}}}},"delete":{"parameters":[{"schema":{"format":"uuid","type":"string"},"in":"path","name":"sessionId","required":true}],"responses":{"200":{"description":"Default Response","content":{"application/json":{"schema":{"type":"object","properties":{"success":{"type":"boolean"}},"required":["success"]}}}},"404":{"description":"Default Response","content":{"application/json":{"schema":{"type":"object","properties":{"error":{"type":"string"},"code":{"type":"string"}},"required":["error"]}}}}}}},"/api/claude-code/sessions/{sessionId}/messages":{"post":{"requestBody":{"content":{"application/json":{"schema":{"type":"object","properties":{"content":{"minLength":1,"type":"string"},"allowedTools":{"type":"array","items":{"type":"string"}}},"required":["content"]}}},"required":true},"parameters":[{"schema":{"format":"uuid","type":"string"},"in":"path","name":"sessionId","required":true}],"responses":{"202":{"description":"Default Response","content":{"application/json":{"schema":{"type":"object","properties":{}}}}},"404":{"description":"Default Response","content":{"application/json":{"schema":{"type":"object","properties":{"error":{"type":"string"},"code":{"type":"string"}},"required":["error"]}}}}}},"get":{"parameters":[{"schema":{"format":"uuid","type":"string"},"in":"path","name":"sessionId","required":true}],"responses":{"200":{"description":"Default Response","content":{"application/json":{"schema":{"type":"object","properties":{"messages":{"type":"array","items":{"type":"object","properties":{"id":{"type":"string"},"sessionId":{"type":"string"},"role":{"anyOf":[{"type":"string","enum":["user"]},{"type":"string","enum":["assistant"]}]},"content":{"type":"string"},"timestamp":{"type":"string"},"claudeSessionId":{"type":"string"},"children":{"type":"array","items":{"type":"object","properties":{"id":{"type":"string"},"role":{"anyOf":[{"type":"string","enum":["user"]},{"type":"string","enum":["assistant"]}]},"content":{"type":"string"},"timestamp":{"type":"string"},"toolCalls":{"type":"array","items":{"type":"object","properties":{"name":{"type":"string"},"input":{}},"required":["name","input"]}},"toolResults":{"type":"array","items":{"type":"object","properties":{"tool_use_id":{"type":"string"},"content":{"type":"string"}},"required":["tool_use_id","content"]}},"thinking":{"type":"string"}},"required":["id","role","content","timestamp"]}}},"required":["id","sessionId","role","content","timestamp","children"]}},"session":{"type":"object","properties":{"id":{"type":"string"},"isWorking":{"type":"boolean"},"currentJobId":{"anyOf":[{"type":"string"},{"type":"null"}]},"lastJobStatus":{"anyOf":[{"type":"string"},{"type":"null"}]},"status":{"anyOf":[{"type":"string","enum":["active"]},{"type":"string","enum":["idle"]},{"type":"string","enum":["expired"]}]}},"required":["id","isWorking","status"]}},"required":["messages","session"]}}}},"404":{"description":"Default Response","content":{"application/json":{"schema":{"type":"object","properties":{"error":{"type":"string"},"code":{"type":"string"}},"required":["error"]}}}}}}},"/api/claude-code/sessions/{sessionId}/files/":{"get":{"parameters":[{"schema":{"default":".","type":"string"},"in":"query","name":"path","required":false},{"schema":{"default":false,"type":"boolean"},"in":"query","name":"recursive","required":false},{"schema":{"type":"string"},"in":"query","name":"pattern","required":false},{"schema":{"format":"uuid","type":"string"},"in":"path","name":"sessionId","required":true}],"responses":{"200":{"description":"Default Response","content":{"application/json":{"schema":{"type":"object","properties":{"files":{"type":"array","items":{"type":"object","properties":{"path":{"type":"string"},"name":{"type":"string"},"type":{"anyOf":[{"type":"string","enum":["file"]},{"type":"string","enum":["directory"]}]},"size":{"type":"number"},"modifiedAt":{"format":"date-time","type":"string"}},"required":["path","name","type"]}},"basePath":{"type":"string"}},"required":["files","basePath"]}}}},"400":{"description":"Default Response","content":{"application/json":{"schema":{"type":"object","properties":{"error":{"type":"string"},"code":{"type":"string"}},"required":["error"]}}}},"403":{"description":"Default Response","content":{"application/json":{"schema":{"type":"object","properties":{"error":{"type":"string"},"code":{"type":"string"}},"required":["error"]}}}},"404":{"description":"Default Response","content":{"application/json":{"schema":{"type":"object","properties":{"error":{"type":"string"},"code":{"type":"string"}},"required":["error"]}}}}}}},"/api/claude-code/sessions/{sessionId}/files/{*}":{"get":{"parameters":[{"schema":{"format":"uuid","type":"string"},"in":"path","name":"sessionId","required":true},{"schema":{"type":"string"},"in":"path","name":"*","required":true}],"responses":{"200":{"description":"Default Response","content":{"application/json":{"schema":{"type":"object","properties":{"path":{"type":"string"},"content":{"type":"string"},"encoding":{"type":"string"},"size":{"type":"number"},"mimeType":{"type":"string"},"modifiedAt":{"format":"date-time","type":"string"}},"required":["path","content","encoding","size","mimeType","modifiedAt"]}}}},"400":{"description":"Default Response","content":{"application/json":{"schema":{"type":"object","properties":{"error":{"type":"string"},"code":{"type":"string"}},"required":["error"]}}}},"403":{"description":"Default Response","content":{"application/json":{"schema":{"type":"object","properties":{"error":{"type":"string"},"code":{"type":"string"}},"required":["error"]}}}},"404":{"description":"Default Response","content":{"application/json":{"schema":{"type":"object","properties":{"error":{"type":"string"},"code":{"type":"string"}},"required":["error"]}}}}}},"post":{"requestBody":{"content":{"application/json":{"schema":{"type":"object","properties":{"content":{"type":"string"},"encoding":{"default":"utf-8","type":"string"}},"required":["content"]}}},"required":true},"parameters":[{"schema":{"format":"uuid","type":"string"},"in":"path","name":"sessionId","required":true},{"schema":{"type":"string"},"in":"path","name":"*","required":true}],"responses":{"201":{"description":"Default Response","content":{"application/json":{"schema":{"type":"object","properties":{"success":{"type":"boolean"},"path":{"type":"string"}},"required":["success","path"]}}}},"400":{"description":"Default Response","content":{"application/json":{"schema":{"type":"object","properties":{"error":{"type":"string"},"code":{"type":"string"}},"required":["error"]}}}},"403":{"description":"Default Response","content":{"application/json":{"schema":{"type":"object","properties":{"error":{"type":"string"},"code":{"type":"string"}},"required":["error"]}}}},"409":{"description":"Default Response","content":{"application/json":{"schema":{"type":"object","properties":{"error":{"type":"string"},"code":{"type":"string"}},"required":["error"]}}}}}},"put":{"requestBody":{"content":{"application/json":{"schema":{"type":"object","properties":{"content":{"type":"string"},"encoding":{"default":"utf-8","type":"string"}},"required":["content"]}}},"required":true},"parameters":[{"schema":{"format":"uuid","type":"string"},"in":"path","name":"sessionId","required":true},{"schema":{"type":"string"},"in":"path","name":"*","required":true}],"responses":{"200":{"description":"Default Response","content":{"application/json":{"schema":{"type":"object","properties":{"success":{"type":"boolean"},"path":{"type":"string"}},"required":["success","path"]}}}},"400":{"description":"Default Response","content":{"application/json":{"schema":{"type":"object","properties":{"error":{"type":"string"},"code":{"type":"string"}},"required":["error"]}}}},"403":{"description":"Default Response","content":{"application/json":{"schema":{"type":"object","properties":{"error":{"type":"string"},"code":{"type":"string"}},"required":["error"]}}}},"404":{"description":"Default Response","content":{"application/json":{"schema":{"type":"object","properties":{"error":{"type":"string"},"code":{"type":"string"}},"required":["error"]}}}}}},"delete":{"parameters":[{"schema":{"format":"uuid","type":"string"},"in":"path","name":"sessionId","required":true},{"schema":{"type":"string"},"in":"path","name":"*","required":true}],"responses":{"200":{"description":"Default Response","content":{"application/json":{"schema":{"type":"object","properties":{"success":{"type":"boolean"},"path":{"type":"string"}},"required":["success","path"]}}}},"400":{"description":"Default Response","content":{"application/json":{"schema":{"type":"object","properties":{"error":{"type":"string"},"code":{"type":"string"}},"required":["error"]}}}},"403":{"description":"Default Response","content":{"application/json":{"schema":{"type":"object","properties":{"error":{"type":"string"},"code":{"type":"string"}},"required":["error"]}}}},"404":{"description":"Default Response","content":{"application/json":{"schema":{"type":"object","properties":{"error":{"type":"string"},"code":{"type":"string"}},"required":["error"]}}}}}}},"/api/claude-code/sessions/{sessionId}/commands/":{"get":{"summary":"List available slash commands","tags":["Commands"],"description":"Discover slash commands from both user Claude home directory and project directory","parameters":[{"schema":{"default":"all","anyOf":[{"type":"string","enum":["user"]},{"type":"string","enum":["project"]},{"type":"string","enum":["all"]}]},"in":"query","name":"type","required":false,"description":"Filter commands by type"},{"schema":{"type":"string"},"in":"query","name":"search","required":false,"description":"Search commands by name or content"},{"schema":{"format":"uuid","type":"string"},"in":"path","name":"sessionId","required":true}],"responses":{"200":{"description":"Default Response","content":{"application/json":{"schema":{"type":"object","properties":{"commands":{"type":"array","items":{"type":"object","properties":{"name":{"description":"Command name (filename without .md extension)","type":"string"},"body":{"description":"Contents of the command file","type":"string"},"type":{"description":"Command type: user (from Claude home) or project (from repo)","anyOf":[{"type":"string","enum":["user"]},{"type":"string","enum":["project"]}]}},"required":["name","body","type"]}},"sources":{"type":"object","properties":{"userCommandsPath":{"description":"Path to user commands directory","type":"string"},"projectCommandsPath":{"description":"Path to project commands directory","type":"string"}}}},"required":["commands","sources"]}}}},"400":{"description":"Default Response","content":{"application/json":{"schema":{"type":"object","properties":{"error":{"type":"string"},"code":{"type":"string"}},"required":["error"]}}}},"403":{"description":"Default Response","content":{"application/json":{"schema":{"type":"object","properties":{"error":{"type":"string"},"code":{"type":"string"}},"required":["error"]}}}},"404":{"description":"Default Response","content":{"application/json":{"schema":{"type":"object","properties":{"error":{"type":"string"},"code":{"type":"string"}},"required":["error"]}}}}}}},"/":{"get":{"responses":{"200":{"description":"Default Response"}}}}},"servers":[{"url":"http://localhost:3001","description":"Development server"}],"security":[{"bearerAuth":[]}],"tags":[{"name":"auth","description":"Authentication endpoints"},{"name":"sessions","description":"Session management"},{"name":"prompts","description":"Prompt execution"},{"name":"files","description":"File operations"},{"name":"health","description":"Health checks"}]}
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Claude Code Mobile API",
+    "description": "Backend API for Claude Code Mobile application",
+    "version": "1.0.0"
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": { "type": "http", "scheme": "bearer", "bearerFormat": "JWT" }
+    },
+    "schemas": {}
+  },
+  "paths": {
+    "/health/": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "anyOf": [
+                        { "type": "string", "enum": ["healthy"] },
+                        { "type": "string", "enum": ["unhealthy"] }
+                      ]
+                    },
+                    "timestamp": { "format": "date-time", "type": "string" },
+                    "services": {
+                      "type": "object",
+                      "properties": {
+                        "database": {
+                          "anyOf": [
+                            { "type": "string", "enum": ["healthy"] },
+                            { "type": "string", "enum": ["unhealthy"] },
+                            { "type": "string", "enum": ["unknown"] }
+                          ]
+                        },
+                        "redis": {
+                          "anyOf": [
+                            { "type": "string", "enum": ["healthy"] },
+                            { "type": "string", "enum": ["unhealthy"] },
+                            { "type": "string", "enum": ["unknown"] }
+                          ]
+                        },
+                        "queue": {
+                          "anyOf": [
+                            { "type": "string", "enum": ["healthy"] },
+                            { "type": "string", "enum": ["unhealthy"] },
+                            { "type": "string", "enum": ["unknown"] }
+                          ]
+                        }
+                      },
+                      "required": ["database", "redis", "queue"]
+                    },
+                    "version": { "type": "string" },
+                    "uptime": { "type": "number" }
+                  },
+                  "required": ["status", "timestamp", "services", "version", "uptime"]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "anyOf": [
+                        { "type": "string", "enum": ["healthy"] },
+                        { "type": "string", "enum": ["unhealthy"] }
+                      ]
+                    },
+                    "timestamp": { "format": "date-time", "type": "string" },
+                    "services": {
+                      "type": "object",
+                      "properties": {
+                        "database": {
+                          "anyOf": [
+                            { "type": "string", "enum": ["healthy"] },
+                            { "type": "string", "enum": ["unhealthy"] },
+                            { "type": "string", "enum": ["unknown"] }
+                          ]
+                        },
+                        "redis": {
+                          "anyOf": [
+                            { "type": "string", "enum": ["healthy"] },
+                            { "type": "string", "enum": ["unhealthy"] },
+                            { "type": "string", "enum": ["unknown"] }
+                          ]
+                        },
+                        "queue": {
+                          "anyOf": [
+                            { "type": "string", "enum": ["healthy"] },
+                            { "type": "string", "enum": ["unhealthy"] },
+                            { "type": "string", "enum": ["unknown"] }
+                          ]
+                        }
+                      },
+                      "required": ["database", "redis", "queue"]
+                    },
+                    "version": { "type": "string" },
+                    "uptime": { "type": "number" }
+                  },
+                  "required": ["status", "timestamp", "services", "version", "uptime"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health/live": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "string", "enum": ["ok"] },
+                    "timestamp": { "type": "string" }
+                  },
+                  "required": ["status", "timestamp"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health/ready": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "string", "enum": ["ready"] },
+                    "timestamp": { "type": "string" }
+                  },
+                  "required": ["status", "timestamp"]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "string", "enum": ["not_ready"] },
+                    "timestamp": { "type": "string" },
+                    "reason": { "type": "string" }
+                  },
+                  "required": ["status", "timestamp", "reason"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/claude-code/repositories/": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "repositories": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "folderName": {
+                            "minLength": 1,
+                            "description": "The folder name of the repository",
+                            "type": "string"
+                          },
+                          "path": {
+                            "description": "The absolute path to the repository",
+                            "type": "string"
+                          },
+                          "isGitRepository": {
+                            "description": "Whether the folder contains a .git directory",
+                            "type": "boolean"
+                          }
+                        },
+                        "required": ["folderName", "path", "isGitRepository"]
+                      }
+                    },
+                    "total": { "type": "integer" },
+                    "githubReposDirectory": {
+                      "description": "The configured GITHUB_REPOS_DIRECTORY",
+                      "type": "string"
+                    }
+                  },
+                  "required": ["repositories", "total", "githubReposDirectory"]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "error": { "type": "string" }, "code": { "type": "string" } },
+                  "required": ["error"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/claude-code/sessions/": {
+      "post": {
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "projectPath": {
+                    "pattern": "^[a-zA-Z0-9._/-]+$",
+                    "minLength": 1,
+                    "maxLength": 255,
+                    "type": "string"
+                  },
+                  "folderName": {
+                    "pattern": "^[a-zA-Z0-9._-]+$",
+                    "minLength": 1,
+                    "maxLength": 100,
+                    "type": "string"
+                  },
+                  "context": { "maxLength": 5000, "type": "string" },
+                  "metadata": {
+                    "type": "object",
+                    "properties": {
+                      "repository": { "type": "string" },
+                      "branch": { "type": "string" },
+                      "allowedTools": { "type": "array", "items": { "type": "string" } }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": { "format": "uuid", "type": "string" },
+                    "projectPath": { "type": "string" },
+                    "claudeDirectoryPath": { "type": "string" },
+                    "claudeCodeSessionId": { "type": "string" },
+                    "context": { "type": "string" },
+                    "status": {
+                      "anyOf": [
+                        { "type": "string", "enum": ["active"] },
+                        { "type": "string", "enum": ["idle"] },
+                        { "type": "string", "enum": ["expired"] }
+                      ]
+                    },
+                    "metadata": {},
+                    "createdAt": { "format": "date-time", "type": "string" },
+                    "updatedAt": { "format": "date-time", "type": "string" },
+                    "lastAccessedAt": { "format": "date-time", "type": "string" },
+                    "isWorking": { "type": "boolean" },
+                    "currentJobId": { "type": "string" },
+                    "lastJobStatus": { "type": "string" }
+                  },
+                  "required": [
+                    "id",
+                    "projectPath",
+                    "status",
+                    "createdAt",
+                    "updatedAt",
+                    "lastAccessedAt",
+                    "isWorking"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "error": { "type": "string" }, "code": { "type": "string" } },
+                  "required": ["error"]
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "parameters": [
+          {
+            "schema": {
+              "anyOf": [
+                { "type": "string", "enum": ["active"] },
+                { "type": "string", "enum": ["idle"] },
+                { "type": "string", "enum": ["expired"] }
+              ]
+            },
+            "in": "query",
+            "name": "status",
+            "required": false
+          },
+          {
+            "schema": { "minimum": 1, "maximum": 100, "default": 20, "type": "integer" },
+            "in": "query",
+            "name": "limit",
+            "required": false
+          },
+          {
+            "schema": { "minimum": 0, "default": 0, "type": "integer" },
+            "in": "query",
+            "name": "offset",
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "sessions": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": { "format": "uuid", "type": "string" },
+                          "projectPath": { "type": "string" },
+                          "claudeDirectoryPath": { "type": "string" },
+                          "claudeCodeSessionId": { "type": "string" },
+                          "context": { "type": "string" },
+                          "status": {
+                            "anyOf": [
+                              { "type": "string", "enum": ["active"] },
+                              { "type": "string", "enum": ["idle"] },
+                              { "type": "string", "enum": ["expired"] }
+                            ]
+                          },
+                          "metadata": {},
+                          "createdAt": { "format": "date-time", "type": "string" },
+                          "updatedAt": { "format": "date-time", "type": "string" },
+                          "lastAccessedAt": { "format": "date-time", "type": "string" },
+                          "isWorking": { "type": "boolean" },
+                          "currentJobId": { "type": "string" },
+                          "lastJobStatus": { "type": "string" }
+                        },
+                        "required": [
+                          "id",
+                          "projectPath",
+                          "status",
+                          "createdAt",
+                          "updatedAt",
+                          "lastAccessedAt",
+                          "isWorking"
+                        ]
+                      }
+                    },
+                    "total": { "type": "integer" },
+                    "limit": { "type": "integer" },
+                    "offset": { "type": "integer" }
+                  },
+                  "required": ["sessions", "total", "limit", "offset"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/claude-code/sessions/{sessionId}": {
+      "get": {
+        "parameters": [
+          {
+            "schema": { "format": "uuid", "type": "string" },
+            "in": "path",
+            "name": "sessionId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": { "format": "uuid", "type": "string" },
+                    "projectPath": { "type": "string" },
+                    "claudeDirectoryPath": { "type": "string" },
+                    "claudeCodeSessionId": { "type": "string" },
+                    "context": { "type": "string" },
+                    "status": {
+                      "anyOf": [
+                        { "type": "string", "enum": ["active"] },
+                        { "type": "string", "enum": ["idle"] },
+                        { "type": "string", "enum": ["expired"] }
+                      ]
+                    },
+                    "metadata": {},
+                    "createdAt": { "format": "date-time", "type": "string" },
+                    "updatedAt": { "format": "date-time", "type": "string" },
+                    "lastAccessedAt": { "format": "date-time", "type": "string" },
+                    "isWorking": { "type": "boolean" },
+                    "currentJobId": { "type": "string" },
+                    "lastJobStatus": { "type": "string" }
+                  },
+                  "required": [
+                    "id",
+                    "projectPath",
+                    "status",
+                    "createdAt",
+                    "updatedAt",
+                    "lastAccessedAt",
+                    "isWorking"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "error": { "type": "string" }, "code": { "type": "string" } },
+                  "required": ["error"]
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": { "context": { "maxLength": 5000, "type": "string" }, "metadata": {} }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": { "format": "uuid", "type": "string" },
+            "in": "path",
+            "name": "sessionId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": { "format": "uuid", "type": "string" },
+                    "projectPath": { "type": "string" },
+                    "claudeDirectoryPath": { "type": "string" },
+                    "claudeCodeSessionId": { "type": "string" },
+                    "context": { "type": "string" },
+                    "status": {
+                      "anyOf": [
+                        { "type": "string", "enum": ["active"] },
+                        { "type": "string", "enum": ["idle"] },
+                        { "type": "string", "enum": ["expired"] }
+                      ]
+                    },
+                    "metadata": {},
+                    "createdAt": { "format": "date-time", "type": "string" },
+                    "updatedAt": { "format": "date-time", "type": "string" },
+                    "lastAccessedAt": { "format": "date-time", "type": "string" },
+                    "isWorking": { "type": "boolean" },
+                    "currentJobId": { "type": "string" },
+                    "lastJobStatus": { "type": "string" }
+                  },
+                  "required": [
+                    "id",
+                    "projectPath",
+                    "status",
+                    "createdAt",
+                    "updatedAt",
+                    "lastAccessedAt",
+                    "isWorking"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "error": { "type": "string" }, "code": { "type": "string" } },
+                  "required": ["error"]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "error": { "type": "string" }, "code": { "type": "string" } },
+                  "required": ["error"]
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "parameters": [
+          {
+            "schema": { "format": "uuid", "type": "string" },
+            "in": "path",
+            "name": "sessionId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "success": { "type": "boolean" } },
+                  "required": ["success"]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "error": { "type": "string" }, "code": { "type": "string" } },
+                  "required": ["error"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/claude-code/sessions/{sessionId}/messages": {
+      "post": {
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "content": { "minLength": 1, "type": "string" },
+                  "allowedTools": { "type": "array", "items": { "type": "string" } }
+                },
+                "required": ["content"]
+              }
+            }
+          },
+          "required": true
+        },
+        "parameters": [
+          {
+            "schema": { "format": "uuid", "type": "string" },
+            "in": "path",
+            "name": "sessionId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Default Response",
+            "content": { "application/json": { "schema": { "type": "object", "properties": {} } } }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "error": { "type": "string" }, "code": { "type": "string" } },
+                  "required": ["error"]
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "parameters": [
+          {
+            "schema": { "format": "uuid", "type": "string" },
+            "in": "path",
+            "name": "sessionId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "messages": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": { "type": "string" },
+                          "sessionId": { "type": "string" },
+                          "role": {
+                            "anyOf": [
+                              { "type": "string", "enum": ["user"] },
+                              { "type": "string", "enum": ["assistant"] }
+                            ]
+                          },
+                          "content": { "type": "string" },
+                          "timestamp": { "type": "string" },
+                          "claudeSessionId": { "type": "string" },
+                          "children": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "id": { "type": "string" },
+                                "role": {
+                                  "anyOf": [
+                                    { "type": "string", "enum": ["user"] },
+                                    { "type": "string", "enum": ["assistant"] }
+                                  ]
+                                },
+                                "content": { "type": "string" },
+                                "timestamp": { "type": "string" },
+                                "toolCalls": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": { "name": { "type": "string" }, "input": {} },
+                                    "required": ["name", "input"]
+                                  }
+                                },
+                                "toolResults": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "tool_use_id": { "type": "string" },
+                                      "content": { "type": "string" }
+                                    },
+                                    "required": ["tool_use_id", "content"]
+                                  }
+                                },
+                                "thinking": { "type": "string" }
+                              },
+                              "required": ["id", "role", "content", "timestamp"]
+                            }
+                          }
+                        },
+                        "required": ["id", "sessionId", "role", "content", "timestamp", "children"]
+                      }
+                    },
+                    "session": {
+                      "type": "object",
+                      "properties": {
+                        "id": { "type": "string" },
+                        "isWorking": { "type": "boolean" },
+                        "currentJobId": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+                        "lastJobStatus": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+                        "status": {
+                          "anyOf": [
+                            { "type": "string", "enum": ["active"] },
+                            { "type": "string", "enum": ["idle"] },
+                            { "type": "string", "enum": ["expired"] }
+                          ]
+                        }
+                      },
+                      "required": ["id", "isWorking", "status"]
+                    }
+                  },
+                  "required": ["messages", "session"]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "error": { "type": "string" }, "code": { "type": "string" } },
+                  "required": ["error"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/claude-code/sessions/{sessionId}/files/": {
+      "get": {
+        "parameters": [
+          {
+            "schema": { "default": ".", "type": "string" },
+            "in": "query",
+            "name": "path",
+            "required": false
+          },
+          {
+            "schema": { "default": false, "type": "boolean" },
+            "in": "query",
+            "name": "recursive",
+            "required": false
+          },
+          { "schema": { "type": "string" }, "in": "query", "name": "pattern", "required": false },
+          {
+            "schema": { "format": "uuid", "type": "string" },
+            "in": "path",
+            "name": "sessionId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "files": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "path": { "type": "string" },
+                          "name": { "type": "string" },
+                          "type": {
+                            "anyOf": [
+                              { "type": "string", "enum": ["file"] },
+                              { "type": "string", "enum": ["directory"] }
+                            ]
+                          },
+                          "size": { "type": "number" },
+                          "modifiedAt": { "format": "date-time", "type": "string" }
+                        },
+                        "required": ["path", "name", "type"]
+                      }
+                    },
+                    "basePath": { "type": "string" }
+                  },
+                  "required": ["files", "basePath"]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "error": { "type": "string" }, "code": { "type": "string" } },
+                  "required": ["error"]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "error": { "type": "string" }, "code": { "type": "string" } },
+                  "required": ["error"]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "error": { "type": "string" }, "code": { "type": "string" } },
+                  "required": ["error"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/claude-code/sessions/{sessionId}/files/{*}": {
+      "get": {
+        "parameters": [
+          {
+            "schema": { "format": "uuid", "type": "string" },
+            "in": "path",
+            "name": "sessionId",
+            "required": true
+          },
+          { "schema": { "type": "string" }, "in": "path", "name": "*", "required": true }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "path": { "type": "string" },
+                    "content": { "type": "string" },
+                    "encoding": { "type": "string" },
+                    "size": { "type": "number" },
+                    "mimeType": { "type": "string" },
+                    "modifiedAt": { "format": "date-time", "type": "string" }
+                  },
+                  "required": ["path", "content", "encoding", "size", "mimeType", "modifiedAt"]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "error": { "type": "string" }, "code": { "type": "string" } },
+                  "required": ["error"]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "error": { "type": "string" }, "code": { "type": "string" } },
+                  "required": ["error"]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "error": { "type": "string" }, "code": { "type": "string" } },
+                  "required": ["error"]
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "content": { "type": "string" },
+                  "encoding": { "default": "utf-8", "type": "string" }
+                },
+                "required": ["content"]
+              }
+            }
+          },
+          "required": true
+        },
+        "parameters": [
+          {
+            "schema": { "format": "uuid", "type": "string" },
+            "in": "path",
+            "name": "sessionId",
+            "required": true
+          },
+          { "schema": { "type": "string" }, "in": "path", "name": "*", "required": true }
+        ],
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "success": { "type": "boolean" }, "path": { "type": "string" } },
+                  "required": ["success", "path"]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "error": { "type": "string" }, "code": { "type": "string" } },
+                  "required": ["error"]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "error": { "type": "string" }, "code": { "type": "string" } },
+                  "required": ["error"]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "error": { "type": "string" }, "code": { "type": "string" } },
+                  "required": ["error"]
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "content": { "type": "string" },
+                  "encoding": { "default": "utf-8", "type": "string" }
+                },
+                "required": ["content"]
+              }
+            }
+          },
+          "required": true
+        },
+        "parameters": [
+          {
+            "schema": { "format": "uuid", "type": "string" },
+            "in": "path",
+            "name": "sessionId",
+            "required": true
+          },
+          { "schema": { "type": "string" }, "in": "path", "name": "*", "required": true }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "success": { "type": "boolean" }, "path": { "type": "string" } },
+                  "required": ["success", "path"]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "error": { "type": "string" }, "code": { "type": "string" } },
+                  "required": ["error"]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "error": { "type": "string" }, "code": { "type": "string" } },
+                  "required": ["error"]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "error": { "type": "string" }, "code": { "type": "string" } },
+                  "required": ["error"]
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "parameters": [
+          {
+            "schema": { "format": "uuid", "type": "string" },
+            "in": "path",
+            "name": "sessionId",
+            "required": true
+          },
+          { "schema": { "type": "string" }, "in": "path", "name": "*", "required": true }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "success": { "type": "boolean" }, "path": { "type": "string" } },
+                  "required": ["success", "path"]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "error": { "type": "string" }, "code": { "type": "string" } },
+                  "required": ["error"]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "error": { "type": "string" }, "code": { "type": "string" } },
+                  "required": ["error"]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "error": { "type": "string" }, "code": { "type": "string" } },
+                  "required": ["error"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/claude-code/sessions/{sessionId}/commands/": {
+      "get": {
+        "summary": "List available slash commands",
+        "tags": ["Commands"],
+        "description": "Discover slash commands from both user Claude home directory and project directory",
+        "parameters": [
+          {
+            "schema": {
+              "default": "all",
+              "anyOf": [
+                { "type": "string", "enum": ["user"] },
+                { "type": "string", "enum": ["project"] },
+                { "type": "string", "enum": ["all"] }
+              ]
+            },
+            "in": "query",
+            "name": "type",
+            "required": false,
+            "description": "Filter commands by type"
+          },
+          {
+            "schema": { "type": "string" },
+            "in": "query",
+            "name": "search",
+            "required": false,
+            "description": "Search commands by name or content"
+          },
+          {
+            "schema": { "format": "uuid", "type": "string" },
+            "in": "path",
+            "name": "sessionId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "commands": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "description": "Command name (filename without .md extension)",
+                            "type": "string"
+                          },
+                          "body": {
+                            "description": "Contents of the command file",
+                            "type": "string"
+                          },
+                          "type": {
+                            "description": "Command type: user (from Claude home) or project (from repo)",
+                            "anyOf": [
+                              { "type": "string", "enum": ["user"] },
+                              { "type": "string", "enum": ["project"] }
+                            ]
+                          }
+                        },
+                        "required": ["name", "body", "type"]
+                      }
+                    },
+                    "sources": {
+                      "type": "object",
+                      "properties": {
+                        "userCommandsPath": {
+                          "description": "Path to user commands directory",
+                          "type": "string"
+                        },
+                        "projectCommandsPath": {
+                          "description": "Path to project commands directory",
+                          "type": "string"
+                        }
+                      }
+                    }
+                  },
+                  "required": ["commands", "sources"]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "error": { "type": "string" }, "code": { "type": "string" } },
+                  "required": ["error"]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "error": { "type": "string" }, "code": { "type": "string" } },
+                  "required": ["error"]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "error": { "type": "string" }, "code": { "type": "string" } },
+                  "required": ["error"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/": { "get": { "responses": { "200": { "description": "Default Response" } } } }
+  },
+  "servers": [{ "url": "http://localhost:3001", "description": "Development server" }],
+  "security": [{ "bearerAuth": [] }],
+  "tags": [
+    { "name": "auth", "description": "Authentication endpoints" },
+    { "name": "sessions", "description": "Session management" },
+    { "name": "prompts", "description": "Prompt execution" },
+    { "name": "files", "description": "File operations" },
+    { "name": "health", "description": "Health checks" }
+  ]
+}

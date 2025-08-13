@@ -1,15 +1,9 @@
 import { homedir } from 'node:os';
 import path from 'node:path';
-import { parse as parseYaml } from 'yaml';
 import type { Agent, ListAgentsQuery, ListAgentsResponse } from '@/schemas/agent.schema';
+import { fileService } from '@/services/file.service';
 import { ValidationError } from '@/types';
 import { logger } from '@/utils/logger';
-
-interface AgentFrontMatter {
-  name?: string;
-  description?: string;
-  color?: string;
-}
 
 /**
  * Service for discovering and managing agents from Claude home and project directories
@@ -23,77 +17,15 @@ export class AgentService {
   }
 
   /**
-   * Get agents directory path for a given base path
+   * Get agents directory path for user (Claude home) or project
    */
-  private getAgentsDirectoryPath(basePath: string): string {
-    return path.join(basePath, 'agents');
-  }
-
-  /**
-   * Check if a directory exists
-   */
-  private async directoryExists(dirPath: string): Promise<boolean> {
-    try {
-      const file = Bun.file(dirPath);
-      const exists = await file.exists();
-      if (!exists) return false;
-
-      // Check if it's actually a directory by trying to read it as a directory
-      try {
-        const dir = new Bun.Glob('*');
-        Array.from(dir.scanSync({ cwd: dirPath })); // Just check if we can scan
-        return true; // If we can scan it, it's a directory
-      } catch {
-        return false; // If we can't scan it, it's not a directory
-      }
-    } catch (_error) {
-      return false;
-    }
-  }
-
-  /**
-   * Parse YAML frontmatter from markdown content
-   */
-  private parseFrontMatter(content: string): { frontMatter: AgentFrontMatter; content: string } {
-    const frontMatterMatch = content.match(/^---\s*\n(.*?)\n---\s*\n(.*)/s);
-
-    if (!frontMatterMatch) {
-      // No frontmatter found, return empty frontmatter and full content
-      return {
-        frontMatter: {},
-        content: content.trim(),
-      };
-    }
-
-    try {
-      const frontMatterYaml = frontMatterMatch[1];
-      const mainContent = frontMatterMatch[2];
-
-      if (!frontMatterYaml || !mainContent) {
-        return {
-          frontMatter: {},
-          content: content.trim(),
-        };
-      }
-
-      const frontMatter = parseYaml(frontMatterYaml) as AgentFrontMatter;
-
-      return {
-        frontMatter: frontMatter || {},
-        content: mainContent.trim(),
-      };
-    } catch (error) {
-      logger.warn(
-        {
-          error: error instanceof Error ? error.message : String(error),
-        },
-        'Failed to parse YAML frontmatter, using empty frontmatter',
-      );
-
-      return {
-        frontMatter: {},
-        content: content.trim(),
-      };
+  private getAgentsDirectoryPath(basePath: string, isUserPath = false): string {
+    if (isUserPath) {
+      // For user agents: ~/.claude/agents
+      return path.join(basePath, 'agents');
+    } else {
+      // For project agents: {projectPath}/.claude/agents
+      return path.join(basePath, '.claude', 'agents');
     }
   }
 
@@ -107,21 +39,16 @@ export class AgentService {
     const agents: Agent[] = [];
 
     try {
-      // Use Bun.Glob to find all .md files in the directory
-      const glob = new Bun.Glob('*.md');
-      const files = Array.from(glob.scanSync({ cwd: agentsPath }));
+      // Use file service to find all markdown files
+      const markdownFiles = await fileService.systemFindMarkdownFiles(agentsPath);
 
-      for (const fileName of files) {
-        const fullPath = path.join(agentsPath, fileName);
-        const agentFileName = fileName.slice(0, -3); // Remove .md extension
-
+      for (const filePath of markdownFiles) {
         try {
-          const file = Bun.file(fullPath);
-          const rawContent = await file.text();
-          const { frontMatter, content } = this.parseFrontMatter(rawContent);
+          const { frontMatter, content, fileName } =
+            await fileService.systemReadMarkdownFile(filePath);
 
           // Use name from frontmatter if available, otherwise use filename
-          const agentName = frontMatter.name || agentFileName;
+          const agentName = frontMatter.name || fileName;
           const agentDescription = frontMatter.description || '';
 
           if (!agentDescription) {
@@ -129,7 +56,7 @@ export class AgentService {
               {
                 agentName,
                 agentType,
-                path: fullPath,
+                path: filePath,
               },
               'Agent has no description in frontmatter',
             );
@@ -153,7 +80,7 @@ export class AgentService {
             {
               agentName,
               agentType,
-              path: fullPath,
+              path: filePath,
               contentLength: content.length,
               hasDescription: !!agentDescription,
               hasColor: !!frontMatter.color,
@@ -163,9 +90,8 @@ export class AgentService {
         } catch (error) {
           logger.warn(
             {
-              agentFileName,
+              filePath,
               agentType,
-              path: fullPath,
               error: error instanceof Error ? error.message : String(error),
             },
             'Failed to read agent file',
@@ -237,13 +163,13 @@ export class AgentService {
     }
 
     const claudeHomePath = this.getClaudeHomePath();
-    const userAgentsPath = this.getAgentsDirectoryPath(claudeHomePath);
-    const projectAgentsPath = this.getAgentsDirectoryPath(projectPath);
+    const userAgentsPath = this.getAgentsDirectoryPath(claudeHomePath, true);
+    const projectAgentsPath = this.getAgentsDirectoryPath(projectPath, false);
 
     const allAgents: Agent[] = [];
 
     // Check if user agents directory exists and read agents
-    if (await this.directoryExists(userAgentsPath)) {
+    if (await fileService.systemDirectoryExists(userAgentsPath)) {
       const userAgents = await this.readAgentsFromDirectory(userAgentsPath, 'user');
       allAgents.push(...userAgents);
       logger.debug(
@@ -263,7 +189,7 @@ export class AgentService {
     }
 
     // Check if project agents directory exists and read agents
-    if (await this.directoryExists(projectAgentsPath)) {
+    if (await fileService.systemDirectoryExists(projectAgentsPath)) {
       const projectAgents = await this.readAgentsFromDirectory(projectAgentsPath, 'project');
       allAgents.push(...projectAgents);
       logger.debug(
@@ -301,11 +227,11 @@ export class AgentService {
       projectAgentsPath?: string;
     } = {};
 
-    if (await this.directoryExists(userAgentsPath)) {
+    if (await fileService.systemDirectoryExists(userAgentsPath)) {
       sources.userAgentsPath = userAgentsPath;
     }
 
-    if (await this.directoryExists(projectAgentsPath)) {
+    if (await fileService.systemDirectoryExists(projectAgentsPath)) {
       sources.projectAgentsPath = projectAgentsPath;
     }
 

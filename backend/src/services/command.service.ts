@@ -1,6 +1,7 @@
 import { homedir } from 'node:os';
 import path from 'node:path';
 import type { Command, ListCommandsQuery, ListCommandsResponse } from '@/schemas/command.schema';
+import { fileService } from '@/services/file.service';
 import { ValidationError } from '@/types';
 import { logger } from '@/utils/logger';
 
@@ -23,29 +24,27 @@ export class CommandService {
   }
 
   /**
-   * Check if a directory exists
+   * Check if a directory exists using File Service
    */
   private async directoryExists(dirPath: string): Promise<boolean> {
+    logger.debug({ dirPath }, 'Checking if directory exists');
     try {
-      const file = Bun.file(dirPath);
-      const exists = await file.exists();
-      if (!exists) return false;
-
-      // Check if it's actually a directory by trying to read it as a directory
-      try {
-        const dir = new Bun.Glob('*');
-        Array.from(dir.scanSync({ cwd: dirPath })); // Just check if we can scan
-        return true; // If we can scan it, it's a directory
-      } catch {
-        return false; // If we can't scan it, it's not a directory
+      const exists = await fileService.systemDirectoryExists(dirPath);
+      if (!exists) {
+        logger.debug({ dirPath }, 'Directory does not exist or not accessible');
       }
-    } catch (_error) {
+      return exists;
+    } catch (error) {
+      logger.debug(
+        { dirPath, error: error instanceof Error ? error.message : String(error) },
+        'Error checking if directory exists',
+      );
       return false;
     }
   }
 
   /**
-   * Read markdown files from a commands directory
+   * Read markdown files from a commands directory using File Service
    */
   private async readCommandsFromDirectory(
     commandsPath: string,
@@ -53,21 +52,30 @@ export class CommandService {
   ): Promise<Command[]> {
     const commands: Command[] = [];
 
-    try {
-      // Use Bun.Glob to find all .md files in the directory
-      const glob = new Bun.Glob('*.md');
-      const files = Array.from(glob.scanSync({ cwd: commandsPath }));
+    logger.debug({ commandsPath, commandType }, 'Starting to read commands from directory');
 
-      for (const fileName of files) {
-        const fullPath = path.join(commandsPath, fileName);
-        const commandName = fileName.slice(0, -3); // Remove .md extension
+    try {
+      // Use File Service to find markdown files
+      const markdownFiles = await fileService.systemFindMarkdownFiles(commandsPath);
+
+      logger.debug(
+        {
+          commandsPath,
+          commandType,
+          files: markdownFiles.map((f) => path.basename(f)),
+          fileCount: markdownFiles.length,
+        },
+        'Found .md files in directory',
+      );
+
+      for (const filePath of markdownFiles) {
+        const commandName = path.basename(filePath, '.md');
 
         try {
-          const file = Bun.file(fullPath);
-          const content = await file.text();
+          const fileContent = await fileService.systemReadFileContent(filePath);
           commands.push({
             name: commandName,
-            body: content,
+            body: fileContent,
             type: commandType,
           });
 
@@ -75,8 +83,8 @@ export class CommandService {
             {
               commandName,
               commandType,
-              path: fullPath,
-              contentLength: content.length,
+              path: filePath,
+              contentLength: fileContent.length,
             },
             'Successfully read command file',
           );
@@ -85,7 +93,7 @@ export class CommandService {
             {
               commandName,
               commandType,
-              path: fullPath,
+              path: filePath,
               error: error instanceof Error ? error.message : String(error),
             },
             'Failed to read command file',

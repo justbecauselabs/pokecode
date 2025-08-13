@@ -1,9 +1,9 @@
-import { existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
+import { fileService } from '@/services/file.service';
 import type { IntermediateMessage } from '../types/claude-messages';
 import { logger } from '../utils/logger';
-import { MessageValidator } from '../utils/message-validator';
+import { parseJsonlMessage, toIntermediateMessage } from '../utils/message-validator';
 
 // TODO: Add 'better-sqlite3' dependency to package.json for SQLite access
 // For now, we'll focus on JSONL file access which is the primary storage format
@@ -52,43 +52,67 @@ export class ClaudeDirectoryService {
   }
 
   /**
-   * Check if Claude directory exists and is initialized
+   * Check if Claude directory exists and is initialized using File Service
    */
-  isInitialized(): boolean {
-    const claudeExists = existsSync(this.claudeBasePath);
-    const sqliteExists = existsSync(this.sqliteDbPath);
-    const isInitialized = claudeExists && sqliteExists;
+  async isInitialized(): Promise<boolean> {
+    try {
+      // Check if claude base path exists
+      await fileService.listFiles('system', '/', this.claudeBasePath, { recursive: false });
+      const claudeExists = true;
 
-    logger.debug(
-      {
-        claudeBasePath: this.claudeBasePath,
-        claudeExists,
-        sqliteDbPath: this.sqliteDbPath,
-        sqliteExists,
-        isInitialized,
-      },
-      'Claude directory initialization check',
-    );
+      // Check if sqlite database exists
+      let sqliteExists = false;
+      try {
+        await fileService.readFile('system', '/', this.sqliteDbPath);
+        sqliteExists = true;
+      } catch {
+        sqliteExists = false;
+      }
 
-    return isInitialized;
+      const isInitialized = claudeExists && sqliteExists;
+
+      logger.debug(
+        {
+          claudeBasePath: this.claudeBasePath,
+          claudeExists,
+          sqliteDbPath: this.sqliteDbPath,
+          sqliteExists,
+          isInitialized,
+        },
+        'Claude directory initialization check',
+      );
+
+      return isInitialized;
+    } catch {
+      return false;
+    }
   }
 
   /**
-   * Initialize Claude directory structure if it doesn't exist
+   * Initialize Claude directory structure if it doesn't exist using File Service
    */
-  ensureInitialized(): void {
-    if (!existsSync(this.claudeBasePath)) {
-      mkdirSync(this.claudeBasePath, { recursive: true });
+  async ensureInitialized(): Promise<void> {
+    try {
+      // Check if claude base path exists, if not create it
+      await fileService.listFiles('system', '/', this.claudeBasePath, { recursive: false });
+    } catch {
+      // Directory doesn't exist, create placeholder file to ensure directory structure
+      await fileService.createFile('system', '/', join(this.claudeBasePath, '.keep'), '');
     }
-    if (!existsSync(this.projectsPath)) {
-      mkdirSync(this.projectsPath, { recursive: true });
+
+    try {
+      // Check if projects path exists, if not create it
+      await fileService.listFiles('system', '/', this.projectsPath, { recursive: false });
+    } catch {
+      // Directory doesn't exist, create placeholder file to ensure directory structure
+      await fileService.createFile('system', '/', join(this.projectsPath, '.keep'), '');
     }
   }
 
   /**
-   * Get project-based conversation files (JSONL format)
+   * Get project-based conversation files (JSONL format) using File Service
    */
-  getProjectConversationFiles(projectPath: string): string[] {
+  async getProjectConversationFiles(projectPath: string): Promise<string[]> {
     try {
       // Use session-specific path if available, otherwise fall back to original behavior
       let projectDir: string;
@@ -109,7 +133,29 @@ export class ClaudeDirectoryService {
         'Getting project conversation files',
       );
 
-      if (!existsSync(projectDir)) {
+      try {
+        const { files } = await fileService.listFiles('system', '/', projectDir, {
+          recursive: false,
+          pattern: '*.jsonl',
+        });
+
+        const fullPaths = files
+          .filter((file) => file.type === 'file')
+          .map((file) => join(projectDir, file.name));
+
+        logger.debug(
+          {
+            projectDir,
+            allFiles: files.map((f) => f.name),
+            jsonlFiles: files.filter((f) => f.name.endsWith('.jsonl')).map((f) => f.name),
+            fullPaths,
+            count: fullPaths.length,
+          },
+          'Found project conversation files',
+        );
+
+        return fullPaths;
+      } catch {
         logger.debug(
           {
             projectDir,
@@ -119,24 +165,6 @@ export class ClaudeDirectoryService {
         );
         return [];
       }
-
-      const fs = require('node:fs');
-      const files = fs.readdirSync(projectDir);
-      const jsonlFiles = files.filter((file: string) => file.endsWith('.jsonl'));
-      const fullPaths = jsonlFiles.map((file: string) => join(projectDir, file));
-
-      logger.debug(
-        {
-          projectDir,
-          allFiles: files,
-          jsonlFiles,
-          fullPaths,
-          count: fullPaths.length,
-        },
-        'Found project conversation files',
-      );
-
-      return fullPaths;
     } catch (error) {
       logger.error(
         {
@@ -150,24 +178,26 @@ export class ClaudeDirectoryService {
   }
 
   /**
-   * Read JSONL conversation file with Zod validation
+   * Read JSONL conversation file with Zod validation using File Service
    */
-  readConversationFile(filePath: string): IntermediateMessage[] {
+  async readConversationFile(filePath: string): Promise<IntermediateMessage[]> {
     try {
       logger.debug(
         {
           filePath,
-          exists: existsSync(filePath),
         },
         'Reading conversation file with validation',
       );
 
-      if (!existsSync(filePath)) {
+      let content: string;
+      try {
+        const fileResponse = await fileService.readFile('system', '/', filePath);
+        content = fileResponse.content;
+      } catch {
         logger.debug({ filePath }, 'Conversation file does not exist');
         return [];
       }
 
-      const content = readFileSync(filePath, 'utf-8');
       const lines = content
         .trim()
         .split('\n')
@@ -190,10 +220,10 @@ export class ClaudeDirectoryService {
           const parsed = JSON.parse(line);
 
           // Strict validation - will throw on invalid messages
-          const validatedMessage = MessageValidator.parseJsonlMessage(parsed, index, filePath);
+          const validatedMessage = parseJsonlMessage(parsed, index, filePath);
 
           // Convert to intermediate message format
-          const intermediateMessage = MessageValidator.toIntermediateMessage(validatedMessage);
+          const intermediateMessage = toIntermediateMessage(validatedMessage);
           intermediateMessages.push(intermediateMessage);
         } catch (jsonError) {
           if (jsonError instanceof SyntaxError) {
@@ -245,15 +275,15 @@ export class ClaudeDirectoryService {
    * Get all conversations for a project path
    * Currently focuses on JSONL files, SQLite support coming later
    */
-  getProjectConversations(projectPath: string): {
+  async getProjectConversations(projectPath: string): Promise<{
     jsonlConversations: Array<{
       file: string;
       messages: IntermediateMessage[];
     }>;
-  } {
+  }> {
     logger.debug({ projectPath }, 'Getting project conversations');
 
-    const jsonlFiles = this.getProjectConversationFiles(projectPath);
+    const jsonlFiles = await this.getProjectConversationFiles(projectPath);
     const jsonlConversations: Array<{
       file: string;
       messages: IntermediateMessage[];
@@ -261,7 +291,7 @@ export class ClaudeDirectoryService {
 
     for (const file of jsonlFiles) {
       try {
-        const messages = this.readConversationFile(file);
+        const messages = await this.readConversationFile(file);
         jsonlConversations.push({
           file,
           messages,
@@ -297,17 +327,17 @@ export class ClaudeDirectoryService {
    * Group conversation messages into threads and categorize them
    * Returns user prompts, final responses, and intermediate messages
    */
-  getConversationThreads(projectPath: string): {
+  async getConversationThreads(projectPath: string): Promise<{
     conversationThreads: Array<{
       userPrompt: IntermediateMessage;
       finalResponse: IntermediateMessage | null;
       intermediateMessages: IntermediateMessage[];
       threadId: string;
     }>;
-  } {
+  }> {
     logger.debug({ projectPath }, 'Getting conversation threads');
 
-    const conversations = this.getProjectConversations(projectPath);
+    const conversations = await this.getProjectConversations(projectPath);
     const conversationThreads: Array<{
       userPrompt: IntermediateMessage;
       finalResponse: IntermediateMessage | null;
@@ -404,8 +434,11 @@ export class ClaudeDirectoryService {
   /**
    * Get intermediate messages for a specific conversation thread
    */
-  getIntermediateMessages(projectPath: string, threadId: string): IntermediateMessage[] {
-    const threads = this.getConversationThreads(projectPath);
+  async getIntermediateMessages(
+    projectPath: string,
+    threadId: string,
+  ): Promise<IntermediateMessage[]> {
+    const threads = await this.getConversationThreads(projectPath);
     const thread = threads.conversationThreads.find((t) => t.threadId === threadId);
 
     if (!thread) {
@@ -420,14 +453,14 @@ export class ClaudeDirectoryService {
    * Get conversation history for export/display
    * Currently works with JSONL files, will be enhanced with SQLite support
    */
-  getConversationHistory(filePath: string): {
+  async getConversationHistory(filePath: string): Promise<{
     messages: IntermediateMessage[];
     summary: {
       totalMessages: number;
     };
-  } {
+  }> {
     try {
-      const messages = this.readConversationFile(filePath);
+      const messages = await this.readConversationFile(filePath);
 
       return {
         messages,
@@ -473,15 +506,15 @@ export class ClaudeDirectoryService {
   /**
    * Export session history to specified format
    */
-  exportSessionHistory(
+  async exportSessionHistory(
     projectPath: string,
     format: 'markdown' | 'json' = 'markdown',
-  ): {
+  ): Promise<{
     content: string;
     format: string;
-  } {
+  }> {
     try {
-      const conversations = this.getProjectConversations(projectPath);
+      const conversations = await this.getProjectConversations(projectPath);
 
       if (format === 'json') {
         return {
@@ -526,13 +559,13 @@ export class ClaudeDirectoryService {
   /**
    * Find the most recent conversation for a project
    */
-  getMostRecentConversation(projectPath: string): {
+  async getMostRecentConversation(projectPath: string): Promise<{
     conversationId?: string;
     source: 'jsonl';
     lastActivity: string;
-  } | null {
+  } | null> {
     try {
-      const { jsonlConversations } = this.getProjectConversations(projectPath);
+      const { jsonlConversations } = await this.getProjectConversations(projectPath);
 
       let mostRecent = null;
       let lastActivity = '';

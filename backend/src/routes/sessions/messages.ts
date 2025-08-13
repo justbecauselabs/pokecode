@@ -125,6 +125,7 @@ const messageRoutes: FastifyPluginAsync = async (fastify) => {
           messages,
           session: {
             id: session.id,
+            name: session.name,
             isWorking: session.isWorking,
             currentJobId: session.currentJobId,
             lastJobStatus: session.lastJobStatus,

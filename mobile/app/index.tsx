@@ -1,6 +1,15 @@
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useMemo } from 'react';
-import { ActionSheetIOS, ActivityIndicator, Alert, FlatList, Platform, Pressable, Text, View } from 'react-native';
+import {
+  ActionSheetIOS,
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  Platform,
+  Pressable,
+  Text,
+  View,
+} from 'react-native';
 import { LoadingState, SafeAreaView } from '@/components/common';
 import { useDeleteSession, useSessions } from '@/hooks/useSessions';
 import { formatRelativeTime } from '@/utils/format';
@@ -41,7 +50,7 @@ export default function HomeScreen() {
 
   const truncatePath = (path: string, maxLength: number = 40) => {
     if (path.length <= maxLength) return path;
-    return '...' + path.slice(-(maxLength - 3));
+    return `...${path.slice(-(maxLength - 3))}`;
   };
 
   // Refetch sessions when screen comes into focus
@@ -178,7 +187,10 @@ export default function HomeScreen() {
                           {truncatePath(item.projectPath)}
                         </Text>
                         {item.context && (
-                          <Text className="text-sm text-muted-foreground font-mono mb-2" numberOfLines={2}>
+                          <Text
+                            className="text-sm text-muted-foreground font-mono mb-2"
+                            numberOfLines={2}
+                          >
                             {item.context}
                           </Text>
                         )}
@@ -186,14 +198,14 @@ export default function HomeScreen() {
                           {formatRelativeTime(item.lastAccessedAt)}
                         </Text>
                       </View>
-                      <Text className={`text-sm font-medium font-mono ${getStatusColor(item.status)}`}>
+                      <Text
+                        className={`text-sm font-medium font-mono ${getStatusColor(item.status)}`}
+                      >
                         {getStatusLabel(item.status)}
                       </Text>
                     </View>
                   </Pressable>
-                  {index < activeSessions.length - 1 && (
-                    <View className="h-px bg-border" />
-                  )}
+                  {index < activeSessions.length - 1 && <View className="h-px bg-border" />}
                 </View>
               )}
               showsVerticalScrollIndicator={false}

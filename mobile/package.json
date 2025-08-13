@@ -21,6 +21,7 @@
     "openapi:generate": "bunx openapi-ts -i http://localhost:3001/docs/json -o src/api/generated --client '@hey-api/client-fetch'"
   },
   "dependencies": {
+    "@expo/vector-icons": "^14.1.0",
     "@gorhom/bottom-sheet": "^5.1.8",
     "@react-native-async-storage/async-storage": "2.1.2",
     "@shopify/flash-list": "1.7.6",

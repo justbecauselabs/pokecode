@@ -23,7 +23,7 @@ function getEffectiveBaseUrl(): string {
 function isDebugEnabled(): boolean {
   // Enable debug in development
   if (__DEV__) return true;
-  
+
   // Enable debug when using custom API URL (for troubleshooting)
   const customApiBaseUrl = useSettingsStore.getState().customApiBaseUrl;
   return !!customApiBaseUrl;
@@ -165,7 +165,9 @@ class ReactNativeAPIClient {
       errorLog(`API Network/Fetch Error:`, fetchError);
       errorLog(`API Failed URL: ${url}`);
       errorLog(`API Request Config:`, config);
-      throw new Error(`Network Error: ${fetchError instanceof Error ? fetchError.message : String(fetchError)}`);
+      throw new Error(
+        `Network Error: ${fetchError instanceof Error ? fetchError.message : String(fetchError)}`
+      );
     }
 
     // Log response details
@@ -187,7 +189,7 @@ class ReactNativeAPIClient {
       errorLog(`API Error Details: ${errorMessage}`);
       errorLog(`API Error Request URL: ${url}`);
       errorLog(`API Error Request Method: ${method}`);
-      
+
       throw new Error(errorMessage);
     }
 
@@ -195,13 +197,13 @@ class ReactNativeAPIClient {
       // Check if response has content before trying to parse JSON
       const contentLength = response.headers.get('content-length');
       const contentType = response.headers.get('content-type');
-      
+
       // Handle empty responses (like 202 with no content)
       if (contentLength === '0' || response.status === 204) {
         debugLog('API Success Response: Empty response (no content)');
         return {} as T;
       }
-      
+
       // Only parse JSON if content-type indicates JSON
       if (contentType?.includes('application/json')) {
         const jsonResponse = await response.json();
@@ -221,7 +223,9 @@ class ReactNativeAPIClient {
     } catch (parseError) {
       errorLog(`API JSON Parse Error:`, parseError);
       errorLog(`API Error: Response was not valid JSON`);
-      throw new Error(`Invalid JSON response: ${parseError instanceof Error ? parseError.message : String(parseError)}`);
+      throw new Error(
+        `Invalid JSON response: ${parseError instanceof Error ? parseError.message : String(parseError)}`
+      );
     }
   }
 

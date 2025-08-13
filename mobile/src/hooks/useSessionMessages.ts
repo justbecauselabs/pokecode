@@ -19,7 +19,7 @@ export function useSessionMessages(sessionId: string) {
       isWorking: data?.session?.isWorking,
       isSending: isSendingRef.current,
       lastState: lastPollingStateRef.current,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
 
     if (!data?.session) {
@@ -80,7 +80,7 @@ export function useSessionMessages(sessionId: string) {
     },
     enabled: !!sessionId,
     staleTime: 0, // Always fetch fresh for real-time feel
-    gcTime: 0, // Don't keep stale data in cache  
+    gcTime: 0, // Don't keep stale data in cache
     refetchOnMount: true, // Always refetch on mount
     refetchOnWindowFocus: true, // Refetch when app regains focus
     refetchInterval: (query) => getRefetchInterval(query.state.data), // Conditional polling
@@ -135,7 +135,7 @@ export function useSessionMessages(sessionId: string) {
       // Clear sending state and rollback on error
       isSendingRef.current = false;
       console.log('[Mutation] Message send failed, setting isSending=false');
-      
+
       if (context?.previousMessages) {
         queryClient.setQueryData(['sessionMessages', sessionId], context.previousMessages);
       }
@@ -143,8 +143,10 @@ export function useSessionMessages(sessionId: string) {
     onSuccess: () => {
       // Clear sending state but keep polling until server confirms work is done
       isSendingRef.current = false;
-      console.log('[Mutation] Message sent successfully, setting isSending=false and invalidating query');
-      
+      console.log(
+        '[Mutation] Message sent successfully, setting isSending=false and invalidating query'
+      );
+
       // Invalidate to get fresh data from server, polling will continue based on isWorking
       queryClient.invalidateQueries({ queryKey: ['sessionMessages', sessionId] });
     },

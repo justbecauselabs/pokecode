@@ -1,1 +1,0 @@
-ALTER TABLE "claude_code_sessions" ADD COLUMN "claude_code_session_id" text;
