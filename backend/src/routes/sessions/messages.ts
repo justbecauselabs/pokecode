@@ -1,9 +1,9 @@
+import { Type } from '@sinclair/typebox';
 import type { FastifyPluginAsync } from 'fastify';
 import { rateLimitConfig } from '@/config';
 import {
   CreateMessageBodySchema,
   type CreateMessageRequest,
-  CreateMessageResponseSchema,
   ErrorResponseSchema,
   GetMessagesResponseSchema,
   SessionIdParamsSchema,
@@ -27,7 +27,7 @@ const messageRoutes: FastifyPluginAsync = async (fastify) => {
         params: SessionIdParamsSchema,
         body: CreateMessageBodySchema,
         response: {
-          201: CreateMessageResponseSchema,
+          202: Type.Object({}), // Empty response
           404: ErrorResponseSchema,
         },
       },
@@ -46,24 +46,26 @@ const messageRoutes: FastifyPluginAsync = async (fastify) => {
           });
         }
 
-        // Create message and queue for processing
-        const message = await messageService.createMessage(sessionId, content);
+        // Save user message first
+        await messageService.saveUserMessage(sessionId, content);
+
+        // Queue prompt for processing (SDK will create assistant messages)
+        await messageService.queuePrompt(sessionId, content);
 
         // Track metrics
         if (fastify.metrics) {
-          fastify.metrics.promptsTotal.inc({ status: 'created' });
+          fastify.metrics.promptsTotal.inc({ status: 'queued' });
         }
 
         logger.debug(
           {
             sessionId,
-            messageId: message.id,
             content: content.substring(0, 100),
           },
-          'Message created and queued',
+          'Prompt queued for processing',
         );
 
-        return reply.code(201).send({ message });
+        return reply.code(202).send();
       } catch (error) {
         logger.error(
           {

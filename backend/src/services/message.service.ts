@@ -1,70 +1,41 @@
-import { join } from 'node:path';
+import type { SDKMessage } from '@anthropic-ai/claude-code';
 import { asc, desc, eq } from 'drizzle-orm';
 import { db } from '../db';
 import { sessions } from '../db/schema';
 import { type SessionMessage, sessionMessages } from '../db/schema/session_messages';
 import type { ApiMessage } from '../schemas/message.schema';
-import { jsonlToApiChildren, parseJsonlFile } from '../utils/message-parser';
-import ClaudeDirectoryService from './claude-directory.service';
+import type { JsonlMessage } from '../types/claude-messages';
 import { queueService } from './queue.service';
 
 export class MessageService {
   /**
-   * 1. Create a user message and queue for processing
+   * Queue a prompt for processing (no message creation, SDK handles that)
    */
-  async createMessage(sessionId: string, content: string): Promise<ApiMessage> {
-    const insertValues = {
-      sessionId: sessionId,
-      text: content,
-      type: 'user' as const,
-    };
-
-    // Save to DB using Drizzle properly
-    const result = await db.insert(sessionMessages).values(insertValues).returning();
-
-    const dbMessage = result[0];
-    if (!dbMessage) {
-      throw new Error('Failed to create message');
-    }
+  async queuePrompt(sessionId: string, content: string): Promise<void> {
+    // Generate a job ID for the prompt
+    const promptId = globalThis.crypto.randomUUID();
 
     // Queue job for Claude processing
-    let jobId: string | undefined;
-    try {
-      jobId = await queueService.addPromptJob(
-        sessionId,
-        dbMessage.id, // Using message ID as prompt ID
-        content,
-        undefined, // allowedTools
-        dbMessage.id, // messageId
-      );
-    } catch (queueError) {
-      throw queueError;
-    }
+    await queueService.addPromptJob(
+      sessionId,
+      promptId,
+      content,
+      undefined, // allowedTools
+      promptId, // messageId
+    );
 
     // Update session to indicate work is in progress
-    if (jobId) {
-      await db
-        .update(sessions)
-        .set({
-          isWorking: true,
-          currentJobId: jobId,
-        })
-        .where(eq(sessions.id, sessionId));
-    }
-
-    // Return immediate response (no children yet)
-    return {
-      id: dbMessage.id,
-      sessionId,
-      role: 'user',
-      content,
-      timestamp: dbMessage.createdAt.toISOString(),
-      children: [], // Empty until Claude responds
-    };
+    await db
+      .update(sessions)
+      .set({
+        isWorking: true,
+        currentJobId: promptId,
+      })
+      .where(eq(sessions.id, sessionId));
   }
 
   /**
-   * 2. Get all messages with nested JSONL content
+   * 2. Get all messages with content from JSONB storage
    */
   async getMessages(sessionId: string): Promise<ApiMessage[]> {
     // Get DB messages in chronological order
@@ -74,32 +45,45 @@ export class MessageService {
       .where(eq(sessionMessages.sessionId, sessionId))
       .orderBy(asc(sessionMessages.createdAt));
 
-    // Get session for project path
-    const session = await db.query.sessions.findFirst({
-      where: eq(sessions.id, sessionId),
-    });
-
-    // Convert each DB message to API format with nested JSONL
+    // Convert each DB message to API format with nested JSONB content
     const results: ApiMessage[] = [];
 
     for (const dbMsg of dbMessages) {
+      // Extract content from SDK message data
+      let content = `${dbMsg.type} message`;
+
+      if (dbMsg.contentData) {
+        try {
+          const sdkMessage = JSON.parse(dbMsg.contentData);
+
+          // Extract text content from assistant messages
+          if (sdkMessage.type === 'assistant' && sdkMessage.message?.content) {
+            const textContent = sdkMessage.message.content
+              .filter(
+                (c: unknown) => c && typeof c === 'object' && 'type' in c && c.type === 'text',
+              )
+              .map((c: unknown) => (c as { text: string }).text)
+              .join('\n');
+            if (textContent) {
+              content = textContent;
+            }
+          } else if (sdkMessage.type === 'user' && typeof sdkMessage.content === 'string') {
+            content = sdkMessage.content;
+          }
+        } catch (error) {
+          // If parsing fails, keep default content
+        }
+      }
+
       const apiMessage: ApiMessage = {
         id: dbMsg.id,
         sessionId: dbMsg.sessionId,
         role: dbMsg.type === 'user' ? 'user' : 'assistant',
-        content: dbMsg.text,
+        content,
         timestamp: dbMsg.createdAt.toISOString(),
         ...(dbMsg.claudeSessionId && { claudeSessionId: dbMsg.claudeSessionId }),
-        children: [], // Default empty
+        children: [], // Simplified - no more complex children processing
       };
-
-      // If has JSONL, parse and nest as children
-      if (dbMsg.claudeSessionId && session?.projectPath) {
-        const projectDir = ClaudeDirectoryService.getClaudeDirectoryPath(session.projectPath);
-        const jsonlPath = join(projectDir, `${dbMsg.claudeSessionId}.jsonl`);
-        const jsonlMessages = parseJsonlFile(jsonlPath);
-        apiMessage.children = jsonlToApiChildren(jsonlMessages);
-      }
 
       results.push(apiMessage);
     }
@@ -108,27 +92,54 @@ export class MessageService {
   }
 
   /**
-   * 3. Save assistant message after Claude responds
+   * Update message with content data (stored as JSON string)
    */
-  async saveAssistantMessage(
-    sessionId: string,
-    content: string,
-  ): Promise<void> {
+  async updateMessageContentData(messageId: string, contentData: JsonlMessage[]): Promise<void> {
+    await db
+      .update(sessionMessages)
+      .set({
+        contentData: JSON.stringify(contentData),
+      })
+      .where(eq(sessionMessages.id, messageId));
+  }
+
+  /**
+   * Save SDK message directly to database
+   */
+  async saveSDKMessage(sessionId: string, sdkMessage: SDKMessage): Promise<void> {
+    // Determine message type - default to assistant for most message types
+    let messageType: 'user' | 'assistant' = 'assistant';
+
+    if (sdkMessage.type === 'user') {
+      messageType = 'user';
+    }
+
+    // Save message with SDK data as JSON string
     await db.insert(sessionMessages).values({
       sessionId,
-      text: content,
-      type: 'assistant',
+      type: messageType,
+      contentData: JSON.stringify(sdkMessage), // Store raw SDK message
     });
   }
 
   /**
-   * Update user message with Claude session ID (for linking to JSONL)
+   * Save user prompt as SDK-formatted message
    */
-  async updateClaudeSessionId(messageId: string, claudeSessionId: string): Promise<void> {
-    await db
-      .update(sessionMessages)
-      .set({ claudeSessionId })
-      .where(eq(sessionMessages.id, messageId));
+  async saveUserMessage(sessionId: string, content: string): Promise<void> {
+    // Create user message in Claude SDK format
+    const userMessage = {
+      type: 'user' as const,
+      content,
+      id: globalThis.crypto.randomUUID(),
+      timestamp: new Date().toISOString(),
+    };
+
+    // Save as user message
+    await db.insert(sessionMessages).values({
+      sessionId,
+      type: 'user',
+      contentData: JSON.stringify(userMessage),
+    });
   }
 
   // Keep these for backwards compatibility temporarily

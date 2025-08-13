@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, ActivityIndicator } from 'react-native';
+import { ActivityIndicator, Text, View } from 'react-native';
 
 export function WorkingIndicator(params: { isWorking: boolean }) {
   const { isWorking } = params;

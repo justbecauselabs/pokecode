@@ -184,6 +184,12 @@ const sessionRoutes: FastifyPluginAsync = async (fastify) => {
 
   // Register file routes
   fastify.register(import('./files'), { prefix: '/:sessionId/files' });
+
+  // Register command routes
+  fastify.register(import('./commands'), { prefix: '/:sessionId/commands' });
+
+  // Register agent routes
+  fastify.register(import('./agents'), { prefix: '/:sessionId/agents' });
 };
 
 export default sessionRoutes;

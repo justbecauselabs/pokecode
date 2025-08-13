@@ -453,30 +453,8 @@ export type PostApiClaudeCodeSessionsBySessionIdMessagesResponses = {
     /**
      * Default Response
      */
-    201: {
-        message: {
-            id: string;
-            sessionId: string;
-            role: 'user' | 'assistant';
-            content: string;
-            timestamp: string;
-            claudeSessionId?: string;
-            children: Array<{
-                id: string;
-                role: 'user' | 'assistant';
-                content: string;
-                timestamp: string;
-                toolCalls?: Array<{
-                    name: string;
-                    input: unknown;
-                }>;
-                toolResults?: Array<{
-                    tool_use_id: string;
-                    content: string;
-                }>;
-                thinking?: string;
-            }>;
-        };
+    202: {
+        [key: string]: unknown;
     };
 };
 
@@ -740,6 +718,84 @@ export type PutApiClaudeCodeSessionsBySessionIdFilesBy__Responses = {
 };
 
 export type PutApiClaudeCodeSessionsBySessionIdFilesBy__Response = PutApiClaudeCodeSessionsBySessionIdFilesBy__Responses[keyof PutApiClaudeCodeSessionsBySessionIdFilesBy__Responses];
+
+export type GetApiClaudeCodeSessionsBySessionIdCommandsData = {
+    body?: never;
+    path: {
+        sessionId: string;
+    };
+    query?: {
+        /**
+         * Filter commands by type
+         */
+        type?: 'user' | 'project' | 'all';
+        /**
+         * Search commands by name or content
+         */
+        search?: string;
+    };
+    url: '/api/claude-code/sessions/{sessionId}/commands/';
+};
+
+export type GetApiClaudeCodeSessionsBySessionIdCommandsErrors = {
+    /**
+     * Default Response
+     */
+    400: {
+        error: string;
+        code?: string;
+    };
+    /**
+     * Default Response
+     */
+    403: {
+        error: string;
+        code?: string;
+    };
+    /**
+     * Default Response
+     */
+    404: {
+        error: string;
+        code?: string;
+    };
+};
+
+export type GetApiClaudeCodeSessionsBySessionIdCommandsError = GetApiClaudeCodeSessionsBySessionIdCommandsErrors[keyof GetApiClaudeCodeSessionsBySessionIdCommandsErrors];
+
+export type GetApiClaudeCodeSessionsBySessionIdCommandsResponses = {
+    /**
+     * Default Response
+     */
+    200: {
+        commands: Array<{
+            /**
+             * Command name (filename without .md extension)
+             */
+            name: string;
+            /**
+             * Contents of the command file
+             */
+            body: string;
+            /**
+             * Command type: user (from Claude home) or project (from repo)
+             */
+            type: 'user' | 'project';
+        }>;
+        sources: {
+            /**
+             * Path to user commands directory
+             */
+            userCommandsPath?: string;
+            /**
+             * Path to project commands directory
+             */
+            projectCommandsPath?: string;
+        };
+    };
+};
+
+export type GetApiClaudeCodeSessionsBySessionIdCommandsResponse = GetApiClaudeCodeSessionsBySessionIdCommandsResponses[keyof GetApiClaudeCodeSessionsBySessionIdCommandsResponses];
 
 export type GetData = {
     body?: never;

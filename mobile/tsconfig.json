@@ -30,11 +30,7 @@
     // MODULE SETTINGS
     "target": "ESNext",
     "module": "ESNext",
-    "lib": [
-      "ESNext",
-      "ESNext.Array",
-      "ESNext.AsyncIterable"
-    ],
+    "lib": ["ESNext", "ESNext.Array", "ESNext.AsyncIterable"],
     "jsx": "react-native",
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
@@ -57,39 +53,18 @@
     "preserveConstEnums": true,
     "preserveValueImports": false,
     // TYPE ACQUISITION
-    "types": [
-      "react"
-    ],
-    "typeRoots": [
-      "./node_modules/@types",
-      "./src/types"
-    ],
+    "types": ["react"],
+    "typeRoots": ["./node_modules/@types", "./src/types"],
     // PATH MAPPING
     "paths": {
-      "@/*": [
-        "./src/*"
-      ],
-      "@components/*": [
-        "./src/components/*"
-      ],
-      "@hooks/*": [
-        "./src/hooks/*"
-      ],
-      "@stores/*": [
-        "./src/stores/*"
-      ],
-      "@utils/*": [
-        "./src/utils/*"
-      ],
-      "@types/*": [
-        "./src/types/*"
-      ],
-      "@api/*": [
-        "./src/api/*"
-      ],
-      "@constants/*": [
-        "./src/constants/*"
-      ]
+      "@/*": ["./src/*"],
+      "@components/*": ["./src/components/*"],
+      "@hooks/*": ["./src/hooks/*"],
+      "@stores/*": ["./src/stores/*"],
+      "@utils/*": ["./src/utils/*"],
+      "@types/*": ["./src/types/*"],
+      "@api/*": ["./src/api/*"],
+      "@constants/*": ["./src/constants/*"]
     },
     // ROOT DIRECTORIES
     "rootDir": ".",
@@ -116,8 +91,6 @@
     "**/*.spec.tsx",
     "**/*.test.ts",
     "**/*.test.tsx",
-    "src/api/generated/client/**/*",
-    "src/api/generated/core/**/*",
     "src/api/polyfills.ts"
   ]
 }

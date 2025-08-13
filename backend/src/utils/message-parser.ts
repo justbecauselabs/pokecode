@@ -1,4 +1,3 @@
-import { existsSync, readFileSync } from 'node:fs';
 import type { ApiChildMessage } from '@/schemas/message.schema';
 import {
   type AssistantJsonlMessage,
@@ -10,57 +9,17 @@ import {
 import { logger } from './logger';
 
 /**
- * Parse a JSONL file and validate with Zod
- */
-export function parseJsonlFile(filePath: string): JsonlMessage[] {
-  if (!existsSync(filePath)) {
-    logger.debug({ filePath }, 'JSONL file does not exist');
-    return [];
-  }
-
-  const content = readFileSync(filePath, 'utf-8');
-  const lines = content.split('\n').filter((line) => line.trim());
-  const messages: JsonlMessage[] = [];
-
-  for (const [index, line] of lines.entries()) {
-    try {
-      const parsed = JSON.parse(line);
-      const validated = JsonlMessageSchema.parse(parsed);
-      messages.push(validated);
-    } catch (error) {
-      logger.warn(
-        {
-          filePath,
-          lineNumber: index + 1,
-          error: error instanceof Error ? error.message : String(error),
-        },
-        'Failed to parse JSONL line',
-      );
-      // Skip invalid lines
-    }
-  }
-
-  logger.debug(
-    {
-      filePath,
-      totalLines: lines.length,
-      validMessages: messages.length,
-    },
-    'Parsed JSONL file',
-  );
-
-  return messages;
-}
-
-/**
  * Convert validated JSONL messages to API child messages
  */
 export function jsonlToApiChildren(jsonl: JsonlMessage[]): ApiChildMessage[] {
   return jsonl
     .filter((msg) => msg.type === 'user' || msg.type === 'assistant')
     .map((msg) => {
+      // Generate a fallback ID if uuid is missing
+      const id = msg.uuid || `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
       const base = {
-        id: msg.uuid,
+        id,
         role: msg.type as 'user' | 'assistant',
         content: extractContent(msg as UserJsonlMessage | AssistantJsonlMessage),
         timestamp: msg.timestamp,
@@ -176,38 +135,31 @@ function extractToolResults(
 }
 
 /**
- * Extract final text content from Claude SDK response for saving to DB
+ * Validate and parse JSONB content data
  */
-export function extractFinalContent(response: unknown): string {
-  // This will depend on the actual Claude SDK response structure
-  // For now, a simple implementation
-  if (typeof response === 'object' && response && 'content' in response) {
-    if (typeof response.content === 'string') {
-      return response.content;
-    }
-    if (Array.isArray(response.content)) {
-      return response.content
-        .filter((c: unknown) => {
-          return typeof c === 'object' && c !== null && 'type' in c && c.type === 'text';
-        })
-        .map((c: unknown) => {
-          if (typeof c === 'object' && c !== null && 'text' in c) {
-            return typeof c.text === 'string' ? c.text : '';
-          }
-          return '';
-        })
-        .join('');
-    }
+export function validateJsonbContentData(contentData: unknown): JsonlMessage[] {
+  if (!Array.isArray(contentData)) {
+    logger.warn({ contentData }, 'Content data is not an array');
+    return [];
   }
-  return '';
-}
 
-/**
- * Extract Claude session ID from SDK response
- */
-export function extractClaudeSessionId(response: unknown): string | undefined {
-  if (typeof response === 'object' && response && 'sessionId' in response) {
-    return response.sessionId as string;
+  const validatedMessages: JsonlMessage[] = [];
+
+  for (const [index, item] of contentData.entries()) {
+    try {
+      const validated = JsonlMessageSchema.parse(item);
+      validatedMessages.push(validated);
+    } catch (error) {
+      logger.warn(
+        {
+          index,
+          error: error instanceof Error ? error.message : String(error),
+        },
+        'Failed to validate JSONB content data item',
+      );
+      // Skip invalid items
+    }
   }
-  return undefined;
+
+  return validatedMessages;
 }

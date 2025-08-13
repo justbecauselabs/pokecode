@@ -10,9 +10,9 @@ export const sessionMessages = pgTable(
     sessionId: uuid('session_id')
       .notNull()
       .references(() => sessions.id, { onDelete: 'cascade' }),
-    text: text('text').notNull(),
     type: messageTypeEnum('type').notNull(),
-    claudeSessionId: text('claude_session_id'), // For correlating with JSONL files
+    claudeSessionId: text('claude_session_id'), // For correlating with JSONL files (legacy)
+    contentData: text('content_data'), // SDK message data stored as JSON string
     createdAt: timestamp('created_at').defaultNow().notNull(),
   },
   (table) => ({
@@ -20,6 +20,7 @@ export const sessionMessages = pgTable(
     typeIdx: index('idx_session_messages_type').on(table.type),
     createdAtIdx: index('idx_session_messages_created_at').on(table.createdAt),
     claudeSessionIdIdx: index('idx_session_messages_claude_session_id').on(table.claudeSessionId),
+    // Removed contentDataIdx as it was causing btree size issues with large JSON data
   }),
 );
 

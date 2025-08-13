@@ -3,9 +3,9 @@
  */
 
 import { memo } from 'react';
-import { View, Text, Pressable, Alert, ActionSheetIOS, Platform } from 'react-native';
-import { formatRelativeTime } from '@/utils/format';
+import { ActionSheetIOS, Alert, Platform, Pressable, Text, View } from 'react-native';
 import type { GetApiClaudeCodeSessionsResponse } from '@/api/generated';
+import { formatRelativeTime } from '@/utils/format';
 
 type Session = GetApiClaudeCodeSessionsResponse['sessions'][0];
 
@@ -22,13 +22,13 @@ export const SessionCard = memo(({ session, onPress, onDelete }: SessionCardProp
   const getStatusColor = (status: Session['status']) => {
     switch (status) {
       case 'active':
-        return 'bg-green-500';
+        return 'bg-success';
       case 'idle':
-        return 'bg-yellow-500';
+        return 'bg-warning';
       case 'expired':
-        return 'bg-red-500';
+        return 'bg-destructive';
       default:
-        return 'bg-gray-500';
+        return 'bg-muted';
     }
   };
 
@@ -70,33 +70,29 @@ export const SessionCard = memo(({ session, onPress, onDelete }: SessionCardProp
       );
     } else {
       // For Android, show Alert dialog
-      Alert.alert(
-        'Session Actions',
-        session.projectPath,
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { 
-            text: 'Delete Session', 
-            style: 'destructive',
-            onPress: handleDelete
-          },
-        ]
-      );
+      Alert.alert('Session Actions', session.projectPath, [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete Session',
+          style: 'destructive',
+          onPress: handleDelete,
+        },
+      ]);
     }
   };
 
   const handleDelete = () => {
     if (!onDelete) return;
-    
+
     Alert.alert(
       'Delete Session',
       'Are you sure you want to delete this session? This action cannot be undone.',
       [
         { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Delete', 
+        {
+          text: 'Delete',
           style: 'destructive',
-          onPress: () => onDelete(session.id)
+          onPress: () => onDelete(session.id),
         },
       ]
     );
@@ -106,30 +102,24 @@ export const SessionCard = memo(({ session, onPress, onDelete }: SessionCardProp
     <Pressable
       onPress={() => onPress(session.id)}
       onLongPress={handleLongPress}
-      className="bg-white dark:bg-gray-800 rounded-lg p-4 mb-3 border border-gray-200 dark:border-gray-700 active:bg-gray-50 dark:active:bg-gray-700"
+      className="bg-card rounded-lg p-4 mb-3 border border-border active:opacity-80"
     >
       <View className="space-y-2">
         {/* Header with project path and status */}
         <View className="flex-row items-start justify-between">
           <View className="flex-1 mr-2">
-            <Text 
-              className="text-base font-semibold text-gray-900 dark:text-white"
-              numberOfLines={1}
-            >
+            <Text className="text-base font-semibold text-card-foreground font-mono" numberOfLines={1}>
               {truncatePath(session.projectPath)}
             </Text>
             {session.context && (
-              <Text 
-                className="text-sm text-gray-600 dark:text-gray-300 mt-1"
-                numberOfLines={2}
-              >
+              <Text className="text-sm text-muted-foreground mt-1 font-mono" numberOfLines={2}>
                 {session.context}
               </Text>
             )}
           </View>
-          
+
           <View className={`px-2 py-1 rounded-full ${getStatusColor(session.status)}`}>
-            <Text className="text-xs font-medium text-white">
+            <Text className="text-xs font-medium text-foreground font-mono">
               {getStatusLabel(session.status)}
             </Text>
           </View>
@@ -137,7 +127,7 @@ export const SessionCard = memo(({ session, onPress, onDelete }: SessionCardProp
 
         {/* Footer with timestamp */}
         <View>
-          <Text className="text-xs text-gray-500 dark:text-gray-400">
+          <Text className="text-xs text-muted-foreground font-mono">
             {formatRelativeTime(session.lastAccessedAt)}
           </Text>
         </View>

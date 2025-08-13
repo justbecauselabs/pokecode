@@ -8,13 +8,12 @@ import { ClaudeCodeSDKService } from '@/services/claude-code-sdk.service';
 import { messageService } from '@/services/message.service';
 import type { PromptJobData } from '@/types';
 import { createChildLogger } from '@/utils/logger';
-import { extractClaudeSessionId, extractFinalContent } from '@/utils/message-parser';
 
 const logger = createChildLogger('claude-code-worker');
 
 /**
- * Worker for processing Claude Code prompts using CLI
- * Handles job processing, event streaming, and database updates
+ * Simplified worker for processing Claude Code prompts
+ * SDK handles message saving directly to database
  */
 export class ClaudeCodeWorker {
   private worker: Worker<PromptJobData>;
@@ -64,21 +63,19 @@ export class ClaudeCodeWorker {
   }
 
   /**
-   * Main job processing function
+   * Simplified job processing function
+   * SDK handles message saving directly
    */
   private async processPrompt(job: Job<PromptJobData>): Promise<void> {
-    const { sessionId, promptId, prompt, projectPath, messageId } = job.data;
-    const channel = `claude-code:${sessionId}:${promptId}`;
+    const { sessionId, promptId, prompt, projectPath } = job.data;
 
     logger.info({ promptId, sessionId }, 'Processing prompt');
 
     try {
-      await this.publishStartEvent(channel);
-
-      // Look up existing Claude Code session ID (if any) and update working state
+      // Look up existing Claude Code session ID and update working state
       const session = await db.query.sessions.findFirst({
         where: eq(sessions.id, sessionId),
-        columns: { claudeCodeSessionId: true },
+        columns: { claudeCodeSessionId: true, projectPath: true },
       });
 
       // Update session working state to indicate job is running
@@ -92,51 +89,18 @@ export class ClaudeCodeWorker {
         })
         .where(eq(sessions.id, sessionId));
 
-      // Create Claude Code SDK service instance
+      // Create Claude Code SDK service instance with message service
       const sdkService = new ClaudeCodeSDKService({
         sessionId,
         projectPath,
         claudeCodeSessionId: session?.claudeCodeSessionId ?? null,
+        messageService, // Inject message service for direct saving
       });
 
       // Store the service for potential cleanup
       this.activeSessions.set(promptId, sdkService);
 
-      // Set up event forwarding to Redis
-      this.setupEventForwarding(sdkService, channel, job);
-
-      // Handle Claude Code session ID capture for database backfill
-      sdkService.on(
-        'claude_session_captured',
-        async (data: { databaseSessionId: string; claudeCodeSessionId: string }) => {
-          try {
-            await this.backfillClaudeSessionId(data.databaseSessionId, data.claudeCodeSessionId);
-
-            // Also update the user message with the claude session ID if messageId is provided
-            if (messageId) {
-              await messageService.updateClaudeSessionId(messageId, data.claudeCodeSessionId);
-              logger.debug(
-                { messageId, claudeCodeSessionId: data.claudeCodeSessionId },
-                'Updated user message with Claude session ID',
-              );
-            }
-          } catch (error) {
-            logger.warn(
-              {
-                databaseSessionId: data.databaseSessionId,
-                claudeCodeSessionId: data.claudeCodeSessionId,
-                messageId,
-                error: error instanceof Error ? error.message : String(error),
-              },
-              'Failed to backfill Claude session ID or update message',
-            );
-          }
-        },
-      );
-
-      // Execute the prompt
-      // Note: Claude Code SDK automatically stores conversation data in ~/.claude directory
-      // We only need to track job metadata in our database
+      // Execute the prompt (SDK saves messages directly to DB)
       const result = await sdkService.execute(prompt);
 
       // Clean up
@@ -144,33 +108,6 @@ export class ClaudeCodeWorker {
 
       // Handle result based on success/failure
       if (result.success) {
-        await this.publishCompleteEvent(channel, result);
-
-        // Save assistant message after Claude responds
-        if (messageId && result.response) {
-          try {
-             // Extract final content from the result
-             const finalContent = extractFinalContent(result) || result.response;
-
-             // Save assistant message with Claude session ID
-             await messageService.saveAssistantMessage(sessionId, finalContent);
-
-             logger.debug(
-               { messageId, sessionId },
-               'Saved assistant message after Claude response',
-             );
-          } catch (error) {
-            logger.warn(
-              {
-                messageId,
-                sessionId,
-                error: error instanceof Error ? error.message : String(error),
-              },
-              'Failed to save assistant message',
-            );
-          }
-        }
-
         // Update session working state to indicate completion
         await db
           .update(sessions)
@@ -182,228 +119,17 @@ export class ClaudeCodeWorker {
           })
           .where(eq(sessions.id, sessionId));
 
-        logger.info({ promptId }, 'Prompt completed successfully');
+        logger.info({ promptId, duration: result.duration }, 'Prompt completed successfully');
       } else {
-        await this.handlePromptError(promptId, sessionId, channel, new Error(result.error));
-        throw new Error(result.error); // Let BullMQ handle retries
+        await this.handlePromptError(promptId, sessionId, new Error(result.error));
+        throw new Error(result.error);
       }
     } catch (error) {
       // Clean up on error
       this.activeSessions.delete(promptId);
-      await this.handlePromptError(promptId, sessionId, channel, error as Error);
-      throw error; // Let BullMQ handle retries
+      await this.handlePromptError(promptId, sessionId, error as Error);
+      throw error;
     }
-  }
-
-  /**
-   * Set up event forwarding from SDK service to Redis
-   */
-  private setupEventForwarding(
-    sdkService: ClaudeCodeSDKService,
-    channel: string,
-    job: Job<PromptJobData>,
-  ): void {
-    let messageCount = 0;
-    let toolCount = 0;
-    let blockCount = 0;
-
-    // Forward streaming events
-    sdkService.on('message_start', async (data) => {
-      await this.publishEvent(channel, {
-        type: 'message_start',
-        data,
-      });
-    });
-
-    sdkService.on('content_block_start', async (data) => {
-      blockCount++;
-      await this.publishEvent(channel, {
-        type: 'content_block_start',
-        data,
-      });
-    });
-
-    sdkService.on('text_delta', async (data) => {
-      await this.publishEvent(channel, {
-        type: 'text_delta',
-        data,
-      });
-    });
-
-    sdkService.on('thinking_delta', async (data) => {
-      await this.publishEvent(channel, {
-        type: 'thinking_delta',
-        data,
-      });
-    });
-
-    sdkService.on('citations_delta', async (data) => {
-      await this.publishEvent(channel, {
-        type: 'citations_delta',
-        data,
-      });
-    });
-
-    sdkService.on('content_block_delta', async (data) => {
-      await this.publishEvent(channel, {
-        type: 'content_block_delta',
-        data,
-      });
-    });
-
-    sdkService.on('content_block_stop', async (data) => {
-      await this.publishEvent(channel, {
-        type: 'content_block_stop',
-        data,
-      });
-    });
-
-    sdkService.on('message_delta', async (data) => {
-      await this.publishEvent(channel, {
-        type: 'message_delta',
-        data,
-      });
-    });
-
-    sdkService.on('message_stop', async (data) => {
-      await this.publishEvent(channel, {
-        type: 'message_stop',
-        data,
-      });
-    });
-
-    // Forward assistant messages (legacy compatibility)
-    sdkService.on('assistant', async (data) => {
-      messageCount++;
-      await this.publishEvent(channel, {
-        type: 'message',
-        data,
-      });
-    });
-
-    // Forward thinking content
-    sdkService.on('thinking', async (data) => {
-      await this.publishEvent(channel, {
-        type: 'thinking',
-        data,
-      });
-    });
-
-    // Forward tool use events
-    sdkService.on('tool_use', async (data) => {
-      toolCount++;
-      await this.publishEvent(channel, {
-        type: 'tool_use',
-        data,
-      });
-
-      // Update job progress
-      await job.updateProgress({
-        messagesProcessed: messageCount,
-        toolCallCount: toolCount,
-        blockCount,
-      });
-    });
-
-    // Forward server tool use events
-    sdkService.on('server_tool_use', async (data) => {
-      toolCount++;
-      await this.publishEvent(channel, {
-        type: 'server_tool_use',
-        data,
-      });
-    });
-
-    // Forward tool results
-    sdkService.on('tool_result', async (data) => {
-      await this.publishEvent(channel, {
-        type: 'tool_result',
-        data,
-      });
-    });
-
-    // Forward web search results
-    sdkService.on('web_search_result', async (data) => {
-      await this.publishEvent(channel, {
-        type: 'web_search_result',
-        data,
-      });
-    });
-
-    // Forward errors
-    sdkService.on('error', async (data) => {
-      await this.publishEvent(channel, {
-        type: 'error',
-        data,
-      });
-    });
-
-    // Forward usage statistics
-    sdkService.on('usage', async (data) => {
-      await this.publishEvent(channel, {
-        type: 'usage',
-        data,
-      });
-    });
-
-    // Forward system events
-    sdkService.on('system', async (data) => {
-      await this.publishEvent(channel, {
-        type: 'system',
-        data,
-      });
-    });
-
-    // Forward final result
-    sdkService.on('result', async (data) => {
-      await this.publishEvent(channel, {
-        type: 'result',
-        data,
-      });
-    });
-
-    // Log raw messages for debugging
-    sdkService.on('message', (message) => {
-      logger.debug({ message }, 'Raw message from Claude Code SDK');
-    });
-  }
-
-  /**
-   * Publishes the start event to Redis
-   */
-  private async publishStartEvent(channel: string): Promise<void> {
-    await this.publishEvent(channel, {
-      type: 'message',
-      data: {
-        type: 'message',
-        content: 'Initializing Claude Code SDK...',
-        timestamp: new Date().toISOString(),
-      },
-    });
-  }
-
-  /**
-   * Publishes completion event with summary
-   */
-  private async publishCompleteEvent(
-    channel: string,
-    result: {
-      success: true;
-      duration: number;
-      toolCallCount: number;
-    },
-  ): Promise<void> {
-    await this.publishEvent(channel, {
-      type: 'complete',
-      data: {
-        type: 'complete',
-        summary: {
-          duration: result.duration,
-          toolCallCount: result.toolCallCount,
-        },
-        timestamp: new Date().toISOString(),
-      },
-    });
   }
 
   /**
@@ -412,7 +138,6 @@ export class ClaudeCodeWorker {
   private async handlePromptError(
     promptId: string,
     sessionId: string,
-    channel: string,
     error: Error,
   ): Promise<void> {
     // Enhanced error logging with context
@@ -436,131 +161,6 @@ export class ClaudeCodeWorker {
         updatedAt: new Date(),
       })
       .where(eq(sessions.id, sessionId));
-
-    await this.publishEvent(channel, {
-      type: 'error',
-      data: {
-        type: 'error',
-        error: error.message,
-        timestamp: new Date().toISOString(),
-      },
-    });
-  }
-
-  /**
-   * Publishes an event to Redis pub/sub
-   */
-  private async publishEvent(channel: string, event: any): Promise<void> {
-    try {
-      // Safely serialize the event with circular reference handling
-      const serializedEvent = this.safeJsonStringify(event);
-      if (serializedEvent) {
-        await this.redis.publish(channel, serializedEvent);
-      } else {
-        logger.warn(
-          {
-            channel,
-            eventType: event?.type || 'unknown',
-          },
-          'Failed to serialize event - skipping publish',
-        );
-      }
-    } catch (error) {
-      // Log error but don't throw - stream may have already disconnected
-      logger.warn(
-        {
-          channel,
-          error,
-          eventType: event?.type || 'unknown',
-        },
-        'Failed to publish event (client may have disconnected)',
-      );
-    }
-  }
-
-  /**
-   * Safely stringify JSON with circular reference handling and size limits
-   */
-  private safeJsonStringify(obj: any, maxSize: number = 100000): string | null {
-    try {
-      // Handle circular references
-      const seen = new WeakSet();
-      const result = JSON.stringify(obj, (_key, value) => {
-        if (typeof value === 'object' && value !== null) {
-          if (seen.has(value)) {
-            return '[Circular]';
-          }
-          seen.add(value);
-        }
-
-        // Truncate very long strings to prevent message size issues
-        if (typeof value === 'string' && value.length > 10000) {
-          return `${value.substring(0, 10000)}...[truncated]`;
-        }
-
-        return value;
-      });
-
-      // Check message size and truncate if necessary
-      if (result.length > maxSize) {
-        logger.warn(`Event too large (${result.length} chars), truncating...`);
-
-        const truncated = {
-          ...obj,
-          data:
-            typeof obj.data === 'string'
-              ? `${obj.data.substring(0, maxSize / 2)}...[truncated]`
-              : '[Data too large - truncated]',
-        };
-        return JSON.stringify(truncated);
-      }
-
-      return result;
-    } catch (error) {
-      logger.error(`Failed to stringify event: ${error}`);
-      // Return a safe fallback event
-      return JSON.stringify({
-        type: obj?.type || 'error',
-        data: {
-          type: 'error',
-          error: 'Failed to serialize message',
-          timestamp: new Date().toISOString(),
-        },
-        timestamp: new Date().toISOString(),
-      });
-    }
-  }
-
-  /**
-   * Backfill the Claude Code session ID in the database
-   */
-  private async backfillClaudeSessionId(
-    databaseSessionId: string,
-    claudeCodeSessionId: string,
-  ): Promise<void> {
-    logger.info(
-      {
-        databaseSessionId,
-        claudeCodeSessionId,
-      },
-      'Backfilling Claude Code session ID in database',
-    );
-
-    await db
-      .update(sessions)
-      .set({
-        claudeCodeSessionId,
-        updatedAt: new Date(),
-      })
-      .where(eq(sessions.id, databaseSessionId));
-
-    logger.info(
-      {
-        databaseSessionId,
-        claudeCodeSessionId,
-      },
-      'Successfully backfilled Claude Code session ID',
-    );
   }
 
   /**

@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { MessageValidator } from '../../src/utils/message-validator';
+import { validateJsonbContentData } from '../../src/utils/message-parser';
 
 describe('MessageValidator', () => {
   describe('parseJsonlMessage', () => {
@@ -254,6 +255,150 @@ describe('MessageValidator', () => {
       expect(() => {
         MessageValidator.parseJsonlMessage(invalidMessage);
       }).toThrow('Invalid JSONL message format');
+    });
+  });
+
+  describe('JSONB Content Validation', () => {
+    describe('validateJsonbContentData', () => {
+      it('should validate valid JSONB content data array', () => {
+        const validJsonbData = [
+          {
+            uuid: '12345-abcde',
+            parentUuid: null,
+            sessionId: 'session-123',
+            timestamp: '2023-10-01T10:00:00.000Z',
+            type: 'user',
+            message: {
+              role: 'user',
+              content: 'Hello, world!',
+            },
+            isSidechain: false,
+            userType: 'external',
+            cwd: '/Users/test/project',
+            version: '1.0.73',
+            gitBranch: 'main',
+          },
+          {
+            uuid: '67890-fghij',
+            parentUuid: '12345-abcde',
+            sessionId: 'session-123',
+            timestamp: '2023-10-01T10:01:00.000Z',
+            type: 'assistant',
+            message: {
+              role: 'assistant',
+              content: [
+                {
+                  type: 'text',
+                  text: 'Hello! How can I help you today?',
+                },
+              ],
+              id: 'msg_123',
+              type: 'message',
+              model: 'claude-sonnet-4-20250514',
+              stop_reason: null,
+              stop_sequence: null,
+              usage: {
+                input_tokens: 10,
+                cache_read_input_tokens: 0,
+                output_tokens: 15,
+                service_tier: 'default',
+              },
+            },
+            isSidechain: false,
+            userType: 'external',
+            cwd: '/Users/test/project',
+            version: '1.0.73',
+            gitBranch: 'main',
+          }
+        ];
+
+        const result = validateJsonbContentData(validJsonbData);
+        
+        expect(result).toHaveLength(2);
+        expect(result[0]!.type).toBe('user');
+        expect(result[1]!.type).toBe('assistant');
+      });
+
+      it('should return empty array for non-array input', () => {
+        const invalidData = { not: 'an array' };
+        
+        const result = validateJsonbContentData(invalidData);
+        
+        expect(result).toEqual([]);
+      });
+
+      it('should skip invalid items and return valid ones', () => {
+        const mixedData = [
+          {
+            uuid: '12345-abcde',
+            parentUuid: null,
+            sessionId: 'session-123',
+            timestamp: '2023-10-01T10:00:00.000Z',
+            type: 'user',
+            message: {
+              role: 'user',
+              content: 'Hello, world!',
+            },
+            isSidechain: false,
+            userType: 'external',
+            cwd: '/Users/test/project',
+            version: '1.0.73',
+            gitBranch: 'main',
+          },
+          { invalid: 'data', missing: 'required fields' },
+          {
+            uuid: '67890-fghij',
+            parentUuid: '12345-abcde',
+            sessionId: 'session-123',
+            timestamp: '2023-10-01T10:01:00.000Z',
+            type: 'assistant',
+            message: {
+              role: 'assistant',
+              content: [
+                {
+                  type: 'text',
+                  text: 'Hello! How can I help you today?',
+                },
+              ],
+              id: 'msg_123',
+              type: 'message',
+              model: 'claude-sonnet-4-20250514',
+              stop_reason: null,
+              stop_sequence: null,
+              usage: {
+                input_tokens: 10,
+                cache_read_input_tokens: 0,
+                output_tokens: 15,
+                service_tier: 'default',
+              },
+            },
+            isSidechain: false,
+            userType: 'external',
+            cwd: '/Users/test/project',
+            version: '1.0.73',
+            gitBranch: 'main',
+          }
+        ];
+
+        const result = validateJsonbContentData(mixedData);
+        
+        expect(result).toHaveLength(2); // Only valid items
+        expect(result[0]!.type).toBe('user');
+        expect(result[1]!.type).toBe('assistant');
+      });
+
+      it('should handle empty array', () => {
+        const emptyData: unknown[] = [];
+        
+        const result = validateJsonbContentData(emptyData);
+        
+        expect(result).toEqual([]);
+      });
+
+      it('should handle null and undefined', () => {
+        expect(validateJsonbContentData(null)).toEqual([]);
+        expect(validateJsonbContentData(undefined)).toEqual([]);
+      });
     });
   });
 });

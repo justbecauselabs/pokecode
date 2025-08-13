@@ -1,7 +1,5 @@
 // Type aliases for message-related types
-import type {
-  GetApiClaudeCodeSessionsBySessionIdMessagesResponse,
-} from '../api/generated';
+import type { GetApiClaudeCodeSessionsBySessionIdMessagesResponse } from '../api/generated';
 
 // Extract the Message type from the generated response type
 export type Message = GetApiClaudeCodeSessionsBySessionIdMessagesResponse['messages'][number];

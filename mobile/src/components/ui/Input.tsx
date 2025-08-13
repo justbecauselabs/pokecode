@@ -1,67 +1,39 @@
 import type React from 'react';
-import {
-  StyleSheet,
-  Text,
-  TextInput,
-  type TextInputProps,
-  useColorScheme,
-  View,
-  type ViewStyle,
-} from 'react-native';
-import { darkTheme, lightTheme } from '@/constants/theme';
-import { useUIStore } from '@/stores/uiStore';
+import { Text, TextInput, type TextInputProps, View } from 'react-native';
+import { cn } from '@/utils/cn';
 
 interface InputProps extends TextInputProps {
   label?: string;
   error?: string;
-  containerStyle?: ViewStyle;
+  className?: string;
+  containerClassName?: string;
 }
 
-export const Input: React.FC<InputProps> = ({ label, error, containerStyle, style, ...props }) => {
-  const colorScheme = useColorScheme();
-  const { theme } = useUIStore();
-  const isDark = theme === 'dark' || (theme === 'system' && colorScheme === 'dark');
-  const currentTheme = isDark ? darkTheme : lightTheme;
+export const Input: React.FC<InputProps> = ({
+  label,
+  error,
+  className,
+  containerClassName,
+  ...props
+}) => {
+  const containerClasses = cn('mb-4', containerClassName);
+
+  const inputClasses = cn(
+    'border rounded-lg px-3 py-2.5 text-base bg-input text-foreground',
+    error ? 'border-destructive' : 'border-border',
+    'focus:border-ring focus:ring-2 focus:ring-ring focus:ring-opacity-20',
+    className
+  );
 
   return (
-    <View style={[styles.container, containerStyle]}>
-      {label && <Text style={[styles.label, { color: currentTheme.colors.text }]}>{label}</Text>}
+    <View className={containerClasses}>
+      {label && <Text className="text-sm font-semibold mb-1.5 text-foreground">{label}</Text>}
       <TextInput
-        style={[
-          styles.input,
-          {
-            backgroundColor: currentTheme.colors.inputBackground,
-            color: currentTheme.colors.text,
-            borderColor: error ? currentTheme.colors.error : currentTheme.colors.border,
-          },
-          style,
-        ]}
-        placeholderTextColor={currentTheme.colors.textTertiary}
+        className={inputClasses}
+        placeholderTextColor="#9da5b4" // muted-foreground color
         {...props}
       />
-      {error && <Text style={[styles.error, { color: currentTheme.colors.error }]}>{error}</Text>}
+      {error && <Text className="text-xs mt-1 text-destructive">{error}</Text>}
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    marginBottom: 16,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 6,
-  },
-  input: {
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 16,
-  },
-  error: {
-    fontSize: 12,
-    marginTop: 4,
-  },
-});

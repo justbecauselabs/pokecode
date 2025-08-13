@@ -18,6 +18,15 @@ Default to using Bun instead of Node.js.
 - `WebSocket` is built-in. Don't use `ws`.
 - Bun.$`ls` instead of execa.
 
+### File System Operations
+
+- Use `Bun.file(path)` instead of `fs.readFile()` or `fs.writeFile()`
+- Use `Bun.Glob` for pattern matching instead of `fs.readdir()` with filtering
+- Use `file.exists()` instead of `fs.stat()` for existence checks
+- Use `file.text()` for reading text content
+- Use `file.arrayBuffer()` for binary content
+- Example: `const content = await Bun.file('./file.txt').text()`
+
 ## Typescript
 
 ### Best Practices

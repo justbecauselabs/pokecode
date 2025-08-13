@@ -1,5 +1,5 @@
+import { fireEvent, render, waitFor } from '@testing-library/react-native';
 import React from 'react';
-import { render, fireEvent, waitFor } from '@testing-library/react-native';
 import { MessageInput } from '../MessageInput';
 
 const mockOnSendMessage = jest.fn();
@@ -11,10 +11,7 @@ describe('MessageInput', () => {
 
   it('renders correctly', () => {
     const { getByPlaceholderText, getByText } = render(
-      <MessageInput
-        sessionId="test-session"
-        onSendMessage={mockOnSendMessage}
-      />
+      <MessageInput sessionId="test-session" onSendMessage={mockOnSendMessage} />
     );
 
     expect(getByPlaceholderText('Enter your message...')).toBeTruthy();
@@ -23,10 +20,7 @@ describe('MessageInput', () => {
 
   it('disables send button when message is empty', () => {
     const { getByText } = render(
-      <MessageInput
-        sessionId="test-session"
-        onSendMessage={mockOnSendMessage}
-      />
+      <MessageInput sessionId="test-session" onSendMessage={mockOnSendMessage} />
     );
 
     const sendButton = getByText('Send');
@@ -35,10 +29,7 @@ describe('MessageInput', () => {
 
   it('enables send button when message has content', () => {
     const { getByPlaceholderText, getByText } = render(
-      <MessageInput
-        sessionId="test-session"
-        onSendMessage={mockOnSendMessage}
-      />
+      <MessageInput sessionId="test-session" onSendMessage={mockOnSendMessage} />
     );
 
     const input = getByPlaceholderText('Enter your message...');
@@ -52,10 +43,7 @@ describe('MessageInput', () => {
     mockOnSendMessage.mockResolvedValue({});
 
     const { getByPlaceholderText, getByText } = render(
-      <MessageInput
-        sessionId="test-session"
-        onSendMessage={mockOnSendMessage}
-      />
+      <MessageInput sessionId="test-session" onSendMessage={mockOnSendMessage} />
     );
 
     const input = getByPlaceholderText('Enter your message...');
@@ -73,10 +61,7 @@ describe('MessageInput', () => {
     mockOnSendMessage.mockResolvedValue({});
 
     const { getByPlaceholderText, getByText } = render(
-      <MessageInput
-        sessionId="test-session"
-        onSendMessage={mockOnSendMessage}
-      />
+      <MessageInput sessionId="test-session" onSendMessage={mockOnSendMessage} />
     );
 
     const input = getByPlaceholderText('Enter your message...');
@@ -92,11 +77,7 @@ describe('MessageInput', () => {
 
   it('shows loading state when sending', () => {
     const { getByText } = render(
-      <MessageInput
-        sessionId="test-session"
-        onSendMessage={mockOnSendMessage}
-        isSending={true}
-      />
+      <MessageInput sessionId="test-session" onSendMessage={mockOnSendMessage} isSending={true} />
     );
 
     const sendButton = getByText('Send');
@@ -105,11 +86,7 @@ describe('MessageInput', () => {
 
   it('handles disabled state correctly', () => {
     const { getByText } = render(
-      <MessageInput
-        sessionId="test-session"
-        onSendMessage={mockOnSendMessage}
-        disabled={true}
-      />
+      <MessageInput sessionId="test-session" onSendMessage={mockOnSendMessage} disabled={true} />
     );
 
     const sendButton = getByText('Send');

@@ -1,49 +1,27 @@
 import type React from 'react';
-import { StyleSheet, TouchableOpacity, useColorScheme, View, type ViewStyle } from 'react-native';
-import { darkTheme, lightTheme } from '@/constants/theme';
-import { useUIStore } from '@/stores/uiStore';
+import { TouchableOpacity, View } from 'react-native';
+import { cn } from '@/utils/cn';
 
 interface CardProps {
   children: React.ReactNode;
-  style?: ViewStyle;
+  className?: string;
   padding?: 'none' | 'small' | 'medium' | 'large';
   onPress?: () => void;
 }
 
-export const Card: React.FC<CardProps> = ({ children, style, padding = 'medium', onPress }) => {
-  const colorScheme = useColorScheme();
-  const { theme } = useUIStore();
-  const isDark = theme === 'dark' || (theme === 'system' && colorScheme === 'dark');
-  const currentTheme = isDark ? darkTheme : lightTheme;
+export const Card: React.FC<CardProps> = ({ children, className, padding = 'medium', onPress }) => {
+  const baseClasses = 'bg-card rounded-xl shadow-lg';
 
-  const getPaddingStyle = (): ViewStyle => {
-    switch (padding) {
-      case 'none':
-        return {};
-      case 'small':
-        return { padding: currentTheme.spacing.sm };
-      case 'medium':
-        return { padding: currentTheme.spacing.md };
-      case 'large':
-        return { padding: currentTheme.spacing.lg };
-    }
+  const paddingClasses = {
+    none: '',
+    small: 'p-2',
+    medium: 'p-4',
+    large: 'p-6',
   };
 
-  const cardContent = (
-    <View
-      style={[
-        styles.card,
-        {
-          backgroundColor: currentTheme.colors.card,
-          shadowColor: isDark ? '#000' : '#000',
-        },
-        getPaddingStyle(),
-        style,
-      ]}
-    >
-      {children}
-    </View>
-  );
+  const cardClasses = cn(baseClasses, paddingClasses[padding], className);
+
+  const cardContent = <View className={cardClasses}>{children}</View>;
 
   if (onPress) {
     return (
@@ -55,16 +33,3 @@ export const Card: React.FC<CardProps> = ({ children, style, padding = 'medium',
 
   return cardContent;
 };
-
-const styles = StyleSheet.create({
-  card: {
-    borderRadius: 12,
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-});

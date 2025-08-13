@@ -1,44 +1,23 @@
 import type React from 'react';
-import { ActivityIndicator, StyleSheet, Text, useColorScheme, View } from 'react-native';
-import { darkTheme, lightTheme } from '@/constants/theme';
-import { useUIStore } from '@/stores/uiStore';
+import { ActivityIndicator, Text, View } from 'react-native';
 
 interface LoadingStateProps {
   message?: string;
   size?: 'small' | 'large';
+  className?: string;
 }
 
 export const LoadingState: React.FC<LoadingStateProps> = ({
   message = 'Loading...',
   size = 'large',
+  className,
 }) => {
-  const colorScheme = useColorScheme();
-  const { theme } = useUIStore();
-  const isDark = theme === 'dark' || (theme === 'system' && colorScheme === 'dark');
-  const currentTheme = isDark ? darkTheme : lightTheme;
-
   return (
-    <View style={styles.container}>
-      <ActivityIndicator size={size} color={currentTheme.colors.primary} />
+    <View className={`flex-1 justify-center items-center p-5 ${className || ''}`}>
+      <ActivityIndicator size={size} color="#528bff" />
       {message && (
-        <Text style={[styles.message, { color: currentTheme.colors.textSecondary }]}>
-          {message}
-        </Text>
+        <Text className="mt-3 text-base text-center text-muted-foreground font-mono">{message}</Text>
       )}
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  message: {
-    marginTop: 12,
-    fontSize: 16,
-    textAlign: 'center',
-  },
-});

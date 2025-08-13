@@ -15,7 +15,7 @@ export const ToolResultSchema = Type.Object({
   content: Type.String(),
 });
 
-// Child message schema (JSONL messages)
+// Child message schema (parsed from JSONB content data)
 export const ApiChildMessageSchema = Type.Object({
   id: Type.String(),
   role: MessageRoleSchema,
@@ -26,7 +26,7 @@ export const ApiChildMessageSchema = Type.Object({
   thinking: Type.Optional(Type.String()),
 });
 
-// Main API message schema (DB messages with nested JSONL)
+// Main API message schema (DB messages with nested JSONB content)
 export const ApiMessageSchema = Type.Object({
   id: Type.String(),
   sessionId: Type.String(),

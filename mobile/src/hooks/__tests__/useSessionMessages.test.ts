@@ -1,8 +1,8 @@
+import { QueryClient, type QueryClientProvider } from '@tanstack/react-query';
 import { renderHook, waitFor } from '@testing-library/react-native';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import React from 'react';
-import { useSessionMessages } from '../useSessionMessages';
+import type React from 'react';
 import { apiClient } from '../../api/rn-client';
+import { useSessionMessages } from '../useSessionMessages';
 
 // Mock the API client
 jest.mock('../../api/rn-client', () => ({

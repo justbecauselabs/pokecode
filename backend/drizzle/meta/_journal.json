@@ -57,6 +57,27 @@
       "when": 1755049973695,
       "tag": "0007_cynical_vampiro",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1755060358243,
+      "tag": "0008_fluffy_valkyrie",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1755063276192,
+      "tag": "0009_sour_warstar",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1755064361729,
+      "tag": "0010_ordinary_kabuki",
+      "breakpoints": true
     }
   ]
 }

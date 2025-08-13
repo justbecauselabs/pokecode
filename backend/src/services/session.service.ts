@@ -6,6 +6,7 @@ import { sessions } from '@/db/schema';
 import ClaudeDirectoryService from '@/services/claude-directory.service';
 import { repositoryService } from '@/services/repository.service';
 import { NotFoundError, ValidationError } from '@/types';
+import { logger } from '@/utils/logger';
 
 export class SessionService {
   async createSession(data: {
@@ -93,7 +94,11 @@ export class SessionService {
   async listSessions(
     options: { status?: 'active' | 'idle' | 'expired'; limit?: number; offset?: number } = {},
   ) {
+    logger.info({ options }, 'Listing sessions');
+
     const { limit = 20, offset = 0 } = options;
+    // Always enforce a maximum limit of 20 sessions
+    const effectiveLimit = Math.min(limit, 20);
 
     // Build where clause - only show sessions that have Claude Code session IDs
     const whereClause = sql`${sessions.claudeCodeSessionId} IS NOT NULL`;
@@ -105,13 +110,15 @@ export class SessionService {
       .where(whereClause);
     const count = countResult[0]?.count ?? 0;
 
-    // Get sessions
+    // Get sessions ordered by updated_at descending
     const results = await db.query.sessions.findMany({
       where: whereClause,
-      orderBy: [desc(sessions.lastAccessedAt)],
-      limit,
+      orderBy: [desc(sessions.updatedAt)],
+      limit: effectiveLimit,
       offset,
     });
+
+    logger.info({ results }, 'Sessions listed');
 
     // Format sessions and apply status filter if needed
     let formattedSessions = results.map((session) => this.formatSession(session));
@@ -123,7 +130,7 @@ export class SessionService {
     return {
       sessions: formattedSessions,
       total: Number(count),
-      limit,
+      limit: effectiveLimit,
       offset,
     };
   }
