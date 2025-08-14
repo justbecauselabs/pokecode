@@ -31,6 +31,7 @@ export const ApiMessageSchema = Type.Object({
 export const CreateMessageBodySchema = Type.Object({
   content: Type.String({ minLength: 1 }),
   allowedTools: Type.Optional(Type.Array(Type.String())),
+  agent: Type.Optional(Type.String({ description: 'Agent name to use for this message' })),
 });
 
 // Response schemas

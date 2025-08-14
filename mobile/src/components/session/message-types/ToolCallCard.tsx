@@ -10,49 +10,48 @@ interface ToolCallCardProps {
 export const ToolCallCard: React.FC<ToolCallCardProps> = ({ toolCalls, timestamp }) => {
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
 
-  const formatTime = (timestamp: string) => {
-    const date = new Date(timestamp);
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const formatToolCall = (toolCall: { name: string; input: any }) => {
+    // Format like ToolName(param: "value", param2: "value")
+    const params = Object.entries(toolCall.input)
+      .map(([key, value]) => {
+        const valueStr = typeof value === 'string' ? `"${value}"` : JSON.stringify(value);
+        return `${key}: ${valueStr}`;
+      })
+      .join(', ');
+    
+    return `${toolCall.name}(${params})`;
+  };
+
+  const formatCompactToolCall = (toolCall: { name: string; input: any }) => {
+    // Create a compact version for the first line display
+    const formatted = formatToolCall(toolCall);
+    return formatted.length > 80 ? formatted.substring(0, 77) + '...' : formatted;
   };
 
   return (
-    <View className="mb-3">
+    <View>
       {toolCalls.map((toolCall, index) => (
-        <View key={`${toolCall.name}-${index}`} className="mb-2">
-          {/* Tool header */}
+        <View key={`${toolCall.name}-${index}`} className="mb-1">
           <TouchableOpacity
-            className="flex-row items-center justify-between bg-accent/10 border border-accent/20 rounded-t-lg px-3 py-2 active:opacity-80"
+            className="active:opacity-70"
             onPress={() => setExpandedIndex(expandedIndex === index ? null : index)}
             accessibilityRole="button"
             accessibilityLabel={`Toggle ${toolCall.name} tool details`}
           >
-            <View className="flex-row items-center">
-              <View className="w-2 h-2 bg-accent rounded-full mr-2" />
-              <Text className="text-sm font-mono font-semibold text-accent">
-                {toolCall.name}
-              </Text>
-            </View>
-            <View className="flex-row items-center">
-              <Text className="text-xs text-muted-foreground font-mono mr-2">
-                {formatTime(timestamp)}
-              </Text>
-              <Text className="text-accent font-mono">
-                {expandedIndex === index ? '−' : '+'}
-              </Text>
-            </View>
+            <Text className="text-base font-mono text-foreground">
+              {formatCompactToolCall(toolCall)}
+            </Text>
           </TouchableOpacity>
 
-          {/* Tool input (expandable) */}
+          {/* Full tool call details (expandable) */}
           {expandedIndex === index && (
-            <View className="bg-muted border-l border-r border-b border-accent/20 rounded-b-lg p-3">
-              <Text className="text-xs font-mono font-medium text-muted-foreground mb-2">
-                Input:
+            <View className="mt-2 mb-2">
+              <Text className="text-sm font-mono text-muted-foreground">
+                {formatToolCall(toolCall)}
               </Text>
-              <View className="bg-background border border-border rounded p-2">
-                <Text className="text-xs font-mono text-foreground">
-                  {JSON.stringify(toolCall.input, null, 2)}
-                </Text>
-              </View>
+              <Text className="text-xs font-mono text-muted-foreground mt-1">
+                {JSON.stringify(toolCall.input, null, 2)}
+              </Text>
             </View>
           )}
         </View>

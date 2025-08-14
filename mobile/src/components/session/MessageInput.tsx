@@ -5,20 +5,23 @@ import { Pill, TextField } from '../common';
 
 interface MessageInputRef {
   insertCommand: (params: { commandName: string }) => void;
+  insertAgent: (params: { agentName: string }) => void;
 }
 
 interface MessageInputProps {
   sessionId: string;
-  onSendMessage: (params: { content: string }) => Promise<unknown>;
+  onSendMessage: (params: { content: string; agent?: string }) => Promise<unknown>;
   onShowSlashCommands?: () => void;
+  onShowAgents?: () => void;
   isSending?: boolean;
   disabled?: boolean;
 }
 
 export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>((props, ref) => {
-  const { onSendMessage, onShowSlashCommands, isSending = false, disabled } = props;
+  const { onSendMessage, onShowSlashCommands, onShowAgents, isSending = false, disabled } = props;
   const [message, setMessage] = useState('');
   const [selectedCommand, setSelectedCommand] = useState<string | null>(null);
+  const [selectedAgent, setSelectedAgent] = useState<string | null>(null);
   const inputRef = useRef<TextInput>(null);
 
   const insertCommand = (params: { commandName: string }) => {
@@ -30,9 +33,19 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>((prop
     }, 100);
   };
 
+  const insertAgent = (params: { agentName: string }) => {
+    setSelectedAgent(params.agentName);
+
+    // Focus the input after selecting the agent
+    setTimeout(() => {
+      inputRef.current?.focus();
+    }, 100);
+  };
+
   // Expose methods to parent component
   useImperativeHandle(ref, () => ({
     insertCommand,
+    insertAgent,
   }));
 
   const handleSend = async () => {
@@ -46,9 +59,15 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>((prop
       const finalMessage = selectedCommand
         ? `/${selectedCommand} ${trimmedMessage}`
         : trimmedMessage;
-      await onSendMessage({ content: finalMessage });
+      
+      await onSendMessage({ 
+        content: finalMessage, 
+        agent: selectedAgent || undefined 
+      });
+      
       setMessage('');
       setSelectedCommand(null); // Clear the selected command after sending
+      setSelectedAgent(null); // Clear the selected agent after sending
     } catch (error) {
       console.error('Failed to send message:', error);
       Alert.alert('Error', 'Failed to send message. Please try again.');
@@ -94,8 +113,16 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>((prop
         </TouchableOpacity>
       </View>
 
-      {/* Slash Command Button Below Input */}
-      <View className="mt-3 items-start">
+      {/* Agent and Slash Command Buttons Below Input */}
+      <View className="mt-3 flex-row gap-2 items-start">
+        <Pill
+          variant={selectedAgent ? 'active' : 'default'}
+          onPress={selectedAgent ? () => setSelectedAgent(null) : onShowAgents}
+          disabled={disabled || isSending}
+        >
+          {selectedAgent ? selectedAgent : 'agent'}
+        </Pill>
+        
         <Pill
           variant={selectedCommand ? 'active' : 'default'}
           onPress={selectedCommand ? () => setSelectedCommand(null) : onShowSlashCommands}

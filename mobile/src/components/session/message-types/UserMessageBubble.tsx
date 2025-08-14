@@ -9,26 +9,20 @@ interface UserMessageBubbleProps {
 }
 
 export const UserMessageBubble: React.FC<UserMessageBubbleProps> = ({ message }) => {
-  return (
-    <View className="mb-6">
-      {/* User header */}
-      <View className="flex-row items-center mb-2">
-        <View className="w-2 h-2 bg-blue-500 rounded-full mr-2" />
-        <Text className="text-sm font-mono font-medium text-foreground">User</Text>
-      </View>
+  const hasTools = message.toolResults && message.toolResults.length > 0;
 
-      {/* User message content */}
-      <View className="bg-card border border-border rounded-lg p-4 ml-4">
-        {message.content.trim() ? (
+  return (
+    <View className="mb-2">
+      {/* User message content - only show if no tools or if content is meaningful */}
+      {!hasTools && message.content.trim() && (
+        <View className="mb-1">
           <MarkdownRenderer content={message.content} />
-        ) : (
-          <Text className="text-muted-foreground italic font-mono">[No content]</Text>
-        )}
-      </View>
+        </View>
+      )}
 
       {/* Tool results */}
       {message.toolResults && message.toolResults.length > 0 && (
-        <View className="ml-4 mt-3">
+        <View className="mb-1">
           <ToolResultCard toolResults={message.toolResults} timestamp={message.timestamp} />
         </View>
       )}

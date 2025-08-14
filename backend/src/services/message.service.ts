@@ -4,15 +4,14 @@ import { db } from '../db';
 import { sessions } from '../db/schema-sqlite';
 import { type SessionMessage, sessionMessages } from '../db/schema-sqlite/session_messages';
 import type { ApiMessage } from '../schemas/message.schema';
-import type { JsonlMessage } from '../types/claude-messages';
-import { validateJsonbContentData } from '../utils/message-parser';
+import { isValidSDKMessage, sdkToApiMessage } from '../utils/message-parser';
 import { sqliteQueueService } from './queue-sqlite.service';
 
 export class MessageService {
   /**
    * Queue a prompt for processing (no message creation, SDK handles that)
    */
-  async queuePrompt(sessionId: string, content: string): Promise<void> {
+  async queuePrompt(sessionId: string, content: string, options?: { agent?: string }): Promise<void> {
     // Generate a job ID for the prompt
     const promptId = globalThis.crypto.randomUUID();
 
@@ -23,6 +22,7 @@ export class MessageService {
       content,
       undefined, // allowedTools
       promptId, // messageId
+      options?.agent, // agent
     );
 
     // Update session to indicate work is in progress
@@ -54,90 +54,15 @@ export class MessageService {
       }
 
       try {
-        const sdkMessage = JSON.parse(dbMsg.contentData);
+        const rawData = JSON.parse(dbMsg.contentData);
         
-        // Validate the message and extract content
-        const validated = validateJsonbContentData(sdkMessage);
-        if (validated.length === 0) {
-          continue;
-        }
-
-        const message = validated[0]!;
-        
-        // Extract content based on message type
-        let content = '';
-        let toolCalls: Array<{ name: string; input: any }> | undefined;
-        let toolResults: Array<{ tool_use_id: string; content: string }> | undefined;
-        let thinking: string | undefined;
-
-        if (message.type === 'user') {
-          // Handle user messages
-          const userContent = message.message.content;
-          if (typeof userContent === 'string') {
-            content = userContent;
-          } else if (Array.isArray(userContent)) {
-            // Extract text content
-            const textContent = userContent
-              .filter((c: any) => c.type === 'text')
-              .map((c: any) => c.text)
-              .join('\n');
-            content = textContent;
-
-            // Extract tool results
-            const results = userContent
-              .filter((c: any) => c.type === 'tool_result')
-              .map((c: any) => ({
-                tool_use_id: c.tool_use_id,
-                content: c.content,
-              }));
-            if (results.length > 0) {
-              toolResults = results;
-            }
-          }
-        } else if (message.type === 'assistant') {
-          // Handle assistant messages
-          const assistantContent = message.message.content;
-          
-          // Extract text content
-          const textContent = assistantContent
-            .filter((c: any) => c.type === 'text')
-            .map((c: any) => c.text)
-            .join('\n');
-          content = textContent;
-
-          // Extract tool calls
-          const calls = assistantContent
-            .filter((c: any) => c.type === 'tool_use')
-            .map((c: any) => ({
-              name: c.name,
-              input: c.input,
-            }));
-          if (calls.length > 0) {
-            toolCalls = calls;
-          }
-
-          // Extract thinking content
-          const thinkingContent = assistantContent
-            .filter((c: any) => c.type === 'thinking')
-            .map((c: any) => c.thinking)
-            .join('\n');
-          if (thinkingContent) {
-            thinking = thinkingContent;
+        // Check if it's a valid SDK message
+        if (isValidSDKMessage(rawData)) {
+          const apiMessage = sdkToApiMessage(rawData, dbMsg.id, dbMsg.sessionId, dbMsg.createdAt);
+          if (apiMessage) {
+            results.push(apiMessage);
           }
         }
-
-        const apiMessage: ApiMessage = {
-          id: dbMsg.id,
-          sessionId: dbMsg.sessionId,
-          role: dbMsg.type === 'user' ? 'user' : 'assistant',
-          content: content || '[No content]',
-          timestamp: dbMsg.createdAt.toISOString(),
-          ...(toolCalls && { toolCalls }),
-          ...(toolResults && { toolResults }),
-          ...(thinking && { thinking }),
-        };
-
-        results.push(apiMessage);
       } catch (error) {
         // Skip malformed messages
         console.warn(`Failed to parse message ${dbMsg.id}:`, error);
@@ -150,7 +75,7 @@ export class MessageService {
   /**
    * Update message with content data (stored as JSON string)
    */
-  async updateMessageContentData(messageId: string, contentData: JsonlMessage[]): Promise<void> {
+  async updateMessageContentData(messageId: string, contentData: SDKMessage): Promise<void> {
     await db
       .update(sessionMessages)
       .set({
@@ -188,8 +113,8 @@ export class MessageService {
    */
   async saveUserMessage(sessionId: string, content: string): Promise<void> {
     // Create user message in Claude SDK format
-    const userMessage = {
-      type: 'user' as const,
+    const userMessage: SDKMessage = {
+      type: 'user',
       content,
       id: globalThis.crypto.randomUUID(),
       timestamp: new Date().toISOString(),

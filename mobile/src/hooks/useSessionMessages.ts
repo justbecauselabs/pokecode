@@ -88,10 +88,10 @@ export function useSessionMessages(sessionId: string) {
   });
 
   const sendMessageMutation = useMutation({
-    mutationFn: async (params: { content: string }) => {
+    mutationFn: async (params: { content: string; agent?: string }) => {
       return apiClient.sendMessage({
         sessionId,
-        data: { content: params.content },
+        data: { content: params.content, agent: params.agent },
       });
     },
     onMutate: async (params) => {
@@ -156,7 +156,7 @@ export function useSessionMessages(sessionId: string) {
     queryClient.invalidateQueries({ queryKey: ['sessionMessages', sessionId] });
   };
 
-  const sendMessage = async (params: { content: string }) => {
+  const sendMessage = async (params: { content: string; agent?: string }) => {
     const result = await sendMessageMutation.mutateAsync(params);
 
     // No need to call refetch() here - onSuccess already invalidates the query

@@ -1,6 +1,5 @@
 import { Type } from '@sinclair/typebox';
 import type { FastifyPluginAsync } from 'fastify';
-import { rateLimitConfig } from '@/config';
 import {
   CreateMessageBodySchema,
   type CreateMessageRequest,
@@ -20,9 +19,6 @@ const messageRoutes: FastifyPluginAsync = async (fastify) => {
   }>(
     '/messages',
     {
-      config: {
-        rateLimit: rateLimitConfig.prompt,
-      },
       schema: {
         params: SessionIdParamsSchema,
         body: CreateMessageBodySchema,
@@ -34,7 +30,7 @@ const messageRoutes: FastifyPluginAsync = async (fastify) => {
     },
     async (request, reply) => {
       const { sessionId } = request.params;
-      const { content } = request.body;
+      const { content, agent } = request.body;
 
       try {
         // Verify session exists
@@ -50,7 +46,8 @@ const messageRoutes: FastifyPluginAsync = async (fastify) => {
         await messageService.saveUserMessage(sessionId, content);
 
         // Queue prompt for processing (SDK will create assistant messages)
-        await messageService.queuePrompt(sessionId, content);
+        // Pass agent context if provided
+        await messageService.queuePrompt(sessionId, content, { agent });
 
         // Track metrics
         if (fastify.metrics) {
@@ -85,9 +82,6 @@ const messageRoutes: FastifyPluginAsync = async (fastify) => {
   }>(
     '/messages',
     {
-      config: {
-        rateLimit: rateLimitConfig.read,
-      },
       schema: {
         params: SessionIdParamsSchema,
         response: {
@@ -109,7 +103,7 @@ const messageRoutes: FastifyPluginAsync = async (fastify) => {
           });
         }
 
-        // Get all messages with nested JSONL content
+        // Get all messages parsed from SDK format to API format
         const messages = await messageService.getMessages(sessionId);
 
         logger.debug(

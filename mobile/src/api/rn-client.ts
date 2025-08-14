@@ -67,6 +67,9 @@ import type {
   PostApiClaudeCodeSessionsResponse,
 } from './generated';
 
+// Agent types (until generated types include these)
+import type { Agent, GetAgentsResponse, GetAgentsQuery } from '../types/agents';
+
 interface RequestOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
   headers?: Record<string, string>;
@@ -379,6 +382,18 @@ class ReactNativeAPIClient {
   }): Promise<GetApiClaudeCodeSessionsBySessionIdCommandsResponse> {
     return this.request<GetApiClaudeCodeSessionsBySessionIdCommandsResponse>({
       path: '/api/claude-code/sessions/{sessionId}/commands/',
+      pathParams: { sessionId: params.sessionId },
+      options: { query: params.query },
+    });
+  }
+
+  // Agent endpoints
+  async getAgents(params: {
+    sessionId: string;
+    query?: GetAgentsQuery;
+  }): Promise<GetAgentsResponse> {
+    return this.request<GetAgentsResponse>({
+      path: '/api/claude-code/sessions/{sessionId}/agents/',
       pathParams: { sessionId: params.sessionId },
       options: { query: params.query },
     });

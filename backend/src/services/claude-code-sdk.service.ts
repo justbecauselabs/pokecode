@@ -28,6 +28,7 @@ export type ClaudeCodeResult =
  */
 export class ClaudeCodeSDKService {
   private startTime: number = 0;
+  private lastMessageTime: number = 0;
   private sessionId: string;
   private isProcessing = false;
   private currentQuery: Query | null = null;
@@ -79,11 +80,12 @@ export class ClaudeCodeSDKService {
       }
 
       // Configure SDK options with resumption support
+      // Use node explicitly and point to the actual JS file
       const sdkOptions: Options = {
         cwd: this.options.projectPath,
         permissionMode: 'bypassPermissions',
-        pathToClaudeCodeExecutable: this.pathToClaudeCodeExecutable,
-        executable: 'bun',
+        pathToClaudeCodeExecutable: '/Users/billy/.claude/local/node_modules/@anthropic-ai/claude-code/cli.js',
+        executable: 'node',
         ...(lastClaudeSessionId && { resume: lastClaudeSessionId }),
         // Add stderr debugging
         stderr: (data: string) => {
