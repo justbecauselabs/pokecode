@@ -220,7 +220,6 @@ export class SessionService {
     return activeSessions.length;
   }
 
-
   private formatSession(session: typeof sessions.$inferSelect) {
     return {
       id: session.id,
@@ -237,6 +236,9 @@ export class SessionService {
       isWorking: session.isWorking,
       currentJobId: session.currentJobId,
       lastJobStatus: session.lastJobStatus,
+      // Token and message tracking
+      messageCount: session.messageCount,
+      tokenCount: session.tokenCount,
     };
   }
 

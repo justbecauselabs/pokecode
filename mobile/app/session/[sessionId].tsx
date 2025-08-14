@@ -10,12 +10,16 @@ import { MessageList } from '../../src/components/session/MessageList';
 import { SlashCommandBottomSheet } from '../../src/components/session/SlashCommandBottomSheet';
 import { useSessionMessages } from '../../src/hooks/useSessionMessages';
 import { useSlashCommands } from '../../src/hooks/useSlashCommands';
+import { useSession } from '../../src/hooks/useSessions';
 
 export default function SessionDetailScreen() {
   const { sessionId } = useLocalSearchParams<{ sessionId: string }>();
 
-  const { messages, session, isLoading, error, sendMessage, isSending, isWorking } =
+  const { messages, session: messageSession, isLoading, error, sendMessage, isSending, isWorking } =
     useSessionMessages(sessionId ?? '');
+
+  // Fetch full session data for counts
+  const { data: fullSession } = useSession(sessionId ?? '');
 
   // Fetch slash commands
   const {
@@ -69,7 +73,7 @@ export default function SessionDetailScreen() {
     <>
       <Stack.Screen
         options={{
-          title: session?.name || 'Session',
+          title: messageSession?.name || 'Session',
           headerTitleStyle: {
             fontWeight: '600',
             color: '#abb2bf', // One Dark Pro foreground
@@ -94,6 +98,7 @@ export default function SessionDetailScreen() {
                 <MessageInput
                   ref={messageInputRef}
                   sessionId={sessionId}
+                  session={fullSession}
                   onSendMessage={sendMessage}
                   onShowSlashCommands={handleShowSlashCommands}
                   isSending={isSending || isWorking}

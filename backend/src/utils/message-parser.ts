@@ -8,14 +8,14 @@ import type {
 import type {
   ContentBlock,
   ContentBlockParam,
-  TextBlock,
-  ThinkingBlock,
   RedactedThinkingBlock,
-  ToolUseBlock,
-  ToolResultBlockParam,
-  WebSearchToolResultBlock,
-  WebSearchResultBlock,
+  TextBlock,
   TextCitation,
+  ThinkingBlock,
+  ToolResultBlockParam,
+  ToolUseBlock,
+  WebSearchResultBlock,
+  WebSearchToolResultBlock,
 } from '@anthropic-ai/sdk/resources/messages';
 import type { Static } from '@sinclair/typebox';
 import type { ApiMessage, CitationSchema, WebSearchResultSchema } from '../schemas/message.schema';
@@ -143,12 +143,14 @@ export function sdkToApiMessage(
           apiMessage.usage = {
             inputTokens: usage.input_tokens,
             outputTokens: usage.output_tokens,
-            ...(usage.cache_creation_input_tokens !== null && usage.cache_creation_input_tokens !== undefined && {
-              cacheCreationInputTokens: usage.cache_creation_input_tokens,
-            }),
-            ...(usage.cache_read_input_tokens !== null && usage.cache_read_input_tokens !== undefined && {
-              cacheReadInputTokens: usage.cache_read_input_tokens,
-            }),
+            ...(usage.cache_creation_input_tokens !== null &&
+              usage.cache_creation_input_tokens !== undefined && {
+                cacheCreationInputTokens: usage.cache_creation_input_tokens,
+              }),
+            ...(usage.cache_read_input_tokens !== null &&
+              usage.cache_read_input_tokens !== undefined && {
+                cacheReadInputTokens: usage.cache_read_input_tokens,
+              }),
             ...(usage.service_tier !== undefined && { serviceTier: usage.service_tier }),
           };
         }

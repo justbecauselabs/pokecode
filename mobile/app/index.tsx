@@ -10,10 +10,10 @@ import {
   Text,
   View,
 } from 'react-native';
+import type { GetApiClaudeCodeSessionsResponse } from '@/api/generated';
 import { LoadingState, SafeAreaView } from '@/components/common';
 import { useDeleteSession, useSessions } from '@/hooks/useSessions';
 import { formatRelativeTime } from '@/utils/format';
-import type { GetApiClaudeCodeSessionsResponse } from '@/api/generated';
 
 type Session = GetApiClaudeCodeSessionsResponse['sessions'][0];
 
@@ -194,9 +194,18 @@ export default function HomeScreen() {
                             {item.context}
                           </Text>
                         )}
-                        <Text className="text-xs text-muted-foreground font-mono">
+                        <Text className="text-xs text-muted-foreground font-mono mb-1">
                           {formatRelativeTime(item.lastAccessedAt)}
                         </Text>
+                        <View className="flex-row items-center gap-2">
+                          <Text className="text-xs text-muted-foreground font-mono">
+                            {item.messageCount} msg
+                          </Text>
+                          <Text className="text-xs text-muted-foreground font-mono">•</Text>
+                          <Text className="text-xs text-muted-foreground font-mono">
+                            {item.tokenCount.toLocaleString()} tokens
+                          </Text>
+                        </View>
                       </View>
                       <Text
                         className={`text-sm font-medium font-mono ${getStatusColor(item.status)}`}

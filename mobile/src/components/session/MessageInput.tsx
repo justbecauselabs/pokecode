@@ -1,7 +1,8 @@
 import { Feather } from '@expo/vector-icons';
 import { forwardRef, useImperativeHandle, useRef, useState } from 'react';
-import { Alert, Keyboard, type TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, Keyboard, type TextInput, TouchableOpacity, View, Text } from 'react-native';
 import { Pill, TextField } from '../common';
+import type { GetApiClaudeCodeSessionsBySessionIdResponse } from '@/api/generated';
 
 export interface MessageInputRef {
   insertCommand: (params: { commandName: string }) => void;
@@ -10,6 +11,7 @@ export interface MessageInputRef {
 
 interface MessageInputProps {
   sessionId: string;
+  session?: GetApiClaudeCodeSessionsBySessionIdResponse;
   onSendMessage: (params: { content: string; agent?: string }) => Promise<unknown>;
   onShowSlashCommands?: () => void;
   onShowAgents?: () => void;
@@ -18,7 +20,7 @@ interface MessageInputProps {
 }
 
 export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>((props, ref) => {
-  const { onSendMessage, onShowSlashCommands, onShowAgents, isSending = false, disabled } = props;
+  const { session, onSendMessage, onShowSlashCommands, onShowAgents, isSending = false, disabled } = props;
   const [message, setMessage] = useState('');
   const [selectedCommand, setSelectedCommand] = useState<string | null>(null);
   const [selectedAgent, setSelectedAgent] = useState<string | null>(null);
@@ -59,12 +61,12 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>((prop
       const finalMessage = selectedCommand
         ? `/${selectedCommand} ${trimmedMessage}`
         : trimmedMessage;
-      
-      await onSendMessage({ 
-        content: finalMessage, 
-        agent: selectedAgent || undefined 
+
+      await onSendMessage({
+        content: finalMessage,
+        agent: selectedAgent || undefined
       });
-      
+
       setMessage('');
       setSelectedCommand(null); // Clear the selected command after sending
       setSelectedAgent(null); // Clear the selected agent after sending
@@ -85,7 +87,6 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>((prop
             placeholder="Enter your message..."
             multiline
             textAlignVertical="top"
-            className="max-h-32"
             editable={!disabled && !isSending}
             onSubmitEditing={handleSend}
             blurOnSubmit={false}
@@ -125,7 +126,7 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>((prop
         >
           {selectedAgent ? selectedAgent : 'agent'}
         </Pill>
-        
+
         <Pill
           variant={selectedCommand ? 'active' : 'default'}
           onPress={selectedCommand ? () => setSelectedCommand(null) : () => {
@@ -137,6 +138,19 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>((prop
           {selectedCommand ? `/${selectedCommand}` : 'slash command'}
         </Pill>
       </View>
+
+      {/* Session Stats */}
+      {session && (
+        <View className="mt-2 flex-row items-center gap-4">
+          <Text className="text-xs text-muted-foreground font-mono">
+            {session.messageCount} messages
+          </Text>
+          <Text className="text-xs text-muted-foreground font-mono">•</Text>
+          <Text className="text-xs text-muted-foreground font-mono">
+            {session.tokenCount.toLocaleString()} tokens
+          </Text>
+        </View>
+      )}
     </View>
   );
 });

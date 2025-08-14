@@ -1,9 +1,9 @@
 import { Database } from 'bun:sqlite';
 import path from 'node:path';
 import { drizzle } from 'drizzle-orm/bun-sqlite';
+import { isTest } from '@/utils/env';
 import { createChildLogger } from '@/utils/logger';
 import * as schema from './schema-sqlite';
-import { isTest } from '@/utils/env';
 
 const logger = createChildLogger('database');
 

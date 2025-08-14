@@ -1,18 +1,18 @@
-import { beforeEach, describe, expect, test, afterEach } from 'bun:test';
-import { eq } from 'drizzle-orm';
 import { Database } from 'bun:sqlite';
+import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
+import type { SDKMessage } from '@anthropic-ai/claude-code';
+import { eq } from 'drizzle-orm';
 import { db } from '@/db';
-import { sessions, sessionMessages } from '@/db/schema-sqlite';
+import { sessionMessages, sessions } from '@/db/schema-sqlite';
 import { MessageService } from '@/services/message.service';
 import {
-  systemMessages,
-  userMessages,
   assistantMessages,
-  toolResultMessages,
+  conversationFixtures,
   resultMessages,
-  conversationFixtures
+  systemMessages,
+  toolResultMessages,
+  userMessages,
 } from '../fixtures/sdk-messages';
-import type { SDKMessage } from '@anthropic-ai/claude-code';
 
 /**
  * Clean up test database by removing all data
@@ -25,13 +25,16 @@ async function cleanupTestDatabase(): Promise<void> {
 /**
  * Create a test session for use in tests
  */
-async function createTestSession(params: { id?: string; name?: string; projectPath?: string } = {}): Promise<string> {
-  const sessionId = params.id || `test-session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+async function createTestSession(
+  params: { id?: string; name?: string; projectPath?: string } = {},
+): Promise<string> {
+  const sessionId =
+    params.id || `test-session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
   await db.insert(sessions).values({
     id: sessionId,
     name: params.name || 'Test Session',
-    projectPath: params.projectPath || '/test/project'
+    projectPath: params.projectPath || '/test/project',
   });
 
   return sessionId;
@@ -69,21 +72,21 @@ describe('MessageService', () => {
         sessionId: testSessionId,
         type: 'assistant',
         contentData: JSON.stringify(systemMsg),
-        createdAt: new Date(baseTime)
+        createdAt: new Date(baseTime),
       });
 
       await db.insert(sessionMessages).values({
         sessionId: testSessionId,
         type: 'user',
         contentData: JSON.stringify(userMsg),
-        createdAt: new Date(baseTime + 1000)
+        createdAt: new Date(baseTime + 1000),
       });
 
       await db.insert(sessionMessages).values({
         sessionId: testSessionId,
         type: 'assistant',
         contentData: JSON.stringify(assistantMsg),
-        createdAt: new Date(baseTime + 2000)
+        createdAt: new Date(baseTime + 2000),
       });
 
       const messages = await messageService.getMessages(testSessionId);
@@ -105,13 +108,13 @@ describe('MessageService', () => {
       await db.insert(sessionMessages).values({
         sessionId: testSessionId,
         type: 'assistant', // system messages stored as assistant type
-        contentData: JSON.stringify(systemInit)
+        contentData: JSON.stringify(systemInit),
       });
 
       await db.insert(sessionMessages).values({
         sessionId: testSessionId,
         type: 'assistant',
-        contentData: JSON.stringify(systemWithTools)
+        contentData: JSON.stringify(systemWithTools),
       });
 
       const messages = await messageService.getMessages(testSessionId);
@@ -137,7 +140,7 @@ describe('MessageService', () => {
         await db.insert(sessionMessages).values({
           sessionId: testSessionId,
           type: 'user',
-          contentData: JSON.stringify(msg)
+          contentData: JSON.stringify(msg),
         });
       }
 
@@ -145,14 +148,20 @@ describe('MessageService', () => {
 
       expect(messages).toHaveLength(4);
       expect(messages[0].content).toBe('Simple message');
-      expect(messages[1].content).toBe('Please review this code for best practices and potential issues');
+      expect(messages[1].content).toBe(
+        'Please review this code for best practices and potential issues',
+      );
       expect(messages[2].content).toBe('Analyze the file package.json and explain its purpose');
       expect(messages[3].content).toBe('Fix this bug: Component not rendering');
     });
 
     test('handles all assistant message variations', async () => {
       const textResponse = assistantMessages.textResponse('Plain text response', testSessionId);
-      const withThinking = assistantMessages.withThinking('Response', 'Let me think...', testSessionId);
+      const withThinking = assistantMessages.withThinking(
+        'Response',
+        'Let me think...',
+        testSessionId,
+      );
       const fileRead = assistantMessages.fileRead('config.json', testSessionId);
       const bashCommand = assistantMessages.bashCommand('ls -la', 'List files', testSessionId);
 
@@ -162,7 +171,7 @@ describe('MessageService', () => {
         await db.insert(sessionMessages).values({
           sessionId: testSessionId,
           type: 'assistant',
-          contentData: JSON.stringify(msg)
+          contentData: JSON.stringify(msg),
         });
       }
 
@@ -179,7 +188,9 @@ describe('MessageService', () => {
       expect(messages[1].thinking).toBe('Let me think...');
 
       // Test tool use messages
-      expect(messages[2].content).toBe(`I'll read the config.json file to understand its contents.`);
+      expect(messages[2].content).toBe(
+        `I'll read the config.json file to understand its contents.`,
+      );
       expect(messages[2].toolCalls).toBeDefined();
       expect(messages[2].toolCalls?.[0].name).toBe('read');
 
@@ -189,9 +200,22 @@ describe('MessageService', () => {
 
     test('handles tool result messages', async () => {
       const toolUseId = 'tool-read-123';
-      const fileResult = toolResultMessages.fileResult(toolUseId, '{"name": "test"}', testSessionId);
-      const bashResult = toolResultMessages.bashResult(toolUseId, 'total 8\ndrwxr-xr-x 2 user user 4096', false, testSessionId);
-      const errorResult = toolResultMessages.errorResult(toolUseId, 'File not found', testSessionId);
+      const fileResult = toolResultMessages.fileResult(
+        toolUseId,
+        '{"name": "test"}',
+        testSessionId,
+      );
+      const bashResult = toolResultMessages.bashResult(
+        toolUseId,
+        'total 8\ndrwxr-xr-x 2 user user 4096',
+        false,
+        testSessionId,
+      );
+      const errorResult = toolResultMessages.errorResult(
+        toolUseId,
+        'File not found',
+        testSessionId,
+      );
 
       const messagesToInsert = [fileResult, bashResult, errorResult];
 
@@ -199,7 +223,7 @@ describe('MessageService', () => {
         await db.insert(sessionMessages).values({
           sessionId: testSessionId,
           type: 'user', // tool results are user messages
-          contentData: JSON.stringify(msg)
+          contentData: JSON.stringify(msg),
         });
       }
 
@@ -229,7 +253,7 @@ describe('MessageService', () => {
         await db.insert(sessionMessages).values({
           sessionId: testSessionId,
           type: 'assistant', // result messages stored as assistant type
-          contentData: JSON.stringify(msg)
+          contentData: JSON.stringify(msg),
         });
       }
 
@@ -260,16 +284,16 @@ describe('MessageService', () => {
             cited_text: 'API documentation',
             title: 'API Guide',
             start_char_index: 10,
-            end_char_index: 25
-          }
+            end_char_index: 25,
+          },
         ],
-        testSessionId
+        testSessionId,
       );
 
       await db.insert(sessionMessages).values({
         sessionId: testSessionId,
         type: 'assistant',
-        contentData: JSON.stringify(withCitations)
+        contentData: JSON.stringify(withCitations),
       });
 
       const messages = await messageService.getMessages(testSessionId);
@@ -289,16 +313,16 @@ describe('MessageService', () => {
             url: 'https://example.com',
             title: 'Example Guide',
             encrypted_content: 'encrypted_content_here',
-            page_age: '2 days ago'
-          }
+            page_age: '2 days ago',
+          },
         ],
-        testSessionId
+        testSessionId,
       );
 
       await db.insert(sessionMessages).values({
         sessionId: testSessionId,
         type: 'assistant',
-        contentData: JSON.stringify(webSearchMsg)
+        contentData: JSON.stringify(webSearchMsg),
       });
 
       const messages = await messageService.getMessages(testSessionId);
@@ -314,13 +338,13 @@ describe('MessageService', () => {
       const redactedThinking = assistantMessages.withRedactedThinking(
         'Here is my response.',
         'redacted_thinking_data',
-        testSessionId
+        testSessionId,
       );
 
       await db.insert(sessionMessages).values({
         sessionId: testSessionId,
         type: 'assistant',
-        contentData: JSON.stringify(redactedThinking)
+        contentData: JSON.stringify(redactedThinking),
       });
 
       const messages = await messageService.getMessages(testSessionId);
@@ -342,7 +366,7 @@ describe('MessageService', () => {
           sessionId: testSessionId,
           type: messageType,
           contentData: JSON.stringify(msg),
-          createdAt: new Date(Date.now() + i * 1000) // Ensure proper ordering
+          createdAt: new Date(Date.now() + i * 1000), // Ensure proper ordering
         });
       }
 
@@ -362,14 +386,14 @@ describe('MessageService', () => {
       await db.insert(sessionMessages).values({
         sessionId: testSessionId,
         type: 'user',
-        contentData: JSON.stringify(validMsg)
+        contentData: JSON.stringify(validMsg),
       });
 
       // Insert malformed JSON
       await db.insert(sessionMessages).values({
         sessionId: testSessionId,
         type: 'user',
-        contentData: 'invalid json {'
+        contentData: 'invalid json {',
       });
 
       // Insert another valid message
@@ -377,7 +401,7 @@ describe('MessageService', () => {
       await db.insert(sessionMessages).values({
         sessionId: testSessionId,
         type: 'assistant',
-        contentData: JSON.stringify(validMsg2)
+        contentData: JSON.stringify(validMsg2),
       });
 
       // Mock console.warn to capture warnings
@@ -405,14 +429,14 @@ describe('MessageService', () => {
       await db.insert(sessionMessages).values({
         sessionId: testSessionId,
         type: 'user',
-        contentData: null
+        contentData: null,
       });
 
       // Insert message with empty string content data
       await db.insert(sessionMessages).values({
         sessionId: testSessionId,
         type: 'user',
-        contentData: ''
+        contentData: '',
       });
 
       // Insert a valid message
@@ -420,7 +444,7 @@ describe('MessageService', () => {
       await db.insert(sessionMessages).values({
         sessionId: testSessionId,
         type: 'user',
-        contentData: JSON.stringify(validMsg)
+        contentData: JSON.stringify(validMsg),
       });
 
       const messages = await messageService.getMessages(testSessionId);
@@ -438,7 +462,7 @@ describe('MessageService', () => {
       await db.insert(sessionMessages).values({
         sessionId: testSessionId,
         type: 'user',
-        contentData: JSON.stringify(msg1)
+        contentData: JSON.stringify(msg1),
       });
 
       // Insert message in second session
@@ -446,7 +470,7 @@ describe('MessageService', () => {
       await db.insert(sessionMessages).values({
         sessionId: otherSessionId,
         type: 'user',
-        contentData: JSON.stringify(msg2)
+        contentData: JSON.stringify(msg2),
       });
 
       const session1Messages = await messageService.getMessages(testSessionId);

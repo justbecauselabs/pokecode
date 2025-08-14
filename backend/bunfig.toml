@@ -7,8 +7,8 @@ trust = true
 # Use bun:test as the test runner
 runner = "bun"
 
-# Setup file to run before tests
-setup = "./tests/setup.ts"
+# Preload setup file before tests
+preload = ["./tests/setup.ts"]
 
 # Test file patterns
 include = [

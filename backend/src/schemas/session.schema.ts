@@ -41,6 +41,9 @@ export const SessionResponseSchema = Type.Object({
   isWorking: Type.Boolean(),
   currentJobId: Type.Optional(Type.String()),
   lastJobStatus: Type.Optional(Type.String()),
+  // Token and message tracking
+  messageCount: Type.Integer({ minimum: 0, default: 0 }),
+  tokenCount: Type.Integer({ minimum: 0, default: 0 }),
 });
 
 // List sessions schemas

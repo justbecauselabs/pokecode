@@ -29,6 +29,21 @@ export function useSessions() {
 }
 
 /**
+ * Fetches a single session by ID
+ */
+export function useSession(sessionId: string) {
+  return useQuery({
+    queryKey: ['session', sessionId],
+    queryFn: async (): Promise<Session> => {
+      return apiClient.getSession({ sessionId });
+    },
+    enabled: !!sessionId,
+    staleTime: 30 * 1000, // Consider data fresh for 30 seconds
+    refetchOnWindowFocus: true,
+  });
+}
+
+/**
  * Creates a new session
  */
 export function useCreateSession() {

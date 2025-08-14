@@ -172,6 +172,8 @@ export type GetApiClaudeCodeSessionsResponses = {
             isWorking: boolean;
             currentJobId?: string;
             lastJobStatus?: string;
+            messageCount: number;
+            tokenCount: number;
         }>;
         total: number;
         limit: number;
@@ -227,6 +229,8 @@ export type PostApiClaudeCodeSessionsResponses = {
         isWorking: boolean;
         currentJobId?: string;
         lastJobStatus?: string;
+        messageCount: number;
+        tokenCount: number;
     };
 };
 
@@ -303,6 +307,8 @@ export type GetApiClaudeCodeSessionsBySessionIdResponses = {
         isWorking: boolean;
         currentJobId?: string;
         lastJobStatus?: string;
+        messageCount: number;
+        tokenCount: number;
     };
 };
 
@@ -357,6 +363,8 @@ export type PatchApiClaudeCodeSessionsBySessionIdResponses = {
         isWorking: boolean;
         currentJobId?: string;
         lastJobStatus?: string;
+        messageCount: number;
+        tokenCount: number;
     };
 };
 

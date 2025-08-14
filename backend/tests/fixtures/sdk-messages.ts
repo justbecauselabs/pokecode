@@ -27,7 +27,6 @@ export const usage: NonNullableUsage = {
   },
 };
 
-
 /**
  * System initialization messages
  */
@@ -263,7 +262,7 @@ export const assistantMessages = {
         {
           type: 'text',
           text,
-          citations: citations.map(c => {
+          citations: citations.map((c) => {
             if (c.type === 'char_location') {
               return {
                 type: c.type,
@@ -330,7 +329,7 @@ export const assistantMessages = {
         {
           type: 'web_search_tool_result',
           tool_use_id: `tool-websearch-${Date.now()}`,
-          content: searchResults.map(result => ({
+          content: searchResults.map((result) => ({
             type: 'web_search_result' as const,
             url: result.url,
             title: result.title,
@@ -519,7 +518,10 @@ export const conversationFixtures = {
   simpleFlow: (sessionId = 'test-session-1') => [
     systemMessages.init(sessionId),
     userMessages.simple('Hello, can you help me with a task?', sessionId),
-    assistantMessages.textResponse('Hello! I\'d be happy to help. What can I do for you?', sessionId),
+    assistantMessages.textResponse(
+      "Hello! I'd be happy to help. What can I do for you?",
+      sessionId,
+    ),
   ],
 
   toolFlow: (sessionId = 'test-session-1') => {
@@ -527,9 +529,21 @@ export const conversationFixtures = {
     return [
       systemMessages.init(sessionId),
       userMessages.simple('Can you read the package.json file?', sessionId),
-      assistantMessages.withToolUse('I\'ll read the package.json file for you.', 'read', { file_path: './package.json' }, sessionId),
-      toolResultMessages.fileResult(toolUseId, '{"name": "test-project", "version": "1.0.0"}', sessionId),
-      assistantMessages.textResponse('I can see this is a test project with version 1.0.0.', sessionId),
+      assistantMessages.withToolUse(
+        "I'll read the package.json file for you.",
+        'read',
+        { file_path: './package.json' },
+        sessionId,
+      ),
+      toolResultMessages.fileResult(
+        toolUseId,
+        '{"name": "test-project", "version": "1.0.0"}',
+        sessionId,
+      ),
+      assistantMessages.textResponse(
+        'I can see this is a test project with version 1.0.0.',
+        sessionId,
+      ),
       resultMessages.success(sessionId),
     ];
   },
@@ -539,8 +553,16 @@ export const conversationFixtures = {
     return [
       systemMessages.init(sessionId),
       userMessages.simple('Run ls on a non-existent directory', sessionId),
-      assistantMessages.bashCommand('ls /non/existent/directory', 'I\'ll list the contents of that directory.', sessionId),
-      toolResultMessages.errorResult(toolUseId, 'ls: /non/existent/directory: No such file or directory', sessionId),
+      assistantMessages.bashCommand(
+        'ls /non/existent/directory',
+        "I'll list the contents of that directory.",
+        sessionId,
+      ),
+      toolResultMessages.errorResult(
+        toolUseId,
+        'ls: /non/existent/directory: No such file or directory',
+        sessionId,
+      ),
       resultMessages.error(sessionId),
     ];
   },
