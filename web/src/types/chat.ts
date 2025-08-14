@@ -20,6 +20,14 @@ export interface ChatMessage {
 	citations?: Citation[];
 	thinking?: string;
 	signature?: string;
+	toolCalls?: Array<{
+		name: string;
+		input: any;
+	}>;
+	toolResults?: Array<{
+		toolUseId: string;
+		content: string;
+	}>;
 }
 
 export interface Prompt {

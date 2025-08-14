@@ -1,20 +1,30 @@
-import { drizzle } from 'drizzle-orm/bun-sqlite';
 import { Database } from 'bun:sqlite';
+import path from 'node:path';
+import { drizzle } from 'drizzle-orm/bun-sqlite';
 import { createChildLogger } from '@/utils/logger';
 import * as schema from './schema-sqlite';
-import path from 'node:path';
+import { isTest } from '@/utils/env';
 
 const logger = createChildLogger('database');
 
-// Determine database path
-const dbPath = process.env.SQLITE_DB_PATH || path.join(process.cwd(), 'data', 'pokecode.db');
+// Determine database path based on environment
+function getDatabasePath(): string {
+  if (isTest()) {
+    return path.join(process.cwd(), 'tests', 'data', 'pokecode.db');
+  }
+
+  return process.env.SQLITE_DB_PATH || path.join(process.cwd(), 'data', 'pokecode.db');
+}
+
+const dbPath = getDatabasePath();
 
 // Ensure data directory exists
 import { mkdirSync } from 'node:fs';
+
 mkdirSync(path.dirname(dbPath), { recursive: true });
 
 // Create optimized SQLite connection
-const sqlite = new Database(dbPath, { 
+const sqlite = new Database(dbPath, {
   strict: true, // Enable strict mode for better SQL compliance
 });
 

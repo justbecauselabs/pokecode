@@ -451,9 +451,9 @@ export interface PromptJobData {
   sessionId: string;
   promptId: string;
   prompt: string;
-  allowedTools?: string[];
+  allowedTools?: string[] | undefined;
   projectPath: string;
-  messageId?: string; // ID of the user message record in database
+  messageId?: string | undefined; // ID of the user message record in database
 }
 
 // Error Types

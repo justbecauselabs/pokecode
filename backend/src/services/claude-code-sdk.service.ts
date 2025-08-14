@@ -1,5 +1,5 @@
 import { type Options, type Query, query, type SDKMessage } from '@anthropic-ai/claude-code';
-import { fileService } from '@/services/file.service';
+import { directoryExists } from '@/utils/file';
 import { createChildLogger } from '@/utils/logger';
 import type { MessageService } from './message.service';
 
@@ -28,7 +28,6 @@ export type ClaudeCodeResult =
  */
 export class ClaudeCodeSDKService {
   private startTime: number = 0;
-  private lastMessageTime: number = 0;
   private sessionId: string;
   private isProcessing = false;
   private currentQuery: Query | null = null;
@@ -64,8 +63,8 @@ export class ClaudeCodeSDKService {
         this.sessionId,
       );
 
-      // Validate project path exists using File Service
-      const pathExists = await fileService.systemDirectoryExists(this.options.projectPath);
+      // Validate project path exists using File Utils
+      const pathExists = await directoryExists(this.options.projectPath);
       if (!pathExists) {
         const errorMessage = `Project path does not exist: ${this.options.projectPath}`;
         logger.error(
@@ -84,7 +83,7 @@ export class ClaudeCodeSDKService {
       const sdkOptions: Options = {
         cwd: this.options.projectPath,
         permissionMode: 'bypassPermissions',
-        pathToClaudeCodeExecutable: '/Users/billy/.claude/local/node_modules/@anthropic-ai/claude-code/cli.js',
+        pathToClaudeCodeExecutable: this.pathToClaudeCodeExecutable,
         executable: 'node',
         ...(lastClaudeSessionId && { resume: lastClaudeSessionId }),
         // Add stderr debugging

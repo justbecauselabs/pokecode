@@ -1,7 +1,6 @@
-import path from 'node:path';
 import { config } from '@/config';
 import type { ListRepositoriesResponse, RepositoryResponse } from '@/schemas/repository.schema';
-import { fileService } from '@/services/file.service';
+import { directoryExists, joinPath, listDirectory, validateGitRepository } from '@/utils/file';
 
 export class RepositoryService {
   /**
@@ -12,12 +11,12 @@ export class RepositoryService {
 
     try {
       // Check if the github repos directory exists
-      if (!(await fileService.systemDirectoryExists(githubReposDirectory))) {
+      if (!(await directoryExists(githubReposDirectory))) {
         throw new Error(`Directory does not exist: ${githubReposDirectory}`);
       }
 
-      // Use File Service to list directory contents
-      const items = await fileService.systemListDirectory(githubReposDirectory, {
+      // Use File Utils to list directory contents
+      const items = await listDirectory(githubReposDirectory, {
         includeHidden: false,
       });
 
@@ -28,11 +27,10 @@ export class RepositoryService {
 
       // Check each directory for git repository status
       for (const dir of directories) {
-        const folderPath = path.join(githubReposDirectory, dir.name);
+        const folderPath = joinPath(githubReposDirectory, dir.name);
 
         // Use the dedicated git validation method
-        const { exists, isGitRepository } =
-          await fileService.systemValidateGitRepository(folderPath);
+        const { exists, isGitRepository } = await validateGitRepository(folderPath);
 
         if (exists) {
           repositories.push({
@@ -70,7 +68,7 @@ export class RepositoryService {
       throw new Error('Invalid folder name: cannot contain path separators or traversal');
     }
 
-    return path.join(config.GITHUB_REPOS_DIRECTORY, folderName);
+    return joinPath(config.GITHUB_REPOS_DIRECTORY, folderName);
   }
 
   /**
@@ -81,7 +79,7 @@ export class RepositoryService {
   ): Promise<{ exists: boolean; isGitRepository: boolean }> {
     try {
       const folderPath = this.resolveFolderPath(folderName);
-      return await fileService.systemValidateGitRepository(folderPath);
+      return await validateGitRepository(folderPath);
     } catch (error) {
       // Log validation error but don't throw, just return false
       console.error(`Repository validation error for ${folderName}:`, error);

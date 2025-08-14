@@ -3,7 +3,7 @@ import { forwardRef, useImperativeHandle, useRef, useState } from 'react';
 import { Alert, Keyboard, type TextInput, TouchableOpacity, View } from 'react-native';
 import { Pill, TextField } from '../common';
 
-interface MessageInputRef {
+export interface MessageInputRef {
   insertCommand: (params: { commandName: string }) => void;
   insertAgent: (params: { agentName: string }) => void;
 }
@@ -117,7 +117,10 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>((prop
       <View className="mt-3 flex-row gap-2 items-start">
         <Pill
           variant={selectedAgent ? 'active' : 'default'}
-          onPress={selectedAgent ? () => setSelectedAgent(null) : onShowAgents}
+          onPress={selectedAgent ? () => setSelectedAgent(null) : () => {
+            Keyboard.dismiss();
+            onShowAgents?.();
+          }}
           disabled={disabled || isSending}
         >
           {selectedAgent ? selectedAgent : 'agent'}
@@ -125,7 +128,10 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>((prop
         
         <Pill
           variant={selectedCommand ? 'active' : 'default'}
-          onPress={selectedCommand ? () => setSelectedCommand(null) : onShowSlashCommands}
+          onPress={selectedCommand ? () => setSelectedCommand(null) : () => {
+            Keyboard.dismiss();
+            onShowSlashCommands?.();
+          }}
           disabled={disabled || isSending}
         >
           {selectedCommand ? `/${selectedCommand}` : 'slash command'}

@@ -63,9 +63,9 @@ export function ChildMessageRenderer({
 				for (const toolResult of message.metadata.toolResults) {
 					blocks.push({
 						type: "tool",
-						content: `✅ **Tool Result** (${toolResult.tool_use_id.substring(0, 8)}...)\n\n${toolResult.content}`,
+						content: `✅ **Tool Result** (${toolResult.toolUseId.substring(0, 8)}...)\n\n${toolResult.content}`,
 						timestamp,
-						metadata: { isToolResult: true, toolUseId: toolResult.tool_use_id }
+						metadata: { isToolResult: true, toolUseId: toolResult.toolUseId }
 					});
 				}
 			}

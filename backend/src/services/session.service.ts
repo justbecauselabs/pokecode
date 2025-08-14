@@ -1,12 +1,19 @@
 import { randomUUID } from 'node:crypto';
 import fs from 'node:fs';
-import path from 'node:path';
 import { desc, eq, sql } from 'drizzle-orm';
 import { db } from '@/db';
 import { sessions } from '@/db/schema-sqlite';
-import ClaudeDirectoryService from '@/services/claude-directory.service';
 import { repositoryService } from '@/services/repository.service';
 import { NotFoundError, ValidationError } from '@/types';
+import {
+  getBasename,
+  getHomeDirectory,
+  getParentPath,
+  getRelativePath,
+  isAbsolute,
+  joinPath,
+  normalizePath,
+} from '@/utils/file';
 import { logger } from '@/utils/logger';
 
 export class SessionService {
@@ -52,8 +59,12 @@ export class SessionService {
 
     // Generate session ID upfront to create session-specific Claude directory path
     const sessionId = randomUUID();
-    const claudeDirectoryPath = ClaudeDirectoryService.getClaudeDirectoryPath(
-      projectPath,
+    const projectKey = projectPath.replace(/\//g, '-').replace(/_/g, '-');
+    const claudeDirectoryPath = joinPath(
+      getHomeDirectory(),
+      '.claude',
+      'projects',
+      projectKey,
       sessionId,
     );
 
@@ -209,47 +220,6 @@ export class SessionService {
     return activeSessions.length;
   }
 
-  /**
-   * Get conversation history from Claude directory for a session
-   */
-  async getSessionConversations(sessionId: string) {
-    const session = await this.getSession(sessionId);
-
-    if (!session.claudeDirectoryPath) {
-      throw new ValidationError('Session does not have Claude directory path configured');
-    }
-
-    const claudeService = ClaudeDirectoryService.forSessionDirectory(session.claudeDirectoryPath);
-    return await claudeService.getProjectConversations(session.projectPath);
-  }
-
-  /**
-   * Get the most recent conversation for a session
-   */
-  async getMostRecentConversation(sessionId: string) {
-    const session = await this.getSession(sessionId);
-
-    if (!session.claudeDirectoryPath) {
-      throw new ValidationError('Session does not have Claude directory path configured');
-    }
-
-    const claudeService = ClaudeDirectoryService.forSessionDirectory(session.claudeDirectoryPath);
-    return await claudeService.getMostRecentConversation(session.projectPath);
-  }
-
-  /**
-   * Check if Claude directory is available for a session
-   */
-  async isClaudeDirectoryAvailable(sessionId: string): Promise<boolean> {
-    const session = await this.getSession(sessionId);
-
-    if (!session.claudeDirectoryPath) {
-      return false;
-    }
-
-    const claudeService = ClaudeDirectoryService.forSessionDirectory(session.claudeDirectoryPath);
-    return await claudeService.isInitialized();
-  }
 
   private formatSession(session: typeof sessions.$inferSelect) {
     return {
@@ -293,7 +263,7 @@ export class SessionService {
 
     if (gitRoot) {
       // Get the repository name from the git root directory
-      const repoName = path.basename(gitRoot);
+      const repoName = getBasename(gitRoot);
 
       // If the project path is the same as git root, just use repo name
       if (cleaned === gitRoot) {
@@ -301,12 +271,12 @@ export class SessionService {
       }
 
       // Otherwise, create relative path from git root
-      const relativePath = path.relative(gitRoot, cleaned);
+      const relativePath = getRelativePath(gitRoot, cleaned);
       return `${repoName}/${relativePath}`;
     }
 
     // Fallback to just the directory name if no git root found
-    const name = path.basename(cleaned);
+    const name = getBasename(cleaned);
     return name || 'root';
   }
 
@@ -314,16 +284,16 @@ export class SessionService {
     let currentPath = startPath;
 
     // Walk up the directory tree looking for .git directory
-    while (currentPath !== path.dirname(currentPath)) {
+    while (currentPath !== getParentPath(currentPath)) {
       try {
-        const gitPath = path.join(currentPath, '.git');
+        const gitPath = joinPath(currentPath, '.git');
         if (fs.existsSync(gitPath)) {
           return currentPath;
         }
       } catch (_error) {
         // Continue if we can't access the directory
       }
-      currentPath = path.dirname(currentPath);
+      currentPath = getParentPath(currentPath);
     }
 
     return null; // No git root found
@@ -337,15 +307,15 @@ export class SessionService {
       throw new ValidationError('Invalid project path');
     }
 
-    const normalized = path.normalize(raw);
+    const normalized = normalizePath(raw);
 
     // Must be absolute and not contain traversal after normalization
-    if (!path.isAbsolute(normalized) || normalized.includes('..')) {
+    if (!isAbsolute(normalized) || normalized.includes('..')) {
       throw new ValidationError('Project path must be an absolute path');
     }
 
     // Resolve to an absolute canonical path
-    const resolved = path.resolve(normalized);
+    const resolved = normalized; // Bun handles absolute paths directly
     return resolved;
   }
 }

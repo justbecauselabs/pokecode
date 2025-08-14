@@ -154,20 +154,10 @@ export const useChatStore = create<ChatState>((set, get) => ({
 					role: apiMessage.role,
 					content: apiMessage.content,
 					timestamp: new Date(apiMessage.timestamp),
-					// Map children to childMessages format
-					childMessages: apiMessage.children.map(child => ({
-						id: child.id,
-						content: child.content,
-						role: child.role,
-						type: child.role,
-						timestamp: child.timestamp,
-						metadata: {
-							toolCalls: child.toolCalls,
-							toolResults: child.toolResults,
-							thinking: child.thinking,
-						},
-					})),
-					promptId: apiMessage.claudeSessionId,
+					thinking: apiMessage.thinking,
+					// Store tool data directly on the message
+					toolCalls: apiMessage.toolCalls,
+					toolResults: apiMessage.toolResults,
 				};
 
 				messages.push(chatMessage);

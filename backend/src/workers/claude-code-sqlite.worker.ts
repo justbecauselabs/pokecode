@@ -20,8 +20,6 @@ export class ClaudeCodeSQLiteWorker {
   private processingJobs = 0;
   private pollingTimer: Timer | null = null;
 
-  constructor() {}
-
   /**
    * Starts the worker polling loop
    */
@@ -32,7 +30,7 @@ export class ClaudeCodeSQLiteWorker {
 
     this.isRunning = true;
     logger.info({ concurrency: this.concurrency }, 'Starting SQLite worker');
-    
+
     // Start the polling loop
     this.startPolling();
   }
@@ -50,7 +48,7 @@ export class ClaudeCodeSQLiteWorker {
         // Only process if we have capacity
         if (this.processingJobs < this.concurrency) {
           const job = await sqliteQueueService.getNextJob();
-          
+
           if (job) {
             // Process job in background (don't await)
             this.processJob(job).catch((error) => {
@@ -75,7 +73,9 @@ export class ClaudeCodeSQLiteWorker {
   /**
    * Processes a single job
    */
-  private async processJob(job: ReturnType<Awaited<typeof sqliteQueueService.getNextJob>>): Promise<void> {
+  private async processJob(
+    job: Awaited<ReturnType<typeof sqliteQueueService.getNextJob>>,
+  ): Promise<void> {
     if (!job) return;
 
     const { id: jobId, sessionId, promptId, data } = job;
@@ -148,7 +148,7 @@ export class ClaudeCodeSQLiteWorker {
       this.activeSessions.delete(promptId);
 
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      
+
       // Mark job as failed (handles retry logic)
       await sqliteQueueService.markJobFailed(jobId, errorMessage);
 
@@ -181,7 +181,7 @@ export class ClaudeCodeSQLiteWorker {
    */
   async shutdown(): Promise<void> {
     logger.info('Shutting down SQLite worker...');
-    
+
     this.isRunning = false;
 
     // Clear polling timer
@@ -200,14 +200,17 @@ export class ClaudeCodeSQLiteWorker {
     // Wait for any remaining jobs to finish (with timeout)
     const shutdownTimeout = 30000; // 30 seconds
     const startTime = Date.now();
-    
-    while (this.processingJobs > 0 && (Date.now() - startTime) < shutdownTimeout) {
+
+    while (this.processingJobs > 0 && Date.now() - startTime < shutdownTimeout) {
       logger.info({ processingJobs: this.processingJobs }, 'Waiting for jobs to complete...');
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise((resolve) => setTimeout(resolve, 1000));
     }
 
     if (this.processingJobs > 0) {
-      logger.warn({ processingJobs: this.processingJobs }, 'Force shutdown with jobs still processing');
+      logger.warn(
+        { processingJobs: this.processingJobs },
+        'Force shutdown with jobs still processing',
+      );
     }
 
     logger.info('SQLite worker shutdown complete');

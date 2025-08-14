@@ -1,10 +1,12 @@
-import { text, integer, sqliteTable, index } from 'drizzle-orm/sqlite-core';
 import { createId } from '@paralleldrive/cuid2';
+import { index, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 
 export const sessions = sqliteTable(
   'claude_code_sessions',
   {
-    id: text('id').primaryKey().$defaultFn(() => createId()),
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => createId()),
     projectPath: text('project_path').notNull(),
     name: text('name').notNull(), // Name derived from the last path component of projectPath
     context: text('context'),
@@ -28,6 +30,9 @@ export const sessions = sqliteTable(
     isWorking: integer('is_working', { mode: 'boolean' }).default(false).notNull(),
     currentJobId: text('current_job_id'),
     lastJobStatus: text('last_job_status'),
+    // Token and message tracking
+    messageCount: integer('message_count').default(0).notNull(),
+    tokenCount: integer('token_count').default(0).notNull(),
   },
   (table) => ({
     lastAccessedIdx: index('idx_sessions_last_accessed').on(table.lastAccessedAt),

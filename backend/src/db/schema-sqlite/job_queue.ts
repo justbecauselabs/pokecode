@@ -1,21 +1,27 @@
-import { text, integer, sqliteTable, index } from 'drizzle-orm/sqlite-core';
 import { createId } from '@paralleldrive/cuid2';
+import { index, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 
 export const jobQueue = sqliteTable(
   'job_queue',
   {
-    id: text('id').primaryKey().$defaultFn(() => createId()),
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => createId()),
     sessionId: text('session_id').notNull(),
     promptId: text('prompt_id').notNull(),
-    status: text('status', { 
-      enum: ['pending', 'processing', 'completed', 'failed', 'cancelled'] 
-    }).notNull().default('pending'),
-    data: text('data', { mode: 'json' }).$type<{
-      prompt: string;
-      projectPath: string;
-      allowedTools?: string[];
-      messageId?: string;
-    }>().notNull(),
+    status: text('status', {
+      enum: ['pending', 'processing', 'completed', 'failed', 'cancelled'],
+    })
+      .notNull()
+      .default('pending'),
+    data: text('data', { mode: 'json' })
+      .$type<{
+        prompt: string;
+        projectPath: string;
+        allowedTools?: string[];
+        messageId?: string;
+      }>()
+      .notNull(),
     attempts: integer('attempts').default(0).notNull(),
     maxAttempts: integer('max_attempts').default(3).notNull(),
     createdAt: integer('created_at', { mode: 'timestamp' })

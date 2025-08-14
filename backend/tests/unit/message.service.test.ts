@@ -1,385 +1,462 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { beforeEach, describe, expect, test, afterEach } from 'bun:test';
 import { eq } from 'drizzle-orm';
+import { Database } from 'bun:sqlite';
 import { db } from '@/db';
-import { sessionMessages, sessions } from '@/db/schema';
-import { messageService } from '@/services/message.service';
-import type { JsonlMessage } from '@/types/claude-messages';
+import { sessions, sessionMessages } from '@/db/schema-sqlite';
+import { MessageService } from '@/services/message.service';
+import {
+  systemMessages,
+  userMessages,
+  assistantMessages,
+  toolResultMessages,
+  resultMessages,
+  conversationFixtures
+} from '../fixtures/sdk-messages';
+import type { SDKMessage } from '@anthropic-ai/claude-code';
 
-// Test data
-const mockJsonlMessages: JsonlMessage[] = [
-  {
-    uuid: 'msg-1',
-    parentUuid: null,
-    sessionId: 'claude-session-1',
-    timestamp: '2025-01-01T10:00:00Z',
-    type: 'user',
-    isSidechain: false,
-    userType: 'external',
-    cwd: '/test/project',
-    version: '1.0.0',
-    gitBranch: 'main',
-    message: {
-      role: 'user',
-      content: 'Hello, Claude!'
-    }
-  },
-  {
-    uuid: 'msg-2',
-    parentUuid: 'msg-1',
-    sessionId: 'claude-session-1',
-    timestamp: '2025-01-01T10:01:00Z',
-    type: 'assistant',
-    isSidechain: false,
-    userType: 'external',
-    cwd: '/test/project',
-    version: '1.0.0',
-    gitBranch: 'main',
-    message: {
-      role: 'assistant',
-      content: [
-        {
-          type: 'text',
-          text: 'Hello! How can I help you today?'
-        }
-      ],
-      id: 'msg_test_123',
-      type: 'message',
-      model: 'claude-3-sonnet-20240229',
-      stop_reason: 'end_turn',
-      stop_sequence: null,
-      usage: {
-        input_tokens: 10,
-        cache_read_input_tokens: 0,
-        output_tokens: 15
-      }
-    }
-  }
-];
+/**
+ * Clean up test database by removing all data
+ */
+async function cleanupTestDatabase(): Promise<void> {
+  await db.delete(sessionMessages);
+  await db.delete(sessions);
+}
+
+/**
+ * Create a test session for use in tests
+ */
+async function createTestSession(params: { id?: string; name?: string; projectPath?: string } = {}): Promise<string> {
+  const sessionId = params.id || `test-session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+  await db.insert(sessions).values({
+    id: sessionId,
+    name: params.name || 'Test Session',
+    projectPath: params.projectPath || '/test/project'
+  });
+
+  return sessionId;
+}
 
 describe('MessageService', () => {
+  let messageService: MessageService;
   let testSessionId: string;
 
   beforeEach(async () => {
-    // Create a test session
-    const sessionResult = await db.insert(sessions).values({
-      projectPath: '/test/project',
-      claudeDirectoryPath: '/test/.claude',
-      metadata: {},
-    }).returning();
-
-    testSessionId = sessionResult[0]!.id;
+    messageService = new MessageService();
+    testSessionId = await createTestSession();
   });
 
   afterEach(async () => {
-    // Clean up test data
-    await db.delete(sessionMessages).where(eq(sessionMessages.sessionId, testSessionId));
-    await db.delete(sessions).where(eq(sessions.id, testSessionId));
-  });
-
-  describe('createMessage', () => {
-    it('should create a user message successfully', async () => {
-      const content = 'Test message content';
-      
-      const result = await messageService.createMessage(testSessionId, content);
-
-      expect(result).toMatchObject({
-        sessionId: testSessionId,
-        role: 'user',
-        content,
-        children: []
-      });
-      expect(result.id).toBeDefined();
-      expect(result.timestamp).toBeDefined();
-    });
-  });
-
-  describe('saveAssistantMessageWithData', () => {
-    it('should save assistant message with JSONB content data', async () => {
-      const content = 'Assistant response';
-      
-      const result = await messageService.saveAssistantMessageWithData(
-        testSessionId,
-        content,
-        mockJsonlMessages
-      );
-
-      expect(result).toMatchObject({
-        sessionId: testSessionId,
-        text: content,
-        type: 'assistant',
-        contentData: mockJsonlMessages
-      });
-      expect(result.id).toBeDefined();
-    });
-
-    it('should save assistant message without JSONB data when not provided', async () => {
-      const content = 'Assistant response';
-      
-      const result = await messageService.saveAssistantMessageWithData(
-        testSessionId,
-        content
-      );
-
-      expect(result).toMatchObject({
-        sessionId: testSessionId,
-        text: content,
-        type: 'assistant',
-        contentData: null
-      });
-    });
-  });
-
-  describe('updateMessageContentData', () => {
-    it('should update message with JSONB content data', async () => {
-      // First create a message
-      const messageResult = await db.insert(sessionMessages).values({
-        sessionId: testSessionId,
-        text: 'Test message',
-        type: 'user'
-      }).returning();
-
-      const messageId = messageResult[0]!.id;
-
-      // Update with JSONB content
-      await messageService.updateMessageContentData(messageId, mockJsonlMessages);
-
-      // Verify the update
-      const updatedMessage = await messageService.getMessageById(messageId);
-      expect(updatedMessage?.contentData).toEqual(mockJsonlMessages);
-    });
+    await cleanupTestDatabase();
   });
 
   describe('getMessages', () => {
-    it('should return messages with JSONB content converted to children', async () => {
-      // Create a user message
+    test('returns empty array for session with no messages', async () => {
+      const messages = await messageService.getMessages(testSessionId);
+      expect(messages).toEqual([]);
+    });
+
+    test('returns converted API messages in chronological order', async () => {
+      // Insert messages in specific order with slight time differences
+      const baseTime = Date.now();
+
+      const systemMsg = systemMessages.init(testSessionId);
+      const userMsg = userMessages.simple('Hello, can you help me?', testSessionId);
+      const assistantMsg = assistantMessages.textResponse('Sure, I can help!', testSessionId);
+
+      // Insert with specific timestamps to test ordering
       await db.insert(sessionMessages).values({
         sessionId: testSessionId,
-        text: 'User message',
-        type: 'user'
+        type: 'assistant',
+        contentData: JSON.stringify(systemMsg),
+        createdAt: new Date(baseTime)
       });
 
-      // Create an assistant message with JSONB content
       await db.insert(sessionMessages).values({
         sessionId: testSessionId,
-        text: 'Assistant message',
+        type: 'user',
+        contentData: JSON.stringify(userMsg),
+        createdAt: new Date(baseTime + 1000)
+      });
+
+      await db.insert(sessionMessages).values({
+        sessionId: testSessionId,
         type: 'assistant',
-        contentData: mockJsonlMessages
+        contentData: JSON.stringify(assistantMsg),
+        createdAt: new Date(baseTime + 2000)
+      });
+
+      const messages = await messageService.getMessages(testSessionId);
+
+      expect(messages).toHaveLength(3);
+      expect(messages[0].messageType).toBe('system');
+      expect(messages[0].role).toBe('system');
+      expect(messages[0].content).toBe('[System: init]');
+      expect(messages[1].role).toBe('user');
+      expect(messages[1].content).toBe('Hello, can you help me?');
+      expect(messages[2].role).toBe('assistant');
+      expect(messages[2].content).toBe('Sure, I can help!');
+    });
+
+    test('handles all system message variations', async () => {
+      const systemInit = systemMessages.init(testSessionId);
+      const systemWithTools = systemMessages.withCustomTools(['bash', 'read'], testSessionId);
+
+      await db.insert(sessionMessages).values({
+        sessionId: testSessionId,
+        type: 'assistant', // system messages stored as assistant type
+        contentData: JSON.stringify(systemInit)
+      });
+
+      await db.insert(sessionMessages).values({
+        sessionId: testSessionId,
+        type: 'assistant',
+        contentData: JSON.stringify(systemWithTools)
       });
 
       const messages = await messageService.getMessages(testSessionId);
 
       expect(messages).toHaveLength(2);
-      
-      // Check user message
-      const userMessage = messages[0]!;
-      expect(userMessage.role).toBe('user');
-      expect(userMessage.content).toBe('User message');
-      expect(userMessage.children).toEqual([]);
-
-      // Check assistant message with JSONB content
-      const assistantMessage = messages[1]!;
-      expect(assistantMessage.role).toBe('assistant');
-      expect(assistantMessage.content).toBe('Assistant message');
-      expect(assistantMessage.children).toHaveLength(2);
-      expect(assistantMessage.children[0]).toMatchObject({
-        id: 'msg-1',
-        role: 'user',
-        content: 'Hello, Claude!'
-      });
-      expect(assistantMessage.children[1]).toMatchObject({
-        id: 'msg-2',
-        role: 'assistant',
-        content: 'Hello! How can I help you today?'
-      });
+      expect(messages[0].messageType).toBe('system');
+      expect(messages[0].role).toBe('system');
+      expect(messages[0].systemMetadata?.model).toBe('claude-3-5-sonnet-20241022');
+      expect(messages[1].messageType).toBe('system');
+      expect(messages[1].systemMetadata?.tools).toContain('bash');
+      expect(messages[1].systemMetadata?.tools).toContain('read');
     });
 
-    it('should return empty children array when no JSONB content', async () => {
-      // Create a message without JSONB content
+    test('handles all user message variations', async () => {
+      const simpleUser = userMessages.simple('Simple message', testSessionId);
+      const codeReview = userMessages.codeReview(testSessionId);
+      const fileAnalysis = userMessages.fileAnalysis('package.json', testSessionId);
+      const bugFix = userMessages.bugFix('Component not rendering', testSessionId);
+
+      const messagesToInsert = [simpleUser, codeReview, fileAnalysis, bugFix];
+
+      for (const msg of messagesToInsert) {
+        await db.insert(sessionMessages).values({
+          sessionId: testSessionId,
+          type: 'user',
+          contentData: JSON.stringify(msg)
+        });
+      }
+
+      const messages = await messageService.getMessages(testSessionId);
+
+      expect(messages).toHaveLength(4);
+      expect(messages[0].content).toBe('Simple message');
+      expect(messages[1].content).toBe('Please review this code for best practices and potential issues');
+      expect(messages[2].content).toBe('Analyze the file package.json and explain its purpose');
+      expect(messages[3].content).toBe('Fix this bug: Component not rendering');
+    });
+
+    test('handles all assistant message variations', async () => {
+      const textResponse = assistantMessages.textResponse('Plain text response', testSessionId);
+      const withThinking = assistantMessages.withThinking('Response', 'Let me think...', testSessionId);
+      const fileRead = assistantMessages.fileRead('config.json', testSessionId);
+      const bashCommand = assistantMessages.bashCommand('ls -la', 'List files', testSessionId);
+
+      const messagesToInsert = [textResponse, withThinking, fileRead, bashCommand];
+
+      for (const msg of messagesToInsert) {
+        await db.insert(sessionMessages).values({
+          sessionId: testSessionId,
+          type: 'assistant',
+          contentData: JSON.stringify(msg)
+        });
+      }
+
+      const messages = await messageService.getMessages(testSessionId);
+
+      expect(messages).toHaveLength(4);
+
+      // Test text response
+      expect(messages[0].content).toBe('Plain text response');
+      expect(messages[0].role).toBe('assistant');
+
+      // Test thinking message
+      expect(messages[1].content).toBe('Response');
+      expect(messages[1].thinking).toBe('Let me think...');
+
+      // Test tool use messages
+      expect(messages[2].content).toBe(`I'll read the config.json file to understand its contents.`);
+      expect(messages[2].toolCalls).toBeDefined();
+      expect(messages[2].toolCalls?.[0].name).toBe('read');
+
+      expect(messages[3].content).toBe('List files');
+      expect(messages[3].toolCalls?.[0].name).toBe('bash');
+    });
+
+    test('handles tool result messages', async () => {
+      const toolUseId = 'tool-read-123';
+      const fileResult = toolResultMessages.fileResult(toolUseId, '{"name": "test"}', testSessionId);
+      const bashResult = toolResultMessages.bashResult(toolUseId, 'total 8\ndrwxr-xr-x 2 user user 4096', false, testSessionId);
+      const errorResult = toolResultMessages.errorResult(toolUseId, 'File not found', testSessionId);
+
+      const messagesToInsert = [fileResult, bashResult, errorResult];
+
+      for (const msg of messagesToInsert) {
+        await db.insert(sessionMessages).values({
+          sessionId: testSessionId,
+          type: 'user', // tool results are user messages
+          contentData: JSON.stringify(msg)
+        });
+      }
+
+      const messages = await messageService.getMessages(testSessionId);
+
+      expect(messages).toHaveLength(3);
+
+      // All should be user messages with tool results
+      expect(messages[0].role).toBe('user');
+      expect(messages[0].toolResults).toBeDefined();
+      expect(messages[0].toolResults?.[0].content).toBe('{"name": "test"}');
+      expect(messages[0].toolResults?.[0].toolUseId).toBe(toolUseId);
+
+      expect(messages[1].toolResults?.[0].content).toBe('total 8\ndrwxr-xr-x 2 user user 4096');
+      expect(messages[2].toolResults?.[0].content).toBe('File not found');
+      expect(messages[2].toolResults?.[0].isError).toBe(true);
+    });
+
+    test('handles result messages', async () => {
+      const successResult = resultMessages.success(testSessionId);
+      const errorResult = resultMessages.error(testSessionId);
+      const highUsageResult = resultMessages.withHighUsage(testSessionId);
+
+      const messagesToInsert = [successResult, errorResult, highUsageResult];
+
+      for (const msg of messagesToInsert) {
+        await db.insert(sessionMessages).values({
+          sessionId: testSessionId,
+          type: 'assistant', // result messages stored as assistant type
+          contentData: JSON.stringify(msg)
+        });
+      }
+
+      const messages = await messageService.getMessages(testSessionId);
+
+      expect(messages).toHaveLength(3);
+
+      // Test success result
+      expect(messages[0].messageType).toBe('result');
+      expect(messages[0].resultMetadata?.isError).toBe(false);
+      expect(messages[0].resultMetadata?.result).toBe('Task completed successfully');
+      expect(messages[0].resultMetadata?.totalCostUsd).toBe(0.093);
+
+      // Test error result
+      expect(messages[1].resultMetadata?.isError).toBe(true);
+
+      // Test high usage result
+      expect(messages[2].resultMetadata?.totalCostUsd).toBe(0.75);
+      expect(messages[2].resultMetadata?.numTurns).toBe(10);
+    });
+
+    test('handles complex assistant messages with citations', async () => {
+      const withCitations = assistantMessages.withCitations(
+        'Based on the documentation, here are the key points.',
+        [
+          {
+            type: 'char_location',
+            cited_text: 'API documentation',
+            title: 'API Guide',
+            start_char_index: 10,
+            end_char_index: 25
+          }
+        ],
+        testSessionId
+      );
+
       await db.insert(sessionMessages).values({
         sessionId: testSessionId,
-        text: 'Simple message',
-        type: 'user'
+        type: 'assistant',
+        contentData: JSON.stringify(withCitations)
       });
 
       const messages = await messageService.getMessages(testSessionId);
 
       expect(messages).toHaveLength(1);
-      expect(messages[0]!.children).toEqual([]);
+      expect(messages[0].content).toBe('Based on the documentation, here are the key points.');
+      expect(messages[0].citations).toBeDefined();
+      expect(messages[0].citations).toHaveLength(1);
+      expect(messages[0].citations?.[0].citedText).toBe('API documentation');
     });
 
-    it('should handle invalid JSONB content gracefully', async () => {
-      // Create a message with invalid JSONB content
+    test('handles web search messages', async () => {
+      const webSearchMsg = assistantMessages.withWebSearch(
+        'I found some relevant information.',
+        [
+          {
+            url: 'https://example.com',
+            title: 'Example Guide',
+            encrypted_content: 'encrypted_content_here',
+            page_age: '2 days ago'
+          }
+        ],
+        testSessionId
+      );
+
       await db.insert(sessionMessages).values({
         sessionId: testSessionId,
-        text: 'Message with invalid JSONB',
         type: 'assistant',
-        contentData: [{ invalid: 'data' }] as any
+        contentData: JSON.stringify(webSearchMsg)
       });
 
       const messages = await messageService.getMessages(testSessionId);
 
       expect(messages).toHaveLength(1);
-      expect(messages[0]!.children).toEqual([]);
-    });
-  });
-
-  describe('JSONB indexing and querying', () => {
-    it('should support querying JSONB content', async () => {
-      // Create a message with JSONB content
-      const messageResult = await db.insert(sessionMessages).values({
-        sessionId: testSessionId,
-        text: 'Test message',
-        type: 'assistant',
-        contentData: mockJsonlMessages
-      }).returning();
-
-      const messageId = messageResult[0]!.id;
-
-      // Query the message by JSONB content
-      const foundMessages = await db
-        .select()
-        .from(sessionMessages)
-        .where(eq(sessionMessages.id, messageId));
-
-      expect(foundMessages).toHaveLength(1);
-      expect(foundMessages[0]!.contentData).toEqual(mockJsonlMessages);
+      expect(messages[0].content).toBe('I found some relevant information.');
+      expect(messages[0].webSearchResults).toBeDefined();
+      expect(messages[0].webSearchResults).toHaveLength(1);
+      expect(messages[0].webSearchResults?.[0].url).toBe('https://example.com');
     });
 
-    it('should handle empty JSONB arrays', async () => {
-      const messageResult = await db.insert(sessionMessages).values({
-        sessionId: testSessionId,
-        text: 'Empty JSONB message',
-        type: 'assistant',
-        contentData: []
-      }).returning();
+    test('handles redacted thinking messages', async () => {
+      const redactedThinking = assistantMessages.withRedactedThinking(
+        'Here is my response.',
+        'redacted_thinking_data',
+        testSessionId
+      );
 
-      const messageId = messageResult[0]!.id;
-      const message = await messageService.getMessageById(messageId);
-      
-      expect(message?.contentData).toEqual([]);
-    });
-
-    it('should handle null JSONB content', async () => {
-      const messageResult = await db.insert(sessionMessages).values({
-        sessionId: testSessionId,
-        text: 'Null JSONB message',
-        type: 'assistant',
-        contentData: null
-      }).returning();
-
-      const messageId = messageResult[0]!.id;
-      const message = await messageService.getMessageById(messageId);
-      
-      expect(message?.contentData).toBe(null);
-    });
-  });
-
-  describe('saveSDKMessage', () => {
-    it('should save SDK message with Claude session ID', async () => {
-      const mockSDKMessage = {
-        type: 'assistant' as const,
-        session_id: 'claude-session-123',
-        message: {
-          content: [{ type: 'text', text: 'Hello from Claude SDK' }]
-        }
-      };
-
-      await messageService.saveSDKMessage(testSessionId, mockSDKMessage, 'claude-session-123');
-
-      // Verify the message was saved with the Claude session ID
-      const messages = await db
-        .select()
-        .from(sessionMessages)
-        .where(eq(sessionMessages.sessionId, testSessionId));
-
-      expect(messages).toHaveLength(1);
-      expect(messages[0]).toMatchObject({
+      await db.insert(sessionMessages).values({
         sessionId: testSessionId,
         type: 'assistant',
-        claudeCodeSessionId: 'claude-session-123',
-        contentData: JSON.stringify(mockSDKMessage)
+        contentData: JSON.stringify(redactedThinking)
       });
-    });
 
-    it('should save SDK message without Claude session ID', async () => {
-      const mockSDKMessage = {
-        type: 'user' as const,
-        session_id: 'claude-session-456',
-        content: 'User message'
-      };
-
-      await messageService.saveSDKMessage(testSessionId, mockSDKMessage);
-
-      // Verify the message was saved without the Claude session ID
-      const messages = await db
-        .select()
-        .from(sessionMessages)
-        .where(eq(sessionMessages.sessionId, testSessionId));
+      const messages = await messageService.getMessages(testSessionId);
 
       expect(messages).toHaveLength(1);
-      expect(messages[0]).toMatchObject({
+      expect(messages[0].content).toBe('Here is my response.');
+      expect(messages[0].thinking).toBe('redacted_thinking_data');
+    });
+
+    test('handles complete conversation flows', async () => {
+      // Use the simple conversation flow from fixtures
+      const conversation = conversationFixtures.simpleFlow(testSessionId);
+
+      for (let i = 0; i < conversation.length; i++) {
+        const msg = conversation[i];
+        const messageType = msg.type === 'user' ? 'user' : 'assistant';
+
+        await db.insert(sessionMessages).values({
+          sessionId: testSessionId,
+          type: messageType,
+          contentData: JSON.stringify(msg),
+          createdAt: new Date(Date.now() + i * 1000) // Ensure proper ordering
+        });
+      }
+
+      const messages = await messageService.getMessages(testSessionId);
+
+      expect(messages).toHaveLength(3);
+      expect(messages[0].messageType).toBe('system');
+      expect(messages[1].role).toBe('user');
+      expect(messages[1].content).toBe('Hello, can you help me with a task?');
+      expect(messages[2].role).toBe('assistant');
+      expect(messages[2].content).toBe("Hello! I'd be happy to help. What can I do for you?");
+    });
+
+    test('skips malformed messages and logs warnings', async () => {
+      // Insert a valid message
+      const validMsg = userMessages.simple('Valid message', testSessionId);
+      await db.insert(sessionMessages).values({
         sessionId: testSessionId,
         type: 'user',
-        claudeCodeSessionId: null,
-        contentData: JSON.stringify(mockSDKMessage)
+        contentData: JSON.stringify(validMsg)
       });
+
+      // Insert malformed JSON
+      await db.insert(sessionMessages).values({
+        sessionId: testSessionId,
+        type: 'user',
+        contentData: 'invalid json {'
+      });
+
+      // Insert another valid message
+      const validMsg2 = assistantMessages.textResponse('Another valid message', testSessionId);
+      await db.insert(sessionMessages).values({
+        sessionId: testSessionId,
+        type: 'assistant',
+        contentData: JSON.stringify(validMsg2)
+      });
+
+      // Mock console.warn to capture warnings
+      const originalWarn = console.warn;
+      const warnings: any[] = [];
+      console.warn = (...args: any[]) => warnings.push(args);
+
+      const messages = await messageService.getMessages(testSessionId);
+
+      // Restore console.warn
+      console.warn = originalWarn;
+
+      // Should only return the valid messages
+      expect(messages).toHaveLength(2);
+      expect(messages[0].content).toBe('Valid message');
+      expect(messages[1].content).toBe('Another valid message');
+
+      // Should have logged a warning for the malformed message
+      expect(warnings).toHaveLength(1);
+      expect(warnings[0][0]).toContain('Failed to parse message');
+    });
+
+    test('handles empty content data gracefully', async () => {
+      // Insert message with null content data
+      await db.insert(sessionMessages).values({
+        sessionId: testSessionId,
+        type: 'user',
+        contentData: null
+      });
+
+      // Insert message with empty string content data
+      await db.insert(sessionMessages).values({
+        sessionId: testSessionId,
+        type: 'user',
+        contentData: ''
+      });
+
+      // Insert a valid message
+      const validMsg = userMessages.simple('Valid message', testSessionId);
+      await db.insert(sessionMessages).values({
+        sessionId: testSessionId,
+        type: 'user',
+        contentData: JSON.stringify(validMsg)
+      });
+
+      const messages = await messageService.getMessages(testSessionId);
+
+      // Should only return the valid message
+      expect(messages).toHaveLength(1);
+      expect(messages[0].content).toBe('Valid message');
+    });
+
+    test('handles messages from different sessions separately', async () => {
+      const otherSessionId = await createTestSession();
+
+      // Insert message in first session
+      const msg1 = userMessages.simple('Message in session 1', testSessionId);
+      await db.insert(sessionMessages).values({
+        sessionId: testSessionId,
+        type: 'user',
+        contentData: JSON.stringify(msg1)
+      });
+
+      // Insert message in second session
+      const msg2 = userMessages.simple('Message in session 2', otherSessionId);
+      await db.insert(sessionMessages).values({
+        sessionId: otherSessionId,
+        type: 'user',
+        contentData: JSON.stringify(msg2)
+      });
+
+      const session1Messages = await messageService.getMessages(testSessionId);
+      const session2Messages = await messageService.getMessages(otherSessionId);
+
+      expect(session1Messages).toHaveLength(1);
+      expect(session1Messages[0].content).toBe('Message in session 1');
+
+      expect(session2Messages).toHaveLength(1);
+      expect(session2Messages[0].content).toBe('Message in session 2');
     });
   });
-
-  describe('getLastClaudeCodeSessionId', () => {
-    it('should return the most recent Claude session ID', async () => {
-      // Create multiple messages with different Claude session IDs
-      const mockMessage1 = { type: 'assistant' as const, session_id: 'claude-1' };
-      const mockMessage2 = { type: 'assistant' as const, session_id: 'claude-2' };
-      const mockMessage3 = { type: 'assistant' as const, session_id: 'claude-3' };
-
-      // Save messages in order (oldest first)
-      await messageService.saveSDKMessage(testSessionId, mockMessage1, 'claude-1');
-      await new Promise(resolve => setTimeout(resolve, 10)); // Small delay
-      await messageService.saveSDKMessage(testSessionId, mockMessage2, 'claude-2');
-      await new Promise(resolve => setTimeout(resolve, 10)); // Small delay  
-      await messageService.saveSDKMessage(testSessionId, mockMessage3, 'claude-3');
-
-      const lastSessionId = await messageService.getLastClaudeCodeSessionId(testSessionId);
-      
-      expect(lastSessionId).toBe('claude-3');
-    });
-
-    it('should return null when no Claude session IDs exist', async () => {
-      // Create a message without Claude session ID
-      const mockMessage = { type: 'user' as const, content: 'No Claude session' };
-      await messageService.saveSDKMessage(testSessionId, mockMessage);
-
-      const lastSessionId = await messageService.getLastClaudeCodeSessionId(testSessionId);
-      
-      expect(lastSessionId).toBe(null);
-    });
-
-    it('should skip null Claude session IDs and find the most recent non-null one', async () => {
-      // Create messages with mixed null and non-null Claude session IDs
-      const mockMessage1 = { type: 'assistant' as const, session_id: 'claude-1' };
-      const mockMessage2 = { type: 'user' as const, content: 'No session' };
-      const mockMessage3 = { type: 'assistant' as const, session_id: 'claude-3' };
-      const mockMessage4 = { type: 'user' as const, content: 'Another no session' };
-
-      await messageService.saveSDKMessage(testSessionId, mockMessage1, 'claude-1');
-      await new Promise(resolve => setTimeout(resolve, 10));
-      await messageService.saveSDKMessage(testSessionId, mockMessage2); // No Claude session ID
-      await new Promise(resolve => setTimeout(resolve, 10));
-      await messageService.saveSDKMessage(testSessionId, mockMessage3, 'claude-3');
-      await new Promise(resolve => setTimeout(resolve, 10));
-      await messageService.saveSDKMessage(testSessionId, mockMessage4); // No Claude session ID
-
-      const lastSessionId = await messageService.getLastClaudeCodeSessionId(testSessionId);
-      
-      expect(lastSessionId).toBe('claude-3');
-    });
-
-    it('should return null for non-existent session', async () => {
-      const lastSessionId = await messageService.getLastClaudeCodeSessionId('non-existent-session');
-      
-      expect(lastSessionId).toBe(null);
-    });
-  });
-
 });

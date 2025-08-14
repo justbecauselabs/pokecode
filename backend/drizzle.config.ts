@@ -1,10 +1,13 @@
 import { defineConfig } from 'drizzle-kit';
+import { isTest } from '@/utils/env';
+
+console.log('isTest', isTest());
 
 export default defineConfig({
   dialect: 'sqlite',
   schema: './src/db/schema-sqlite/*',
   out: './drizzle',
   dbCredentials: {
-    url: './data/pokecode.db',
+    url: isTest() ? './tests/data/pokecode.db' : './data/pokecode.db',
   },
 });

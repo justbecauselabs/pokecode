@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Alert, Pressable, Text, TextInput, View } from 'react-native';
+import { Alert, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from '@/components/common';
 import { useSettingsStore } from '@/stores/settingsStore';
 import type { SettingsFormData } from '@/types/settings';
@@ -77,9 +77,10 @@ export default function SettingsScreen() {
           </Pressable>
         </View>
 
-        {/* Settings Form */}
-        <View className="flex-1 p-4">
-          <View className="bg-card rounded-lg p-4 border border-border">
+        {/* Settings Content */}
+        <ScrollView className="flex-1 p-4">
+          {/* API Configuration */}
+          <View className="bg-card rounded-lg p-4 border border-border mb-4">
             <Text className="text-lg font-semibold text-card-foreground mb-4 font-mono">
               API Configuration
             </Text>
@@ -140,7 +141,69 @@ export default function SettingsScreen() {
               </Pressable>
             </View>
           </View>
-        </View>
+
+          {/* UI Playground Section */}
+          <View className="bg-card rounded-lg p-4 border border-border">
+            <Text className="text-lg font-semibold text-card-foreground mb-4 font-mono">
+              UI Playground
+            </Text>
+            <Text className="text-xs text-muted-foreground mb-4 font-mono">
+              Explore and test UI components used throughout the app
+            </Text>
+
+            <View className="space-y-2">
+              <Pressable
+                onPress={() => router.push('/playground/fonts')}
+                className="py-3 px-4 rounded-lg bg-muted border border-border active:opacity-80"
+              >
+                <Text className="text-foreground font-mono font-medium">Typography & Fonts</Text>
+                <Text className="text-xs text-muted-foreground font-mono mt-1">
+                  Explore different font sizes, weights, and styles
+                </Text>
+              </Pressable>
+
+              <Pressable
+                onPress={() => router.push('/playground/buttons')}
+                className="py-3 px-4 rounded-lg bg-muted border border-border active:opacity-80"
+              >
+                <Text className="text-foreground font-mono font-medium">Buttons</Text>
+                <Text className="text-xs text-muted-foreground font-mono mt-1">
+                  Test different button variants, sizes, and states
+                </Text>
+              </Pressable>
+
+              <Pressable
+                onPress={() => router.push('/playground/pills')}
+                className="py-3 px-4 rounded-lg bg-muted border border-border active:opacity-80"
+              >
+                <Text className="text-foreground font-mono font-medium">Pills</Text>
+                <Text className="text-xs text-muted-foreground font-mono mt-1">
+                  Interactive pill components with different variants
+                </Text>
+              </Pressable>
+
+              <Pressable
+                onPress={() => router.push('/playground/message-types')}
+                className="py-3 px-4 rounded-lg bg-muted border border-border active:opacity-80"
+              >
+                <Text className="text-foreground font-mono font-medium">Message Types</Text>
+                <Text className="text-xs text-muted-foreground font-mono mt-1">
+                  Chat message components and their variations
+                </Text>
+              </Pressable>
+
+              <Pressable
+                onPress={() => router.push('/playground/rows')}
+                className="py-3 px-4 rounded-lg bg-muted border border-border active:opacity-80"
+              >
+                <Text className="text-foreground font-mono font-medium">Rows</Text>
+                <Text className="text-xs text-muted-foreground font-mono mt-1">
+                  Flexible row components with leading/trailing elements
+                </Text>
+              </Pressable>
+            </View>
+          </View>
+        </ScrollView>
       </View>
     </SafeAreaView>
   );

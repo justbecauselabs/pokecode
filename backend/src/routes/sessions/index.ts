@@ -182,9 +182,6 @@ const sessionRoutes: FastifyPluginAsync = async (fastify) => {
   // Register message routes (was prompts)
   fastify.register(import('./messages'), { prefix: '/:sessionId' });
 
-  // Register file routes
-  fastify.register(import('./files'), { prefix: '/:sessionId/files' });
-
   // Register command routes
   fastify.register(import('./commands'), { prefix: '/:sessionId/commands' });
 

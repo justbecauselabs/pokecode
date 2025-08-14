@@ -1,11 +1,14 @@
 import type React from 'react';
+import { View, Text, TouchableOpacity } from 'react-native';
 import Markdown from 'react-native-markdown-display';
+import type { Citation } from '../../types/messages';
 
 interface MarkdownRendererProps {
   content: string;
+  citations?: Citation[];
 }
 
-export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content }) => {
+export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, citations }) => {
   const markdownStyles = {
     body: {
       fontSize: 16,
@@ -93,5 +96,56 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content }) =
     },
   };
 
-  return <Markdown style={markdownStyles}>{content}</Markdown>;
+  // Render citations
+  const renderCitations = () => {
+    if (!citations?.length) return null;
+    
+    return (
+      <View className="mt-3 space-y-2">
+        <Text className="text-sm font-mono font-medium text-blue-700 dark:text-blue-300">
+          📎 Citations
+        </Text>
+        {citations.map((citation, index) => (
+          <TouchableOpacity
+            key={index}
+            className="bg-blue-50 dark:bg-blue-950 p-2 rounded border-l-2 border-blue-300 dark:border-blue-700"
+            onPress={() => {
+              // Could implement navigation to source here
+            }}
+          >
+            <Text className="text-xs font-mono text-blue-600 dark:text-blue-400 mb-1">
+              "{citation.citedText}"
+            </Text>
+            <View className="flex-row items-center space-x-2">
+              <Text className="text-xs font-mono text-blue-500 dark:text-blue-500">
+                {citation.type.replace(/_/g, ' ')}
+              </Text>
+              {citation.url && (
+                <Text className="text-xs font-mono text-blue-500 dark:text-blue-500">
+                  • {citation.url}
+                </Text>
+              )}
+              {citation.documentTitle && (
+                <Text className="text-xs font-mono text-blue-500 dark:text-blue-500">
+                  • {citation.documentTitle}
+                </Text>
+              )}
+              {citation.source && (
+                <Text className="text-xs font-mono text-blue-500 dark:text-blue-500">
+                  • {citation.source}
+                </Text>
+              )}
+            </View>
+          </TouchableOpacity>
+        ))}
+      </View>
+    );
+  };
+
+  return (
+    <View>
+      <Markdown style={markdownStyles}>{content}</Markdown>
+      {renderCitations()}
+    </View>
+  );
 };

@@ -24,7 +24,7 @@ export interface ApiChildMessage {
     input: any;
   }>;
   toolResults?: Array<{
-    tool_use_id: string;
+    toolUseId: string;
     content: string;
   }>;
   thinking?: string;

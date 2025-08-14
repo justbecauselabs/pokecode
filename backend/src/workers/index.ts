@@ -6,6 +6,11 @@ import { ClaudeCodeSQLiteWorker } from './claude-code-sqlite.worker';
 
 const logger = createChildLogger('worker-main');
 
+// Interface for worker with cleanup interval
+interface WorkerWithCleanup extends ClaudeCodeSQLiteWorker {
+  cleanupInterval?: Timer;
+}
+
 // Export for testing
 export { ClaudeCodeSQLiteWorker };
 
@@ -46,16 +51,19 @@ async function startWorker(): Promise<ClaudeCodeSQLiteWorker> {
   );
 
   // Setup cleanup job (run every hour)
-  const cleanupInterval = setInterval(async () => {
-    try {
-      await worker.cleanup();
-    } catch (error) {
-      logger.error({ error }, 'Error during cleanup');
-    }
-  }, 60 * 60 * 1000); // 1 hour
+  const cleanupInterval = setInterval(
+    async () => {
+      try {
+        await worker.cleanup();
+      } catch (error) {
+        logger.error({ error }, 'Error during cleanup');
+      }
+    },
+    60 * 60 * 1000,
+  ); // 1 hour
 
   // Store cleanup interval on worker for shutdown
-  (worker as any).cleanupInterval = cleanupInterval;
+  (worker as WorkerWithCleanup).cleanupInterval = cleanupInterval;
 
   return worker;
 }
@@ -68,7 +76,7 @@ async function handleShutdown(signal: string, worker: ClaudeCodeSQLiteWorker): P
 
   try {
     // Clear cleanup interval if it exists
-    const cleanupInterval = (worker as any).cleanupInterval;
+    const cleanupInterval = (worker as WorkerWithCleanup).cleanupInterval;
     if (cleanupInterval) {
       clearInterval(cleanupInterval);
     }

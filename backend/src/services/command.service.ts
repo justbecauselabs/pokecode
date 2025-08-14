@@ -1,8 +1,14 @@
-import { homedir } from 'node:os';
-import path from 'node:path';
 import type { Command, ListCommandsQuery, ListCommandsResponse } from '@/schemas/command.schema';
-import { fileService } from '@/services/file.service';
 import { ValidationError } from '@/types';
+import {
+  directoryExists,
+  findMarkdownFiles,
+  getBasename,
+  getHomeDirectory,
+  isAbsolute,
+  joinPath,
+  readFileContent,
+} from '@/utils/file';
 import { logger } from '@/utils/logger';
 
 /**
@@ -13,14 +19,14 @@ export class CommandService {
    * Get the Claude home directory path
    */
   private getClaudeHomePath(): string {
-    return path.join(homedir(), '.claude');
+    return joinPath(getHomeDirectory(), '.claude');
   }
 
   /**
    * Get commands directory path for a given base path
    */
   private getCommandsDirectoryPath(basePath: string): string {
-    return path.join(basePath, 'commands');
+    return joinPath(basePath, 'commands');
   }
 
   /**
@@ -29,7 +35,7 @@ export class CommandService {
   private async directoryExists(dirPath: string): Promise<boolean> {
     logger.debug({ dirPath }, 'Checking if directory exists');
     try {
-      const exists = await fileService.systemDirectoryExists(dirPath);
+      const exists = await directoryExists(dirPath);
       if (!exists) {
         logger.debug({ dirPath }, 'Directory does not exist or not accessible');
       }
@@ -55,24 +61,24 @@ export class CommandService {
     logger.debug({ commandsPath, commandType }, 'Starting to read commands from directory');
 
     try {
-      // Use File Service to find markdown files
-      const markdownFiles = await fileService.systemFindMarkdownFiles(commandsPath);
+      // Use File Utils to find markdown files
+      const markdownFiles = await findMarkdownFiles(commandsPath);
 
       logger.debug(
         {
           commandsPath,
           commandType,
-          files: markdownFiles.map((f) => path.basename(f)),
+          files: markdownFiles.map((f) => getBasename(f)),
           fileCount: markdownFiles.length,
         },
         'Found .md files in directory',
       );
 
       for (const filePath of markdownFiles) {
-        const commandName = path.basename(filePath, '.md');
+        const commandName = getBasename(filePath, '.md');
 
         try {
-          const fileContent = await fileService.systemReadFileContent(filePath);
+          const fileContent = await readFileContent(filePath);
           commands.push({
             name: commandName,
             body: fileContent,
@@ -160,7 +166,7 @@ export class CommandService {
     );
 
     // Validate project path
-    if (!projectPath || !path.isAbsolute(projectPath)) {
+    if (!projectPath || !isAbsolute(projectPath)) {
       throw new ValidationError('Invalid project path');
     }
 

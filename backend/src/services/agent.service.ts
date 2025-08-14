@@ -1,8 +1,13 @@
-import { homedir } from 'node:os';
-import path from 'node:path';
 import type { Agent, ListAgentsQuery, ListAgentsResponse } from '@/schemas/agent.schema';
-import { fileService } from '@/services/file.service';
 import { ValidationError } from '@/types';
+import {
+  directoryExists,
+  findMarkdownFiles,
+  getHomeDirectory,
+  isAbsolute,
+  joinPath,
+  readMarkdownFile,
+} from '@/utils/file';
 import { logger } from '@/utils/logger';
 
 /**
@@ -13,7 +18,7 @@ export class AgentService {
    * Get the Claude home directory path
    */
   private getClaudeHomePath(): string {
-    return path.join(homedir(), '.claude');
+    return joinPath(getHomeDirectory(), '.claude');
   }
 
   /**
@@ -22,10 +27,10 @@ export class AgentService {
   private getAgentsDirectoryPath(basePath: string, isUserPath = false): string {
     if (isUserPath) {
       // For user agents: ~/.claude/agents
-      return path.join(basePath, 'agents');
+      return joinPath(basePath, 'agents');
     } else {
       // For project agents: {projectPath}/.claude/agents
-      return path.join(basePath, '.claude', 'agents');
+      return joinPath(basePath, '.claude', 'agents');
     }
   }
 
@@ -39,17 +44,18 @@ export class AgentService {
     const agents: Agent[] = [];
 
     try {
-      // Use file service to find all markdown files
-      const markdownFiles = await fileService.systemFindMarkdownFiles(agentsPath);
+      // Use file utils to find all markdown files
+      const markdownFiles = await findMarkdownFiles(agentsPath);
 
       for (const filePath of markdownFiles) {
         try {
-          const { frontMatter, content, fileName } =
-            await fileService.systemReadMarkdownFile(filePath);
+          const { frontMatter, content, fileName } = await readMarkdownFile(filePath);
 
           // Use name from frontmatter if available, otherwise use filename
-          const agentName = frontMatter.name || fileName;
-          const agentDescription = frontMatter.description || '';
+          const agentName =
+            (typeof frontMatter.name === 'string' ? frontMatter.name : fileName) || fileName;
+          const agentDescription =
+            (typeof frontMatter.description === 'string' ? frontMatter.description : '') || '';
 
           if (!agentDescription) {
             logger.warn(
@@ -70,7 +76,7 @@ export class AgentService {
           };
 
           // Only add color if it exists
-          if (frontMatter.color) {
+          if (frontMatter.color && typeof frontMatter.color === 'string') {
             agent.color = frontMatter.color;
           }
 
@@ -158,7 +164,7 @@ export class AgentService {
     );
 
     // Validate project path
-    if (!projectPath || !path.isAbsolute(projectPath)) {
+    if (!projectPath || !isAbsolute(projectPath)) {
       throw new ValidationError('Invalid project path');
     }
 
@@ -169,7 +175,7 @@ export class AgentService {
     const allAgents: Agent[] = [];
 
     // Check if user agents directory exists and read agents
-    if (await fileService.systemDirectoryExists(userAgentsPath)) {
+    if (await directoryExists(userAgentsPath)) {
       const userAgents = await this.readAgentsFromDirectory(userAgentsPath, 'user');
       allAgents.push(...userAgents);
       logger.debug(
@@ -189,7 +195,7 @@ export class AgentService {
     }
 
     // Check if project agents directory exists and read agents
-    if (await fileService.systemDirectoryExists(projectAgentsPath)) {
+    if (await directoryExists(projectAgentsPath)) {
       const projectAgents = await this.readAgentsFromDirectory(projectAgentsPath, 'project');
       allAgents.push(...projectAgents);
       logger.debug(
@@ -227,11 +233,11 @@ export class AgentService {
       projectAgentsPath?: string;
     } = {};
 
-    if (await fileService.systemDirectoryExists(userAgentsPath)) {
+    if (await directoryExists(userAgentsPath)) {
       sources.userAgentsPath = userAgentsPath;
     }
 
-    if (await fileService.systemDirectoryExists(projectAgentsPath)) {
+    if (await directoryExists(projectAgentsPath)) {
       sources.projectAgentsPath = projectAgentsPath;
     }
 

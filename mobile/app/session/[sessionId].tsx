@@ -1,9 +1,11 @@
 import type { BottomSheetModal } from '@gorhom/bottom-sheet';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useRef } from 'react';
-import { KeyboardAvoidingView, Platform, Text, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, Text, View, Keyboard, TouchableWithoutFeedback } from 'react-native';
+import { PanGestureHandler } from 'react-native-gesture-handler';
+import Animated from 'react-native-reanimated';
 import { SafeAreaView } from '../../src/components/common';
-import { MessageInput } from '../../src/components/session/MessageInput';
+import { MessageInput, type MessageInputRef } from '../../src/components/session/MessageInput';
 import { MessageList } from '../../src/components/session/MessageList';
 import { SlashCommandBottomSheet } from '../../src/components/session/SlashCommandBottomSheet';
 import { useSessionMessages } from '../../src/hooks/useSessionMessages';
@@ -27,9 +29,7 @@ export default function SessionDetailScreen() {
 
   // Bottom sheet refs and state
   const slashCommandBottomSheetRef = useRef<BottomSheetModal>(null);
-  const messageInputRef = useRef<{ insertCommand: (params: { commandName: string }) => void }>(
-    null
-  );
+  const messageInputRef = useRef<MessageInputRef>(null);
 
   // Slash command handlers
   const handleShowSlashCommands = () => {
@@ -42,6 +42,16 @@ export default function SessionDetailScreen() {
 
   const handleSelectSlashCommand = (params: { commandName: string }) => {
     messageInputRef.current?.insertCommand({ commandName: params.commandName });
+  };
+
+  // Gesture handler for swipe to dismiss keyboard
+  const handleSwipeGesture = (event: { nativeEvent: { velocityY: number; translationY: number } }) => {
+    const { velocityY, translationY } = event.nativeEvent;
+    
+    // Dismiss keyboard on downward swipe (positive velocity and translation)
+    if (velocityY > 500 && translationY > 50) {
+      Keyboard.dismiss();
+    }
   };
 
 
@@ -73,21 +83,25 @@ export default function SessionDetailScreen() {
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
         >
-          <View className="flex-1 bg-background">
-            <MessageList
-              messages={messages}
-              isLoading={isLoading}
-              error={error}
-            />
-            <MessageInput
-              ref={messageInputRef}
-              sessionId={sessionId}
-              onSendMessage={sendMessage}
-              onShowSlashCommands={handleShowSlashCommands}
-              isSending={isSending || isWorking}
-              disabled={isLoading}
-            />
-          </View>
+          <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+            <PanGestureHandler onGestureEvent={handleSwipeGesture}>
+              <Animated.View className="flex-1 bg-background">
+                <MessageList
+                  messages={messages}
+                  isLoading={isLoading}
+                  error={error}
+                />
+                <MessageInput
+                  ref={messageInputRef}
+                  sessionId={sessionId}
+                  onSendMessage={sendMessage}
+                  onShowSlashCommands={handleShowSlashCommands}
+                  isSending={isSending || isWorking}
+                  disabled={isLoading}
+                />
+              </Animated.View>
+            </PanGestureHandler>
+          </TouchableWithoutFeedback>
         </KeyboardAvoidingView>
 
         {/* Slash Commands Bottom Sheet */}
