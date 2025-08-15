@@ -72,8 +72,7 @@ export function sdkToApiMessage(
 
     // Initialize all possible content fields
     let content = '';
-    let toolCalls: Array<{ id?: string; name: string; input: unknown }> | undefined;
-    let toolResults: Array<{ toolUseId: string; content: string; isError?: boolean }> | undefined;
+    let toolCalls: Array<{ id?: string; name: string; input: unknown; result?: { content: string; isError?: boolean } }> | undefined;
     let thinking: string | undefined;
     let citations: Array<{ type: string; citedText: string; [key: string]: unknown }> | undefined;
     let webSearchResults:
@@ -90,7 +89,18 @@ export function sdkToApiMessage(
     if (sdkMessage.type === 'user') {
       const userContent = extractUserContent(sdkMessage as SDKUserMessage);
       content = userContent.content;
-      toolResults = userContent.toolResults;
+      // Extract tool results directly into tool calls format
+      if (userContent.toolResults) {
+        toolCalls = userContent.toolResults.map(r => ({
+          id: r.toolUseId,
+          name: 'tool_result',
+          input: {},
+          result: {
+            content: r.content,
+            ...(r.isError !== undefined && { isError: r.isError }),
+          },
+        }));
+      }
     } else if (sdkMessage.type === 'assistant') {
       const extracted = extractAssistantContent(sdkMessage as SDKAssistantMessage);
       content = extracted.content;
@@ -124,8 +134,9 @@ export function sdkToApiMessage(
     };
 
     // Add optional fields if they exist
-    if (toolCalls?.length) apiMessage.toolCalls = toolCalls;
-    if (toolResults?.length) apiMessage.toolResults = toolResults;
+    if (toolCalls?.length) {
+      apiMessage.toolCalls = toolCalls;
+    }
     if (thinking) apiMessage.thinking = thinking;
     if (citations?.length) apiMessage.citations = citations as Static<typeof CitationSchema>[];
     if (webSearchResults?.length)
@@ -274,7 +285,7 @@ function extractUserContent(sdkMessage: SDKUserMessage): {
  */
 function extractAssistantContent(sdkMessage: SDKAssistantMessage): {
   content: string;
-  toolCalls?: Array<{ id?: string; name: string; input: unknown }>;
+  toolCalls?: Array<{ id?: string; name: string; input: unknown; result?: { content: string; isError?: boolean } }>;
   thinking?: string;
   citations?: Array<{ type: string; citedText: string; [key: string]: unknown }>;
   webSearchResults?: Array<{
@@ -292,7 +303,7 @@ function extractAssistantContent(sdkMessage: SDKAssistantMessage): {
   const contentBlocks = sdkMessage.message.content;
   const result: {
     content: string;
-    toolCalls?: Array<{ id?: string; name: string; input: unknown }>;
+    toolCalls?: Array<{ id?: string; name: string; input: unknown; result?: { content: string; isError?: boolean } }>;
     thinking?: string;
     citations?: Array<{ type: string; citedText: string; [key: string]: unknown }>;
     webSearchResults?: Array<{
