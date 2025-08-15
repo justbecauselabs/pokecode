@@ -14,11 +14,13 @@ export const ToolResultCard: React.FC<ToolResultCardProps> = ({ toolResults, tim
     // Create natural language summaries like in the screenshot
     const lines = content.split('\n');
     const totalLines = lines.length;
-    
+
     // Try to detect the type of content and create appropriate summaries
     if (content.includes('- /') || content.includes('├──') || content.includes('└──')) {
       // File listing
-      const fileCount = lines.filter(line => line.trim() && !line.includes('├──') && !line.includes('└──')).length;
+      const fileCount = lines.filter(
+        (line) => line.trim() && !line.includes('├──') && !line.includes('└──')
+      ).length;
       return `Listed ${fileCount} paths (tap to expand)`;
     } else if (content.includes('.tsx') || content.includes('.ts') || content.includes('.js')) {
       // File search results
@@ -52,13 +54,8 @@ export const ToolResultCard: React.FC<ToolResultCardProps> = ({ toolResults, tim
 
           {/* Full result content (expandable) */}
           {expandedIndex === index && (
-            <ScrollView
-              className="mt-2 mb-2 max-h-80"
-              showsVerticalScrollIndicator={true}
-            >
-              <Text className="text-sm font-mono text-muted-foreground">
-                {toolResult.content}
-              </Text>
+            <ScrollView className="mt-2 mb-2 max-h-80" showsVerticalScrollIndicator={true}>
+              <Text className="text-sm font-mono text-muted-foreground">{toolResult.content}</Text>
             </ScrollView>
           )}
         </View>

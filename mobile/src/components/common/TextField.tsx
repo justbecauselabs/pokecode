@@ -75,7 +75,9 @@ export const TextField = forwardRef<TextInput, TextFieldProps>((props, ref) => {
     onBlur?.(e);
   };
 
-  const handleContentSizeChange = (e: Parameters<NonNullable<TextInputProps['onContentSizeChange']>>[0]) => {
+  const handleContentSizeChange = (
+    e: Parameters<NonNullable<TextInputProps['onContentSizeChange']>>[0]
+  ) => {
     if (textInputProps.multiline) {
       setHeight(e.nativeEvent.contentSize.height);
     }

@@ -47,6 +47,8 @@ function errorLog(message: string, data?: unknown): void {
   console.error(`[${timestamp}] ${message}`, data || '');
 }
 
+// Agent types (until generated types include these)
+import type { Agent, GetAgentsQuery, GetAgentsResponse } from '../types/agents';
 // Import generated types for type safety
 import type {
   GetApiClaudeCodeRepositoriesResponse,
@@ -66,9 +68,6 @@ import type {
   PostApiClaudeCodeSessionsData,
   PostApiClaudeCodeSessionsResponse,
 } from './generated';
-
-// Agent types (until generated types include these)
-import type { Agent, GetAgentsResponse, GetAgentsQuery } from '../types/agents';
 
 interface RequestOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';

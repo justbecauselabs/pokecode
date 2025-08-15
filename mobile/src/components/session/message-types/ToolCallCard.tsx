@@ -18,7 +18,7 @@ export const ToolCallCard: React.FC<ToolCallCardProps> = ({ toolCalls, timestamp
         return `${key}: ${valueStr}`;
       })
       .join(', ');
-    
+
     return `${toolCall.name}(${params})`;
   };
 

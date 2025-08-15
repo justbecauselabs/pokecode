@@ -12,9 +12,9 @@ export default function PillsPlaygroundScreen() {
 
   const handlePillPress = (pillId: string) => {
     if (selectedPills.includes(pillId)) {
-      setSelectedPills(prev => prev.filter(id => id !== pillId));
+      setSelectedPills((prev) => prev.filter((id) => id !== pillId));
     } else {
-      setSelectedPills(prev => [...prev, pillId]);
+      setSelectedPills((prev) => [...prev, pillId]);
     }
   };
 
@@ -44,13 +44,19 @@ export default function PillsPlaygroundScreen() {
               <View>
                 <Text className="text-sm text-muted-foreground font-mono mb-2">Default</Text>
                 <View className="flex-row flex-wrap gap-2">
-                  <Pill variant="default" onPress={() => Alert.alert('Pill Pressed', 'Default pill')}>
+                  <Pill
+                    variant="default"
+                    onPress={() => Alert.alert('Pill Pressed', 'Default pill')}
+                  >
                     Default
                   </Pill>
                   <Pill variant="default" onPress={() => Alert.alert('Pill Pressed', 'Tag pill')}>
                     Tag
                   </Pill>
-                  <Pill variant="default" onPress={() => Alert.alert('Pill Pressed', 'Category pill')}>
+                  <Pill
+                    variant="default"
+                    onPress={() => Alert.alert('Pill Pressed', 'Category pill')}
+                  >
                     Category
                   </Pill>
                 </View>
@@ -62,10 +68,16 @@ export default function PillsPlaygroundScreen() {
                   <Pill variant="active" onPress={() => Alert.alert('Pill Pressed', 'Active pill')}>
                     Active
                   </Pill>
-                  <Pill variant="active" onPress={() => Alert.alert('Pill Pressed', 'Selected pill')}>
+                  <Pill
+                    variant="active"
+                    onPress={() => Alert.alert('Pill Pressed', 'Selected pill')}
+                  >
                     Selected
                   </Pill>
-                  <Pill variant="active" onPress={() => Alert.alert('Pill Pressed', 'Enabled pill')}>
+                  <Pill
+                    variant="active"
+                    onPress={() => Alert.alert('Pill Pressed', 'Enabled pill')}
+                  >
                     Enabled
                   </Pill>
                 </View>
@@ -74,13 +86,22 @@ export default function PillsPlaygroundScreen() {
               <View>
                 <Text className="text-sm text-muted-foreground font-mono mb-2">Secondary</Text>
                 <View className="flex-row flex-wrap gap-2">
-                  <Pill variant="secondary" onPress={() => Alert.alert('Pill Pressed', 'Secondary pill')}>
+                  <Pill
+                    variant="secondary"
+                    onPress={() => Alert.alert('Pill Pressed', 'Secondary pill')}
+                  >
                     Secondary
                   </Pill>
-                  <Pill variant="secondary" onPress={() => Alert.alert('Pill Pressed', 'Subtle pill')}>
+                  <Pill
+                    variant="secondary"
+                    onPress={() => Alert.alert('Pill Pressed', 'Subtle pill')}
+                  >
                     Subtle
                   </Pill>
-                  <Pill variant="secondary" onPress={() => Alert.alert('Pill Pressed', 'Muted pill')}>
+                  <Pill
+                    variant="secondary"
+                    onPress={() => Alert.alert('Pill Pressed', 'Muted pill')}
+                  >
                     Muted
                   </Pill>
                 </View>
@@ -97,18 +118,32 @@ export default function PillsPlaygroundScreen() {
               <View>
                 <Text className="text-sm text-muted-foreground font-mono mb-2">Small</Text>
                 <View className="flex-row flex-wrap gap-2">
-                  <Pill size="small" variant="default">Small Default</Pill>
-                  <Pill size="small" variant="active">Small Active</Pill>
-                  <Pill size="small" variant="secondary">Small Secondary</Pill>
+                  <Pill size="small" variant="default">
+                    Small Default
+                  </Pill>
+                  <Pill size="small" variant="active">
+                    Small Active
+                  </Pill>
+                  <Pill size="small" variant="secondary">
+                    Small Secondary
+                  </Pill>
                 </View>
               </View>
 
               <View>
-                <Text className="text-sm text-muted-foreground font-mono mb-2">Medium (Default)</Text>
+                <Text className="text-sm text-muted-foreground font-mono mb-2">
+                  Medium (Default)
+                </Text>
                 <View className="flex-row flex-wrap gap-2">
-                  <Pill size="medium" variant="default">Medium Default</Pill>
-                  <Pill size="medium" variant="active">Medium Active</Pill>
-                  <Pill size="medium" variant="secondary">Medium Secondary</Pill>
+                  <Pill size="medium" variant="default">
+                    Medium Default
+                  </Pill>
+                  <Pill size="medium" variant="active">
+                    Medium Active
+                  </Pill>
+                  <Pill size="medium" variant="secondary">
+                    Medium Secondary
+                  </Pill>
                 </View>
               </View>
             </View>
@@ -122,7 +157,7 @@ export default function PillsPlaygroundScreen() {
             <Text className="text-sm text-muted-foreground font-mono mb-3">
               Tap pills to toggle selection state (simulating filters)
             </Text>
-            
+
             <View className="space-y-4">
               <View>
                 <Text className="text-sm font-medium text-card-foreground mb-2">Categories</Text>
@@ -156,7 +191,9 @@ export default function PillsPlaygroundScreen() {
               </View>
 
               <View>
-                <Text className="text-sm font-medium text-card-foreground mb-2">Priority Levels</Text>
+                <Text className="text-sm font-medium text-card-foreground mb-2">
+                  Priority Levels
+                </Text>
                 <View className="flex-row flex-wrap gap-2">
                   {['Low', 'Medium', 'High', 'Critical'].map((priority) => (
                     <Pill
@@ -177,10 +214,7 @@ export default function PillsPlaygroundScreen() {
                 <Text className="text-sm text-muted-foreground font-mono">
                   {selectedPills.join(', ')}
                 </Text>
-                <Pressable 
-                  onPress={() => setSelectedPills([])}
-                  className="mt-2 self-start"
-                >
+                <Pressable onPress={() => setSelectedPills([])} className="mt-2 self-start">
                   <Text className="text-xs text-primary font-mono">Clear all</Text>
                 </Pressable>
               </View>
@@ -193,10 +227,18 @@ export default function PillsPlaygroundScreen() {
               Disabled State
             </Text>
             <View className="flex-row flex-wrap gap-2">
-              <Pill disabled variant="default">Disabled Default</Pill>
-              <Pill disabled variant="active">Disabled Active</Pill>
-              <Pill disabled variant="secondary">Disabled Secondary</Pill>
-              <Pill disabled size="small" variant="default">Small Disabled</Pill>
+              <Pill disabled variant="default">
+                Disabled Default
+              </Pill>
+              <Pill disabled variant="active">
+                Disabled Active
+              </Pill>
+              <Pill disabled variant="secondary">
+                Disabled Secondary
+              </Pill>
+              <Pill disabled size="small" variant="default">
+                Small Disabled
+              </Pill>
             </View>
           </View>
 
@@ -215,7 +257,7 @@ export default function PillsPlaygroundScreen() {
                   <Text className="text-white text-sm font-medium">Deploy</Text>
                 </View>
               </Pill>
-              
+
               <Pill variant="active" onPress={() => Alert.alert('Custom', 'Count pill')}>
                 <View className="flex-row items-center">
                   <Text className="text-white text-sm font-medium mr-1">Messages</Text>

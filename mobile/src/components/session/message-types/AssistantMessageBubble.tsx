@@ -11,8 +11,9 @@ interface AssistantMessageBubbleProps {
 }
 
 export const AssistantMessageBubble: React.FC<AssistantMessageBubbleProps> = ({ message }) => {
-  const hasTools = (message.toolCalls && message.toolCalls.length > 0) || 
-                   (message.toolResults && message.toolResults.length > 0);
+  const hasTools =
+    (message.toolCalls && message.toolCalls.length > 0) ||
+    (message.toolResults && message.toolResults.length > 0);
 
   return (
     <View className="mb-2">

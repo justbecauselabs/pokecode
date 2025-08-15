@@ -1,12 +1,12 @@
 import { useRouter } from 'expo-router';
-import { ScrollView, Text, View, Pressable } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from '@/components/common';
 import {
-  UserMessageBubble,
   AssistantMessageBubble,
+  ThinkingCard,
   ToolCallCard,
   ToolResultCard,
-  ThinkingCard,
+  UserMessageBubble,
 } from '@/components/session/message-types';
 import type { Message } from '@/types/messages';
 
@@ -41,17 +41,20 @@ export default function MessageTypesPlaygroundScreen() {
 
   const sampleAssistantMessage: Message = {
     id: 'assistant-1',
-    content: "I'll help you create a React component for displaying user profiles. Let me start by examining your current components structure.",
+    content:
+      "I'll help you create a React component for displaying user profiles. Let me start by examining your current components structure.",
     role: 'assistant',
     timestamp: new Date().toISOString(),
   };
 
   const sampleAssistantWithThinking: Message = {
     id: 'assistant-2',
-    content: "Based on the existing Profile component, I can help you enhance it with additional features like avatar display, contact information, and responsive design.",
+    content:
+      'Based on the existing Profile component, I can help you enhance it with additional features like avatar display, contact information, and responsive design.',
     role: 'assistant',
     timestamp: new Date().toISOString(),
-    thinking: "The user is asking for help with a React component for user profiles. I should first understand what they currently have by reading any existing profile-related components, then provide a comprehensive solution that includes:\n\n1. Avatar display\n2. User information layout\n3. Responsive design\n4. Accessibility features\n5. TypeScript types\n\nLet me start by reading their current codebase to understand the existing structure.",
+    thinking:
+      'The user is asking for help with a React component for user profiles. I should first understand what they currently have by reading any existing profile-related components, then provide a comprehensive solution that includes:\n\n1. Avatar display\n2. User information layout\n3. Responsive design\n4. Accessibility features\n5. TypeScript types\n\nLet me start by reading their current codebase to understand the existing structure.',
   };
 
   const sampleAssistantWithTools: Message = {
@@ -73,13 +76,15 @@ export default function MessageTypesPlaygroundScreen() {
       {
         name: 'Read',
         input: { file_path: '/src/components/Profile.tsx' },
-        output: 'export const Profile = ({ user }) => {\n  return (\n    <div className="profile">\n      <h2>{user.name}</h2>\n      <p>{user.email}</p>\n    </div>\n  );\n};',
+        output:
+          'export const Profile = ({ user }) => {\n  return (\n    <div className="profile">\n      <h2>{user.name}</h2>\n      <p>{user.email}</p>\n    </div>\n  );\n};',
         success: true,
       },
       {
         name: 'Glob',
         input: { pattern: '**/*profile*', path: '/src' },
-        output: 'Found 3 files:\n- /src/components/Profile.tsx\n- /src/types/profile.ts\n- /src/pages/ProfilePage.tsx',
+        output:
+          'Found 3 files:\n- /src/components/Profile.tsx\n- /src/types/profile.ts\n- /src/pages/ProfilePage.tsx',
         success: true,
       },
     ],
@@ -91,14 +96,16 @@ export default function MessageTypesPlaygroundScreen() {
       input: {
         file_path: '/src/components/Profile.tsx',
         old_string: 'export const Profile = ({ user }) => {',
-        new_string: 'interface User {\n  id: string;\n  name: string;\n  email: string;\n  avatar?: string;\n}\n\nexport const Profile = ({ user }: { user: User }) => {',
+        new_string:
+          'interface User {\n  id: string;\n  name: string;\n  email: string;\n  avatar?: string;\n}\n\nexport const Profile = ({ user }: { user: User }) => {',
       },
     },
     {
       name: 'Write',
       input: {
         file_path: '/src/components/Avatar.tsx',
-        content: 'import React from "react";\n\ninterface AvatarProps {\n  src?: string;\n  alt: string;\n  size?: "small" | "medium" | "large";\n}\n\nexport const Avatar: React.FC<AvatarProps> = ({ src, alt, size = "medium" }) => {\n  // Avatar component implementation\n};',
+        content:
+          'import React from "react";\n\ninterface AvatarProps {\n  src?: string;\n  alt: string;\n  size?: "small" | "medium" | "large";\n}\n\nexport const Avatar: React.FC<AvatarProps> = ({ src, alt, size = "medium" }) => {\n  // Avatar component implementation\n};',
       },
     },
   ];
@@ -109,7 +116,9 @@ export default function MessageTypesPlaygroundScreen() {
         {/* Header */}
         <View className="flex-row items-center justify-between p-4 border-b border-border">
           <View className="flex-1">
-            <Text className="text-2xl font-bold text-foreground mb-1">Message Types Playground</Text>
+            <Text className="text-2xl font-bold text-foreground mb-1">
+              Message Types Playground
+            </Text>
             <Text className="text-muted-foreground">Chat message components showcase</Text>
           </View>
           <Pressable onPress={() => router.back()} className="ml-4 p-2 rounded-lg bg-muted">
@@ -123,7 +132,7 @@ export default function MessageTypesPlaygroundScreen() {
             <Text className="text-lg font-semibold text-card-foreground mb-4 font-mono">
               User Messages
             </Text>
-            
+
             <View className="space-y-4">
               <View>
                 <Text className="text-sm text-muted-foreground font-mono mb-2">
@@ -150,7 +159,7 @@ export default function MessageTypesPlaygroundScreen() {
             <Text className="text-lg font-semibold text-card-foreground mb-4 font-mono">
               Assistant Messages
             </Text>
-            
+
             <View className="space-y-4">
               <View>
                 <Text className="text-sm text-muted-foreground font-mono mb-2">
@@ -186,7 +195,7 @@ export default function MessageTypesPlaygroundScreen() {
             <Text className="text-lg font-semibold text-card-foreground mb-4 font-mono">
               Individual Message Components
             </Text>
-            
+
             <View className="space-y-4">
               <View>
                 <Text className="text-sm text-muted-foreground font-mono mb-2">
@@ -205,10 +214,7 @@ export default function MessageTypesPlaygroundScreen() {
                   Tool Call Card (Expandable)
                 </Text>
                 <View className="bg-muted p-3 rounded border">
-                  <ToolCallCard
-                    toolCalls={sampleToolCalls}
-                    timestamp={new Date().toISOString()}
-                  />
+                  <ToolCallCard toolCalls={sampleToolCalls} timestamp={new Date().toISOString()} />
                 </View>
               </View>
 
@@ -222,7 +228,8 @@ export default function MessageTypesPlaygroundScreen() {
                       {
                         name: 'Read',
                         input: { file_path: '/src/components/Profile.tsx' },
-                        output: 'export const Profile = ({ user }) => {\n  return (\n    <div className="profile">\n      <img src={user.avatar} alt={user.name} />\n      <h2>{user.name}</h2>\n      <p>{user.email}</p>\n      <p>{user.bio}</p>\n    </div>\n  );\n};',
+                        output:
+                          'export const Profile = ({ user }) => {\n  return (\n    <div className="profile">\n      <img src={user.avatar} alt={user.name} />\n      <h2>{user.name}</h2>\n      <p>{user.email}</p>\n      <p>{user.bio}</p>\n    </div>\n  );\n};',
                         success: true,
                       },
                     ]}
@@ -241,7 +248,7 @@ export default function MessageTypesPlaygroundScreen() {
             <Text className="text-sm text-muted-foreground font-mono mb-4">
               This shows how messages typically flow in a conversation
             </Text>
-            
+
             <View className="space-y-3">
               {/* User starts conversation */}
               <View className="bg-muted/50 p-3 rounded border-l-4 border-l-blue-500">
@@ -266,9 +273,8 @@ export default function MessageTypesPlaygroundScreen() {
 
             <View className="mt-4 p-3 bg-background border border-border rounded">
               <Text className="text-xs text-muted-foreground font-mono">
-                • Blue border: User messages{'\n'}
-                • Green border: Assistant messages{'\n'}
-                • Components are fully interactive (tap to expand thinking/tool details)
+                • Blue border: User messages{'\n'}• Green border: Assistant messages{'\n'}•
+                Components are fully interactive (tap to expand thinking/tool details)
               </Text>
             </View>
           </View>

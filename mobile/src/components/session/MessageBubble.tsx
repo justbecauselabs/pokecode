@@ -1,13 +1,22 @@
 import type React from 'react';
-import { Text, View } from 'react-native';
+import { Text, Pressable, View } from 'react-native';
 import type { Message, ToolCall, ToolResult, WebSearchResult } from '../../types/messages';
 import { MarkdownRenderer } from './MarkdownRenderer';
 
 interface MessageBubbleProps {
   message: Message;
+  onLongPress?: () => void;
 }
 
-export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
+export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, onLongPress }) => {
+  const handleLongPress = () => {
+    console.log('MessageBubble onLongPress called for message:', message.id);
+    onLongPress?.();
+  };
+
+  const handlePress = () => {
+    console.log('MessageBubble onPress called for message:', message.id);
+  };
   const isUser = message.role === 'user';
   const isSystem = message.role === 'system';
   const isResult = message.messageType === 'result';
@@ -23,7 +32,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
   // Render tool calls
   const renderToolCalls = (toolCalls: ToolCall[]) => {
     if (!toolCalls?.length) return null;
-    
+
     return (
       <View>
         {toolCalls.map((toolCall, index) => (
@@ -42,7 +51,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
                   } catch {
                     return String(toolCall.input);
                   }
-                })()}
+                })() as string}
               </Text>
             )}
           </View>
@@ -54,15 +63,32 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
   // Render tool results
   const renderToolResults = (toolResults: ToolResult[]) => {
     if (!toolResults?.length) return null;
-    
+
     return (
       <View>
         {toolResults.map((result, index) => (
-          <View key={result.toolUseId || index}>
-            <Text>
-              {result.isError ? 'Tool Error' : 'Tool Result'}
+          <View
+            key={result.toolUseId || index}
+            className={`p-3 rounded-lg ${
+              result.isError ? 'bg-red-50 dark:bg-red-950' : 'bg-green-50 dark:bg-green-950'
+            }`}
+          >
+            <Text
+              className={`text-sm font-mono font-medium mb-1 ${
+                result.isError
+                  ? 'text-red-700 dark:text-red-300'
+                  : 'text-green-700 dark:text-green-300'
+              }`}
+            >
+              {result.isError ? '❌ Tool Error' : '✅ Tool Result'}
             </Text>
-            <Text>
+            <Text
+              className={`text-xs font-mono ${
+                result.isError
+                  ? 'text-red-600 dark:text-red-400'
+                  : 'text-green-600 dark:text-green-400'
+              }`}
+            >
               {result.content}
             </Text>
           </View>
@@ -74,7 +100,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
   // Render thinking content
   const renderThinking = (thinking: string) => {
     if (!thinking?.trim()) return null;
-    
+
     return (
       <View>
         <Text>
@@ -90,7 +116,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
   // Render web search results
   const renderWebSearchResults = (webSearchResults: WebSearchResult[]) => {
     if (!webSearchResults?.length) return null;
-    
+
     return (
       <View>
         <Text>
@@ -118,7 +144,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
   // Render system metadata
   const renderSystemMetadata = () => {
     if (!isSystem || !message.systemMetadata) return null;
-    
+
     const metadata = message.systemMetadata;
     return (
       <View>
@@ -149,7 +175,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
   // Render result metadata
   const renderResultMetadata = () => {
     if (!isResult || !message.resultMetadata) return null;
-    
+
     const metadata = message.resultMetadata;
     return (
       <View>
@@ -188,10 +214,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
 
       <View>
         {message.content.trim() ? (
-          <MarkdownRenderer 
-            content={message.content} 
-            citations={message.citations}
-          />
+          <MarkdownRenderer content={message.content} citations={message.citations} />
         ) : (
           <Text>[No content]</Text>
         )}
@@ -224,6 +247,6 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
           </Text>
         </View>
       )}
-    </View>
+    </Pressable>
   );
 };

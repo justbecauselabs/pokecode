@@ -231,15 +231,62 @@ describe('MessageService', () => {
 
       expect(messages).toHaveLength(3);
 
-      // All should be user messages with tool results
+      // All should be user messages with tool results converted to tool calls
       expect(messages[0].role).toBe('user');
-      expect(messages[0].toolResults).toBeDefined();
-      expect(messages[0].toolResults?.[0].content).toBe('{"name": "test"}');
-      expect(messages[0].toolResults?.[0].toolUseId).toBe(toolUseId);
+      expect(messages[0].toolCalls).toBeDefined();
+      expect(messages[0].toolCalls?.[0].result?.content).toBe('{"name": "test"}');
+      expect(messages[0].toolCalls?.[0].id).toBe(toolUseId);
 
-      expect(messages[1].toolResults?.[0].content).toBe('total 8\ndrwxr-xr-x 2 user user 4096');
-      expect(messages[2].toolResults?.[0].content).toBe('File not found');
-      expect(messages[2].toolResults?.[0].isError).toBe(true);
+      expect(messages[1].toolCalls?.[0].result?.content).toBe('total 8\ndrwxr-xr-x 2 user user 4096');
+      expect(messages[2].toolCalls?.[0].result?.content).toBe('File not found');
+      expect(messages[2].toolCalls?.[0].result?.isError).toBe(true);
+    });
+
+    test('combines tool calls with their results', async () => {
+      // Create assistant message with tool calls
+      const toolCallMsg = assistantMessages.fileRead('test.txt', testSessionId);
+      
+      // Insert the tool call message
+      await db.insert(sessionMessages).values({
+        sessionId: testSessionId,
+        type: 'assistant',
+        contentData: JSON.stringify(toolCallMsg),
+      });
+      
+      // Get the tool ID from the message
+      const toolUseId = (toolCallMsg.message.content[1] as any).id;
+      
+      // Create a user message with the corresponding tool result
+      const resultMsg = toolResultMessages.fileResult(
+        toolUseId,
+        'File contents here',
+        testSessionId,
+      );
+      
+      // Insert the result message
+      await db.insert(sessionMessages).values({
+        sessionId: testSessionId,
+        type: 'user',
+        contentData: JSON.stringify(resultMsg),
+      });
+      
+      // Test that the service properly combines them
+      const messages = await messageService.getMessages(testSessionId);
+      
+      expect(messages).toHaveLength(2);
+      
+      // The assistant message should have the tool call
+      expect(messages[0].role).toBe('assistant');
+      expect(messages[0].toolCalls).toBeDefined();
+      expect(messages[0].toolCalls?.[0].name).toBe('read');
+      expect(messages[0].toolCalls?.[0].id).toBe(toolUseId);
+      
+      // The user message should have tool results as tool calls with results
+      expect(messages[1].role).toBe('user');
+      expect(messages[1].toolCalls).toBeDefined();
+      expect(messages[1].toolCalls?.[0].id).toBe(toolUseId);
+      expect(messages[1].toolCalls?.[0].result?.content).toBe('File contents here');
+      expect(messages[1].toolCalls?.[0].name).toBe('tool_result')
     });
 
     test('handles result messages', async () => {

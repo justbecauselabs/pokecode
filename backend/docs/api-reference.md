@@ -216,6 +216,34 @@ Deletes a session.
 
 ## Message Management
 
+### Message Schema
+
+The message schema includes tool calls and their results:
+
+```typescript
+interface ToolCall {
+  id?: string;           // Tool use ID for linking
+  name: string;          // Tool name (e.g., "Read", "Edit")
+  input: any;            // Tool input parameters
+  result?: {             // Optional result (when tool has been executed)
+    content: string;     // Result content
+    isError?: boolean;   // Whether the result is an error
+  };
+}
+
+interface Message {
+  id: string;
+  sessionId: string;
+  role: "user" | "assistant" | "system";
+  content: string;
+  timestamp: string;
+  toolCalls?: ToolCall[];     // Tool calls with optional results
+  // ... other fields
+}
+```
+
+**Note:** Tool results are included directly in the `toolCalls` array as an optional `result` field on each tool call. When a tool has been executed, its result will be present in the `result` field.
+
 ### Send Message
 ```http
 POST /api/claude-code/sessions/:sessionId/messages
@@ -275,16 +303,15 @@ Retrieves all messages in a session.
           "timestamp": "2024-01-01T00:00:01.000Z",
           "toolCalls": [
             {
+              "id": "tool-123",
               "name": "Read",
               "input": {
                 "file_path": "/path/to/file.js"
+              },
+              "result": {
+                "content": "File content...",
+                "isError": false
               }
-            }
-          ],
-          "toolResults": [
-            {
-              "tool_use_id": "tool-123",
-              "content": "File content..."
             }
           ],
           "thinking": "Let me analyze this function..."

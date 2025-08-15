@@ -146,13 +146,16 @@ export default function FontsPlaygroundScreen() {
                 Subsection (text-lg font-medium)
               </Text>
               <Text className="text-base text-foreground">
-                Body text (text-base) - This is the default text size used throughout the app for regular content. It provides good readability across different device sizes.
+                Body text (text-base) - This is the default text size used throughout the app for
+                regular content. It provides good readability across different device sizes.
               </Text>
               <Text className="text-sm text-muted-foreground">
-                Small text (text-sm text-muted-foreground) - Used for captions, secondary information, and metadata.
+                Small text (text-sm text-muted-foreground) - Used for captions, secondary
+                information, and metadata.
               </Text>
               <Text className="text-xs text-muted-foreground font-mono">
-                Fine print (text-xs font-mono) - Used for technical details, timestamps, and debug info.
+                Fine print (text-xs font-mono) - Used for technical details, timestamps, and debug
+                info.
               </Text>
             </View>
           </View>

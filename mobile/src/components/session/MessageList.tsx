@@ -10,12 +10,14 @@ interface MessageListProps {
   messages: Message[];
   isLoading: boolean;
   error: Error | null;
+  onMessageLongPress?: (message: Message) => void;
 }
 
 export const MessageList: React.FC<MessageListProps> = ({
   messages,
   isLoading,
   error,
+  onMessageLongPress,
 }) => {
   const flashListRef = useRef<FlashList<Message>>(null);
   const isInitialLoad = useRef(true);
@@ -35,7 +37,7 @@ export const MessageList: React.FC<MessageListProps> = ({
   }, [messages]);
 
   const renderMessage = ({ item }: { item: Message }) => (
-    <EnhancedMessageBubble message={item} />
+    <EnhancedMessageBubble message={item} onLongPress={() => onMessageLongPress?.(item)} />
   );
 
   const renderEmpty = () => (

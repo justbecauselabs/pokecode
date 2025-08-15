@@ -1,21 +1,53 @@
+import { AntDesign, Feather, Ionicons, MaterialIcons } from '@expo/vector-icons';
 import type React from 'react';
-import { Switch, Text, TouchableOpacity, View, type TouchableOpacityProps } from 'react-native';
-import { MaterialIcons, Ionicons, Feather, AntDesign } from '@expo/vector-icons';
+import { Switch, Text, TouchableOpacity, type TouchableOpacityProps, View } from 'react-native';
 import { cn } from '@/utils/cn';
 
 type IconLibrary = 'MaterialIcons' | 'Ionicons' | 'Feather' | 'AntDesign';
 
-type LeadingElement = 
-  | { type: 'icon'; library: IconLibrary; name: string; size?: number; color?: string; className?: string }
+type LeadingElement =
+  | {
+      type: 'icon';
+      library: IconLibrary;
+      name: string;
+      size?: number;
+      color?: string;
+      className?: string;
+    }
   | { type: 'text'; content: string; className?: string }
-  | { type: 'avatar'; initials: string; backgroundColor?: string; textColor?: string; size?: 'small' | 'medium' | 'large' }
-  | { type: 'badge'; count: number; backgroundColor?: string; textColor?: string; maxCount?: number };
+  | {
+      type: 'avatar';
+      initials: string;
+      backgroundColor?: string;
+      textColor?: string;
+      size?: 'small' | 'medium' | 'large';
+    }
+  | {
+      type: 'badge';
+      count: number;
+      backgroundColor?: string;
+      textColor?: string;
+      maxCount?: number;
+    };
 
-type TrailingElement = 
+type TrailingElement =
   | { type: 'text'; content: string; className?: string }
   | { type: 'switch'; value: boolean; onValueChange: (value: boolean) => void; disabled?: boolean }
-  | { type: 'icon'; library: IconLibrary; name: string; size?: number; color?: string; className?: string }
-  | { type: 'badge'; count: number; backgroundColor?: string; textColor?: string; maxCount?: number }
+  | {
+      type: 'icon';
+      library: IconLibrary;
+      name: string;
+      size?: number;
+      color?: string;
+      className?: string;
+    }
+  | {
+      type: 'badge';
+      count: number;
+      backgroundColor?: string;
+      textColor?: string;
+      maxCount?: number;
+    }
   | { type: 'progress'; value: number; max?: number; showPercentage?: boolean; className?: string }
   | { type: 'status'; variant: 'online' | 'offline' | 'away' | 'busy'; label?: string };
 
@@ -46,7 +78,7 @@ export const Row: React.FC<RowProps> = ({
   ...props
 }) => {
   const Component = props.onPress ? TouchableOpacity : View;
-  
+
   const baseClasses = 'flex-row items-center py-3 px-4';
   const rowClasses = cn(baseClasses, className);
 
@@ -58,10 +90,16 @@ export const Row: React.FC<RowProps> = ({
   const subtitleClasses = cn(defaultSubtitleClasses, subtitleClassName);
   const caretClasses = cn(defaultCaretClasses, caretClassName);
 
-  const renderIcon = (params: { library: IconLibrary; name: string; size?: number; color?: string; className?: string }) => {
+  const renderIcon = (params: {
+    library: IconLibrary;
+    name: string;
+    size?: number;
+    color?: string;
+    className?: string;
+  }) => {
     const { library, name, size = 20, color = '#666', className } = params;
     const iconProps = { name: name as any, size, color };
-    
+
     const iconElement = (() => {
       switch (library) {
         case 'MaterialIcons':
@@ -80,9 +118,14 @@ export const Row: React.FC<RowProps> = ({
     return className ? <View className={className}>{iconElement}</View> : iconElement;
   };
 
-  const renderAvatar = (params: { initials: string; backgroundColor?: string; textColor?: string; size?: 'small' | 'medium' | 'large' }) => {
+  const renderAvatar = (params: {
+    initials: string;
+    backgroundColor?: string;
+    textColor?: string;
+    size?: 'small' | 'medium' | 'large';
+  }) => {
     const { initials, backgroundColor = '#528bff', textColor = 'white', size = 'medium' } = params;
-    
+
     const sizeClasses = {
       small: 'w-6 h-6 text-xs',
       medium: 'w-8 h-8 text-sm',
@@ -90,7 +133,7 @@ export const Row: React.FC<RowProps> = ({
     };
 
     return (
-      <View 
+      <View
         className={cn('rounded-full flex items-center justify-center', sizeClasses[size])}
         style={{ backgroundColor }}
       >
@@ -101,12 +144,17 @@ export const Row: React.FC<RowProps> = ({
     );
   };
 
-  const renderBadge = (params: { count: number; backgroundColor?: string; textColor?: string; maxCount?: number }) => {
+  const renderBadge = (params: {
+    count: number;
+    backgroundColor?: string;
+    textColor?: string;
+    maxCount?: number;
+  }) => {
     const { count, backgroundColor = '#ff4444', textColor = 'white', maxCount = 99 } = params;
     const displayCount = count > maxCount ? `${maxCount}+` : count.toString();
 
     return (
-      <View 
+      <View
         className="rounded-full px-1.5 py-0.5 min-w-[18px] items-center justify-center"
         style={{ backgroundColor }}
       >
@@ -144,7 +192,12 @@ export const Row: React.FC<RowProps> = ({
     );
   };
 
-  const renderProgress = (params: { value: number; max?: number; showPercentage?: boolean; className?: string }) => {
+  const renderProgress = (params: {
+    value: number;
+    max?: number;
+    showPercentage?: boolean;
+    className?: string;
+  }) => {
     const { value, max = 100, showPercentage = true, className } = params;
     const percentage = Math.min(Math.max((value / max) * 100, 0), 100);
 
@@ -156,18 +209,18 @@ export const Row: React.FC<RowProps> = ({
           </Text>
         )}
         <View className="w-16 h-1 bg-muted rounded-full">
-          <View 
-            className="h-full bg-primary rounded-full" 
-            style={{ width: `${percentage}%` }}
-          />
+          <View className="h-full bg-primary rounded-full" style={{ width: `${percentage}%` }} />
         </View>
       </View>
     );
   };
 
-  const renderStatus = (params: { variant: 'online' | 'offline' | 'away' | 'busy'; label?: string }) => {
+  const renderStatus = (params: {
+    variant: 'online' | 'offline' | 'away' | 'busy';
+    label?: string;
+  }) => {
     const { variant, label } = params;
-    
+
     const statusConfig = {
       online: { color: '#22c55e', label: label || 'Online' },
       offline: { color: '#94a3b8', label: label || 'Offline' },
@@ -179,13 +232,8 @@ export const Row: React.FC<RowProps> = ({
 
     return (
       <View className="flex-row items-center">
-        <View 
-          className="w-2 h-2 rounded-full mr-2" 
-          style={{ backgroundColor: config.color }}
-        />
-        <Text className="text-xs text-muted-foreground font-mono">
-          {config.label}
-        </Text>
+        <View className="w-2 h-2 rounded-full mr-2" style={{ backgroundColor: config.color }} />
+        <Text className="text-xs text-muted-foreground font-mono">{config.label}</Text>
       </View>
     );
   };
@@ -238,13 +286,9 @@ export const Row: React.FC<RowProps> = ({
   };
 
   return (
-    <Component
-      className={rowClasses}
-      activeOpacity={props.onPress ? 0.7 : 1}
-      {...props}
-    >
+    <Component className={rowClasses} activeOpacity={props.onPress ? 0.7 : 1} {...props}>
       {renderLeading()}
-      
+
       <View className={cn('flex-1', contentClassName)}>
         <Text className={titleClasses}>{title}</Text>
         {subtitle && <Text className={subtitleClasses}>{subtitle}</Text>}
