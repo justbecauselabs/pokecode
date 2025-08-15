@@ -25,14 +25,14 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
     if (!toolCalls?.length) return null;
     
     return (
-      <View className="mt-3 space-y-2">
+      <View>
         {toolCalls.map((toolCall, index) => (
-          <View key={toolCall.id || index} className="bg-blue-50 dark:bg-blue-950 p-3 rounded-lg">
-            <Text className="text-sm font-mono font-medium text-blue-700 dark:text-blue-300 mb-1">
-              🔧 {toolCall.name}
+          <View key={toolCall.id || index}>
+            <Text>
+              Tool: {toolCall.name}
             </Text>
             {toolCall.input && (
-              <Text className="text-xs font-mono text-blue-600 dark:text-blue-400">
+              <Text>
                 {(() => {
                   if (typeof toolCall.input === 'string') {
                     return toolCall.input;
@@ -56,28 +56,13 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
     if (!toolResults?.length) return null;
     
     return (
-      <View className="mt-3 space-y-2">
+      <View>
         {toolResults.map((result, index) => (
-          <View 
-            key={result.toolUseId || index} 
-            className={`p-3 rounded-lg ${
-              result.isError 
-                ? 'bg-red-50 dark:bg-red-950' 
-                : 'bg-green-50 dark:bg-green-950'
-            }`}
-          >
-            <Text className={`text-sm font-mono font-medium mb-1 ${
-              result.isError 
-                ? 'text-red-700 dark:text-red-300' 
-                : 'text-green-700 dark:text-green-300'
-            }`}>
-              {result.isError ? '❌ Tool Error' : '✅ Tool Result'}
+          <View key={result.toolUseId || index}>
+            <Text>
+              {result.isError ? 'Tool Error' : 'Tool Result'}
             </Text>
-            <Text className={`text-xs font-mono ${
-              result.isError 
-                ? 'text-red-600 dark:text-red-400' 
-                : 'text-green-600 dark:text-green-400'
-            }`}>
+            <Text>
               {result.content}
             </Text>
           </View>
@@ -91,11 +76,11 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
     if (!thinking?.trim()) return null;
     
     return (
-      <View className="mt-3 bg-purple-50 dark:bg-purple-950 p-3 rounded-lg">
-        <Text className="text-sm font-mono font-medium text-purple-700 dark:text-purple-300 mb-1">
-          💭 Thinking
+      <View>
+        <Text>
+          Thinking
         </Text>
-        <Text className="text-xs font-mono text-purple-600 dark:text-purple-400">
+        <Text>
           {thinking}
         </Text>
       </View>
@@ -107,20 +92,20 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
     if (!webSearchResults?.length) return null;
     
     return (
-      <View className="mt-3 space-y-2">
-        <Text className="text-sm font-mono font-medium text-orange-700 dark:text-orange-300">
-          🔍 Web Search Results
+      <View>
+        <Text>
+          Web Search Results
         </Text>
         {webSearchResults.map((result, index) => (
-          <View key={index} className="bg-orange-50 dark:bg-orange-950 p-3 rounded-lg">
-            <Text className="text-sm font-mono font-medium text-orange-700 dark:text-orange-300 mb-1">
+          <View key={index}>
+            <Text>
               {result.title}
             </Text>
-            <Text className="text-xs font-mono text-orange-600 dark:text-orange-400 mb-1">
+            <Text>
               {result.url}
             </Text>
             {result.pageAge && (
-              <Text className="text-xs font-mono text-orange-500 dark:text-orange-500">
+              <Text>
                 Age: {result.pageAge}
               </Text>
             )}
@@ -136,23 +121,23 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
     
     const metadata = message.systemMetadata;
     return (
-      <View className="mt-3 bg-gray-50 dark:bg-gray-950 p-3 rounded-lg">
-        <Text className="text-sm font-mono font-medium text-gray-700 dark:text-gray-300 mb-2">
-          ⚙️ System Info
+      <View>
+        <Text>
+          System Info
         </Text>
-        <View className="space-y-1">
+        <View>
           {metadata.cwd && (
-            <Text className="text-xs font-mono text-gray-600 dark:text-gray-400">
+            <Text>
               Directory: {metadata.cwd}
             </Text>
           )}
           {metadata.model && (
-            <Text className="text-xs font-mono text-gray-600 dark:text-gray-400">
+            <Text>
               Model: {metadata.model}
             </Text>
           )}
           {metadata.tools && metadata.tools.length > 0 && (
-            <Text className="text-xs font-mono text-gray-600 dark:text-gray-400">
+            <Text>
               Tools: {metadata.tools.join(', ')}
             </Text>
           )}
@@ -167,26 +152,26 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
     
     const metadata = message.resultMetadata;
     return (
-      <View className="mt-3 bg-blue-50 dark:bg-blue-950 p-3 rounded-lg">
-        <Text className="text-sm font-mono font-medium text-blue-700 dark:text-blue-300 mb-2">
-          📊 Result Summary
+      <View>
+        <Text>
+          Result Summary
         </Text>
-        <View className="space-y-1">
-          <Text className="text-xs font-mono text-blue-600 dark:text-blue-400">
+        <View>
+          <Text>
             Status: {metadata.subtype}
           </Text>
           {metadata.durationMs && (
-            <Text className="text-xs font-mono text-blue-600 dark:text-blue-400">
+            <Text>
               Duration: {metadata.durationMs}ms
             </Text>
           )}
           {metadata.numTurns && (
-            <Text className="text-xs font-mono text-blue-600 dark:text-blue-400">
+            <Text>
               Turns: {metadata.numTurns}
             </Text>
           )}
           {metadata.totalCostUsd && (
-            <Text className="text-xs font-mono text-blue-600 dark:text-blue-400">
+            <Text>
               Cost: ${metadata.totalCostUsd.toFixed(4)}
             </Text>
           )}
@@ -196,8 +181,8 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
   };
 
   return (
-    <View className="mb-6">
-      <Text className="text-sm font-mono font-medium mb-2 text-foreground">
+    <View>
+      <Text>
         {getRoleDisplayName()}
       </Text>
 
@@ -208,7 +193,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
             citations={message.citations}
           />
         ) : (
-          <Text className="text-muted-foreground italic font-mono">[No content]</Text>
+          <Text>[No content]</Text>
         )}
       </View>
 
@@ -232,8 +217,8 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
 
       {/* Usage information for assistant messages */}
       {message.usage && !isUser && !isSystem && (
-        <View className="mt-3 bg-gray-50 dark:bg-gray-950 p-2 rounded">
-          <Text className="text-xs font-mono text-gray-600 dark:text-gray-400">
+        <View>
+          <Text>
             Tokens: {message.usage.inputTokens}↑ {message.usage.outputTokens}↓
             {message.usage.serviceTier && ` • ${String(message.usage.serviceTier)}`}
           </Text>
