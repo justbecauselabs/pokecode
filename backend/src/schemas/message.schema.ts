@@ -15,18 +15,16 @@ export const MessageTypeSchema = Type.Union([
   Type.Literal('result'),
 ]);
 
-// Tool call schema for nested messages
+// Combined tool call schema with optional result
 export const ToolCallSchema = Type.Object({
   id: Type.Optional(Type.String()), // Tool use ID for linking
   name: Type.String(),
   input: Type.Any(),
-});
-
-// Tool result schema for nested messages
-export const ToolResultSchema = Type.Object({
-  toolUseId: Type.String(),
-  content: Type.String(),
-  isError: Type.Optional(Type.Boolean()),
+  // Optional result field - when present, indicates the tool has been executed
+  result: Type.Optional(Type.Object({
+    content: Type.String(),
+    isError: Type.Optional(Type.Boolean()),
+  })),
 });
 
 // Citation schema for text with citations
@@ -123,8 +121,7 @@ export const ApiMessageSchema = Type.Object({
   timestamp: Type.String(),
 
   // Content-specific fields
-  toolCalls: Type.Optional(Type.Array(ToolCallSchema)),
-  toolResults: Type.Optional(Type.Array(ToolResultSchema)),
+  toolCalls: Type.Optional(Type.Array(ToolCallSchema))
   thinking: Type.Optional(Type.String()),
   citations: Type.Optional(Type.Array(CitationSchema)),
   webSearchResults: Type.Optional(Type.Array(WebSearchResultSchema)),
