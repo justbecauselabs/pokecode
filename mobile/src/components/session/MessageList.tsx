@@ -24,11 +24,18 @@ export const MessageList: React.FC<MessageListProps> = ({
 
   useEffect(() => {
     if (messages.length > 0 && flashListRef.current) {
-      // Small delay to ensure content is rendered
-      setTimeout(() => {
-        flashListRef.current?.scrollToIndex({ index: 0, animated: !isInitialLoad.current });
-        isInitialLoad.current = false;
-      }, 100);
+      // Get current scroll offset directly from the ref
+      const scrollMetrics = flashListRef.current.getScrollableNode()?.getScrollMetrics?.();
+      const currentOffset = scrollMetrics?.offset?.y || 0;
+      
+      // Only auto-scroll if user is near the bottom (scroll offset <= 50)
+      if (currentOffset <= 50) {
+        // Small delay to ensure content is rendered
+        setTimeout(() => {
+          flashListRef.current?.scrollToIndex({ index: 0, animated: !isInitialLoad.current });
+          isInitialLoad.current = false;
+        }, 100);
+      }
     }
   }, [messages.length]);
 
@@ -60,7 +67,7 @@ export const MessageList: React.FC<MessageListProps> = ({
   }
 
   return (
-    <View>
+    <View className="flex-1">
       {isLoading && messages.length === 0 ? (
         <LoadingState />
       ) : (
@@ -71,6 +78,7 @@ export const MessageList: React.FC<MessageListProps> = ({
           keyExtractor={(item) => item.id}
           inverted={true}
           ListEmptyComponent={renderEmpty}
+          estimatedItemSize={100}
         />
       )}
     </View>

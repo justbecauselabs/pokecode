@@ -1,10 +1,13 @@
-import type { SDKMessage, SDKUserMessage } from '@anthropic-ai/claude-code';
 import { and, asc, desc, eq, isNotNull, sql } from 'drizzle-orm';
 import { db } from '../db';
 import { sessions } from '../db/schema-sqlite';
-import { type SessionMessage, sessionMessages } from '../db/schema-sqlite/session_messages';
-import type { ApiMessage } from '../schemas/message.schema';
-import { extractTokenCount, sdkToApiMessage } from '../utils/message-parser';
+import { sessionMessages } from '../db/schema-sqlite/session_messages';
+import type {
+  ClaudeCodeSDKMessage,
+  ClaudeCodeSDKUserMessage,
+  Message,
+} from '../schemas/message.schema';
+import { extractTokenCount, sdkToMessage } from '../utils/message-parser';
 import { sqliteQueueService } from './queue-sqlite.service';
 
 export class MessageService {
@@ -35,9 +38,9 @@ export class MessageService {
   }
 
   /**
-   * Get all messages as a flat list with tool data embedded
+   * Get all messages as Message wrapper objects
    */
-  async getMessages(sessionId: string): Promise<ApiMessage[]> {
+  async getMessages(sessionId: string): Promise<Message[]> {
     // Get DB messages in chronological order
     const dbMessages = await db
       .select()
@@ -45,7 +48,7 @@ export class MessageService {
       .where(eq(sessionMessages.sessionId, sessionId))
       .orderBy(asc(sessionMessages.createdAt));
 
-    const results: ApiMessage[] = [];
+    const results: Message[] = [];
 
     for (const dbMsg of dbMessages) {
       if (!dbMsg.contentData) {
@@ -55,11 +58,9 @@ export class MessageService {
       try {
         const rawData = JSON.parse(dbMsg.contentData);
 
-        // Check if it's a valid SDK message
-        const apiMessage = sdkToApiMessage(rawData, dbMsg.id, dbMsg.sessionId, dbMsg.createdAt);
-        if (apiMessage) {
-          results.push(apiMessage);
-        }
+        // Convert to Message wrapper format
+        const message = sdkToMessage(rawData, dbMsg.id);
+        results.push(message);
       } catch (error) {
         // Skip malformed messages
         console.warn(`Failed to parse message ${dbMsg.id}:`, error);
@@ -72,7 +73,10 @@ export class MessageService {
   /**
    * Update message with content data (stored as JSON string)
    */
-  async updateMessageContentData(messageId: string, contentData: SDKMessage): Promise<void> {
+  async updateMessageContentData(
+    messageId: string,
+    contentData: ClaudeCodeSDKMessage,
+  ): Promise<void> {
     await db
       .update(sessionMessages)
       .set({
@@ -86,7 +90,7 @@ export class MessageService {
    */
   async saveSDKMessage(
     sessionId: string,
-    sdkMessage: SDKMessage,
+    sdkMessage: ClaudeCodeSDKMessage,
     claudeCodeSessionId?: string,
   ): Promise<void> {
     // Determine message type for database - map all to user/assistant for compatibility
@@ -127,7 +131,7 @@ export class MessageService {
    */
   async saveUserMessage(sessionId: string, content: string): Promise<void> {
     // Create user message in Claude SDK format
-    const userMessage: SDKUserMessage = {
+    const userMessage: ClaudeCodeSDKUserMessage = {
       type: 'user',
       message: {
         role: 'user',
@@ -174,6 +178,39 @@ export class MessageService {
       .limit(1);
 
     return result[0]?.claudeCodeSessionId ?? null;
+  }
+
+  /**
+   * Get raw messages directly from database with parsed content_data
+   */
+  async getRawMessages(sessionId: string): Promise<
+    Array<{
+      id: string;
+      sessionId: string;
+      type: string;
+      contentData: ClaudeCodeSDKMessage; // Parsed JSON object
+      claudeCodeSessionId: string | null;
+      tokenCount: number | null;
+      createdAt: Date;
+    }>
+  > {
+    // Get DB messages in chronological order
+    const dbMessages = await db
+      .select()
+      .from(sessionMessages)
+      .where(eq(sessionMessages.sessionId, sessionId))
+      .orderBy(asc(sessionMessages.createdAt));
+
+    // Parse content_data from JSON string to object
+    return dbMessages.map((msg) => ({
+      id: msg.id,
+      sessionId: msg.sessionId,
+      type: msg.type,
+      contentData: msg.contentData ? JSON.parse(msg.contentData) : null,
+      claudeCodeSessionId: msg.claudeCodeSessionId,
+      tokenCount: msg.tokenCount,
+      createdAt: msg.createdAt,
+    }));
   }
 }
 

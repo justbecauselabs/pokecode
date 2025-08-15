@@ -1,13 +1,14 @@
 import type React from 'react';
 import { useState } from 'react';
 import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import type { ToolCall } from '@/types/messages';
 
 interface ToolResultCardProps {
-  toolResults: Array<{ tool_use_id: string; content: string }>;
+  toolCalls: ToolCall[];
   timestamp: string;
 }
 
-export const ToolResultCard: React.FC<ToolResultCardProps> = ({ toolResults, timestamp }) => {
+export const ToolResultCard: React.FC<ToolResultCardProps> = ({ toolCalls, timestamp }) => {
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
 
   const formatResultSummary = (content: string) => {
@@ -37,10 +38,13 @@ export const ToolResultCard: React.FC<ToolResultCardProps> = ({ toolResults, tim
     }
   };
 
+  // Filter tool calls that have results
+  const toolCallsWithResults = toolCalls.filter(toolCall => toolCall.result);
+
   return (
     <View>
-      {toolResults.map((toolResult, index) => (
-        <View key={`${toolResult.tool_use_id}-${index}`} className="mb-1">
+      {toolCallsWithResults.map((toolCall, index) => (
+        <View key={`${toolCall.id}-${index}`} className="mb-1">
           <TouchableOpacity
             className="active:opacity-70"
             onPress={() => setExpandedIndex(expandedIndex === index ? null : index)}
@@ -48,14 +52,14 @@ export const ToolResultCard: React.FC<ToolResultCardProps> = ({ toolResults, tim
             accessibilityLabel="Toggle tool result details"
           >
             <Text className="text-base font-mono text-foreground">
-              {formatResultSummary(toolResult.content)}
+              {formatResultSummary(toolCall.result!.content)}
             </Text>
           </TouchableOpacity>
 
           {/* Full result content (expandable) */}
           {expandedIndex === index && (
             <ScrollView className="mt-2 mb-2 max-h-80" showsVerticalScrollIndicator={true}>
-              <Text className="text-sm font-mono text-muted-foreground">{toolResult.content}</Text>
+              <Text className="text-sm font-mono text-muted-foreground">{toolCall.result!.content}</Text>
             </ScrollView>
           )}
         </View>

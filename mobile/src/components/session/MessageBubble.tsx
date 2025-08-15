@@ -1,6 +1,7 @@
 import type React from 'react';
 import { Text, Pressable, View } from 'react-native';
-import type { Message, ToolCall, ToolResult, WebSearchResult } from '../../types/messages';
+import type { Message } from '../../types/messages';
+import { extractMessageText, getMessageRole } from '../../types/messages';
 import { MarkdownRenderer } from './MarkdownRenderer';
 
 interface MessageBubbleProps {
@@ -9,6 +10,18 @@ interface MessageBubbleProps {
 }
 
 export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, onLongPress }) => {
+  // Guard clause to handle undefined messages
+  if (!message || !message.data) {
+    console.warn('MessageBubble received undefined message or message.data');
+    return (
+      <View className="m-2 p-3 bg-red-100 dark:bg-red-900 rounded-lg">
+        <Text className="text-red-600 dark:text-red-400 italic">
+          [Error: Invalid message data]
+        </Text>
+      </View>
+    );
+  }
+
   const handleLongPress = () => {
     console.log('MessageBubble onLongPress called for message:', message.id);
     onLongPress?.();
@@ -17,31 +30,30 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, onLongPre
   const handlePress = () => {
     console.log('MessageBubble onPress called for message:', message.id);
   };
-  const isUser = message.role === 'user';
-  const isSystem = message.role === 'system';
-  const isResult = message.messageType === 'result';
+  
+  const role = getMessageRole(message);
+  const isUser = role === 'user';
+  const isSystem = role === 'system';
+  const isAssistant = role === 'assistant';
+  const isResult = role === 'result';
+  const sdkMessage = message.data as any;
 
-  // Get role display name
-  const getRoleDisplayName = () => {
-    if (isUser) return 'User';
-    if (isSystem) return 'System';
-    if (isResult) return 'Result';
-    return 'Assistant';
-  };
-
-  // Render tool calls
-  const renderToolCalls = (toolCalls: ToolCall[]) => {
-    if (!toolCalls?.length) return null;
+  // Render tool calls from assistant messages
+  const renderToolCalls = () => {
+    if (!isAssistant || !sdkMessage.message?.content) return null;
+    
+    const toolUseBlocks = sdkMessage.message.content.filter((block: any) => block.type === 'tool_use');
+    if (toolUseBlocks.length === 0) return null;
 
     return (
-      <View>
-        {toolCalls.map((toolCall, index) => (
-          <View key={toolCall.id || index}>
-            <Text>
-              Tool: {toolCall.name}
+      <View className="mt-2">
+        {toolUseBlocks.map((toolCall: any, index: number) => (
+          <View key={toolCall.id || index} className="p-3 bg-blue-50 dark:bg-blue-950 rounded-lg mb-2">
+            <Text className="text-sm font-mono font-medium text-blue-700 dark:text-blue-300 mb-1">
+              🔧 Tool: {toolCall.name}
             </Text>
             {toolCall.input && (
-              <Text>
+              <Text className="text-xs font-mono text-blue-600 dark:text-blue-400">
                 {(() => {
                   if (typeof toolCall.input === 'string') {
                     return toolCall.input;
@@ -51,7 +63,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, onLongPre
                   } catch {
                     return String(toolCall.input);
                   }
-                })() as string}
+                })()}
               </Text>
             )}
           </View>
@@ -60,31 +72,34 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, onLongPre
     );
   };
 
-  // Render tool results
-  const renderToolResults = (toolResults: ToolResult[]) => {
-    if (!toolResults?.length) return null;
+  // Render tool results from user messages  
+  const renderToolResults = () => {
+    if (!isUser || !sdkMessage.message?.content || !Array.isArray(sdkMessage.message.content)) return null;
+    
+    const toolResultBlocks = sdkMessage.message.content.filter((block: any) => block.type === 'tool_result');
+    if (toolResultBlocks.length === 0) return null;
 
     return (
-      <View>
-        {toolResults.map((result, index) => (
+      <View className="mt-2">
+        {toolResultBlocks.map((result: any, index: number) => (
           <View
-            key={result.toolUseId || index}
-            className={`p-3 rounded-lg ${
-              result.isError ? 'bg-red-50 dark:bg-red-950' : 'bg-green-50 dark:bg-green-950'
+            key={result.tool_use_id || index}
+            className={`p-3 rounded-lg mb-2 ${
+              result.is_error ? 'bg-red-50 dark:bg-red-950' : 'bg-green-50 dark:bg-green-950'
             }`}
           >
             <Text
               className={`text-sm font-mono font-medium mb-1 ${
-                result.isError
+                result.is_error
                   ? 'text-red-700 dark:text-red-300'
                   : 'text-green-700 dark:text-green-300'
               }`}
             >
-              {result.isError ? '❌ Tool Error' : '✅ Tool Result'}
+              {result.is_error ? '❌ Tool Error' : '✅ Tool Result'}
             </Text>
             <Text
               className={`text-xs font-mono ${
-                result.isError
+                result.is_error
                   ? 'text-red-600 dark:text-red-400'
                   : 'text-green-600 dark:text-green-400'
               }`}
@@ -97,44 +112,65 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, onLongPre
     );
   };
 
-  // Render thinking content
-  const renderThinking = (thinking: string) => {
-    if (!thinking?.trim()) return null;
+  // Render thinking content from assistant messages
+  const renderThinking = () => {
+    if (!isAssistant || !sdkMessage.message?.content) return null;
+    
+    const thinkingBlocks = sdkMessage.message.content.filter((block: any) => 
+      block.type === 'thinking' || block.type === 'redacted_thinking'
+    );
+    if (thinkingBlocks.length === 0) return null;
 
     return (
-      <View>
-        <Text>
-          Thinking
-        </Text>
-        <Text>
-          {thinking}
-        </Text>
+      <View className="mt-2">
+        {thinkingBlocks.map((block: any, index: number) => (
+          <View key={index} className="p-3 bg-purple-50 dark:bg-purple-950 rounded-lg mb-2">
+            <Text className="text-sm font-mono font-medium text-purple-700 dark:text-purple-300 mb-1">
+              🤔 {block.type === 'redacted_thinking' ? 'Thinking (Redacted)' : 'Thinking'}
+            </Text>
+            <Text className="text-xs font-mono text-purple-600 dark:text-purple-400">
+              {block.type === 'redacted_thinking' 
+                ? '[Thinking content redacted]' 
+                : (block.thinking || block.data || '[No thinking content]')
+              }
+            </Text>
+          </View>
+        ))}
       </View>
     );
   };
 
-  // Render web search results
-  const renderWebSearchResults = (webSearchResults: WebSearchResult[]) => {
-    if (!webSearchResults?.length) return null;
+  // Render web search results from assistant messages
+  const renderWebSearchResults = () => {
+    if (!isAssistant || !sdkMessage.message?.content) return null;
+    
+    const webSearchBlocks = sdkMessage.message.content.filter((block: any) => 
+      block.type === 'web_search_tool_result'
+    );
+    if (webSearchBlocks.length === 0) return null;
 
     return (
-      <View>
-        <Text>
-          Web Search Results
-        </Text>
-        {webSearchResults.map((result, index) => (
-          <View key={index}>
-            <Text>
-              {result.title}
+      <View className="mt-2">
+        {webSearchBlocks.map((block: any, index: number) => (
+          <View key={index} className="p-3 bg-orange-50 dark:bg-orange-950 rounded-lg mb-2">
+            <Text className="text-sm font-mono font-medium text-orange-700 dark:text-orange-300 mb-2">
+              🔍 Web Search Results
             </Text>
-            <Text>
-              {result.url}
-            </Text>
-            {result.pageAge && (
-              <Text>
-                Age: {result.pageAge}
-              </Text>
-            )}
+            {Array.isArray(block.content) && block.content.map((result: any, resultIndex: number) => (
+              <View key={resultIndex} className="mb-2 p-2 bg-white dark:bg-gray-800 rounded">
+                <Text className="text-sm font-medium text-orange-800 dark:text-orange-200 mb-1">
+                  {result.title || 'Untitled'}
+                </Text>
+                <Text className="text-xs text-orange-600 dark:text-orange-400 mb-1">
+                  {result.url}
+                </Text>
+                {result.page_age && (
+                  <Text className="text-xs text-orange-500 dark:text-orange-500">
+                    Age: {result.page_age}
+                  </Text>
+                )}
+              </View>
+            ))}
           </View>
         ))}
       </View>
@@ -143,28 +179,32 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, onLongPre
 
   // Render system metadata
   const renderSystemMetadata = () => {
-    if (!isSystem || !message.systemMetadata) return null;
+    if (!isSystem) return null;
 
-    const metadata = message.systemMetadata;
     return (
-      <View>
-        <Text>
-          System Info
+      <View className="mt-2 p-3 bg-gray-50 dark:bg-gray-950 rounded-lg">
+        <Text className="text-sm font-mono font-medium text-gray-700 dark:text-gray-300 mb-2">
+          ⚙️ System Info
         </Text>
-        <View>
-          {metadata.cwd && (
-            <Text>
-              Directory: {metadata.cwd}
+        <View className="space-y-1">
+          {sdkMessage.cwd && (
+            <Text className="text-xs text-gray-600 dark:text-gray-400">
+              Directory: {sdkMessage.cwd}
             </Text>
           )}
-          {metadata.model && (
-            <Text>
-              Model: {metadata.model}
+          {sdkMessage.model && (
+            <Text className="text-xs text-gray-600 dark:text-gray-400">
+              Model: {sdkMessage.model}
             </Text>
           )}
-          {metadata.tools && metadata.tools.length > 0 && (
-            <Text>
-              Tools: {metadata.tools.join(', ')}
+          {sdkMessage.tools && sdkMessage.tools.length > 0 && (
+            <Text className="text-xs text-gray-600 dark:text-gray-400">
+              Tools: {sdkMessage.tools.slice(0, 5).join(', ')}{sdkMessage.tools.length > 5 ? `... (+${sdkMessage.tools.length - 5} more)` : ''}
+            </Text>
+          )}
+          {sdkMessage.apiKeySource && (
+            <Text className="text-xs text-gray-600 dark:text-gray-400">
+              API Key: {sdkMessage.apiKeySource}
             </Text>
           )}
         </View>
@@ -174,31 +214,35 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, onLongPre
 
   // Render result metadata
   const renderResultMetadata = () => {
-    if (!isResult || !message.resultMetadata) return null;
+    if (!isResult) return null;
 
-    const metadata = message.resultMetadata;
     return (
-      <View>
-        <Text>
-          Result Summary
+      <View className="mt-2 p-3 bg-emerald-50 dark:bg-emerald-950 rounded-lg">
+        <Text className="text-sm font-mono font-medium text-emerald-700 dark:text-emerald-300 mb-2">
+          📊 Result Summary
         </Text>
-        <View>
-          <Text>
-            Status: {metadata.subtype}
+        <View className="space-y-1">
+          <Text className="text-xs text-emerald-600 dark:text-emerald-400">
+            Status: {sdkMessage.subtype || 'completed'}
           </Text>
-          {metadata.durationMs && (
-            <Text>
-              Duration: {metadata.durationMs}ms
+          {sdkMessage.duration_ms && (
+            <Text className="text-xs text-emerald-600 dark:text-emerald-400">
+              Duration: {sdkMessage.duration_ms}ms
             </Text>
           )}
-          {metadata.numTurns && (
-            <Text>
-              Turns: {metadata.numTurns}
+          {sdkMessage.num_turns && (
+            <Text className="text-xs text-emerald-600 dark:text-emerald-400">
+              Turns: {sdkMessage.num_turns}
             </Text>
           )}
-          {metadata.totalCostUsd && (
-            <Text>
-              Cost: ${metadata.totalCostUsd.toFixed(4)}
+          {sdkMessage.total_cost_usd && (
+            <Text className="text-xs text-emerald-600 dark:text-emerald-400">
+              Cost: ${sdkMessage.total_cost_usd.toFixed(4)}
+            </Text>
+          )}
+          {sdkMessage.is_error !== undefined && (
+            <Text className={`text-xs ${sdkMessage.is_error ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
+              {sdkMessage.is_error ? '❌ Error' : '✅ Success'}
             </Text>
           )}
         </View>
@@ -206,31 +250,49 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, onLongPre
     );
   };
 
-  return (
-    <View>
-      <Text>
-        {getRoleDisplayName()}
-      </Text>
+  const messageText = extractMessageText(message);
 
-      <View>
-        {message.content.trim() ? (
-          <MarkdownRenderer content={message.content} citations={message.citations} />
+  return (
+    <Pressable 
+      onPress={handlePress} 
+      onLongPress={handleLongPress}
+      className={`m-2 p-3 rounded-lg ${
+        isUser 
+          ? 'bg-blue-500 ml-12 self-end' 
+          : isSystem 
+          ? 'bg-gray-200 dark:bg-gray-800' 
+          : isResult
+          ? 'bg-emerald-100 dark:bg-emerald-900'
+          : 'bg-gray-100 dark:bg-gray-900 mr-12'
+      }`}
+    >
+      {/* Main message content */}
+      <View className={isUser ? 'text-white' : 'text-gray-900 dark:text-gray-100'}>
+        {messageText.trim() ? (
+          <MarkdownRenderer 
+            content={messageText} 
+            citations={isAssistant ? (sdkMessage.message?.content || [])
+              .filter((block: any) => block.type === 'text' && block.citations)
+              .flatMap((block: any) => block.citations || []) : []} 
+          />
         ) : (
-          <Text>[No content]</Text>
+          <Text className={`italic ${isUser ? 'text-white' : 'text-gray-500'}`}>
+            [No content]
+          </Text>
         )}
       </View>
 
       {/* Render thinking content */}
-      {message.thinking && renderThinking(message.thinking)}
+      {renderThinking()}
 
       {/* Render tool calls */}
-      {message.toolCalls && renderToolCalls(message.toolCalls)}
+      {renderToolCalls()}
 
       {/* Render tool results */}
-      {message.toolResults && renderToolResults(message.toolResults)}
+      {renderToolResults()}
 
       {/* Render web search results */}
-      {message.webSearchResults && renderWebSearchResults(message.webSearchResults)}
+      {renderWebSearchResults()}
 
       {/* Render system metadata */}
       {renderSystemMetadata()}
@@ -239,11 +301,11 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, onLongPre
       {renderResultMetadata()}
 
       {/* Usage information for assistant messages */}
-      {message.usage && !isUser && !isSystem && (
-        <View>
-          <Text>
-            Tokens: {message.usage.inputTokens}↑ {message.usage.outputTokens}↓
-            {message.usage.serviceTier && ` • ${String(message.usage.serviceTier)}`}
+      {isAssistant && sdkMessage.message?.usage && (
+        <View className="mt-2 p-2 bg-gray-100 dark:bg-gray-800 rounded">
+          <Text className="text-xs text-gray-600 dark:text-gray-400">
+            Tokens: {sdkMessage.message.usage.input_tokens}↑ {sdkMessage.message.usage.output_tokens}↓
+            {sdkMessage.message.usage.service_tier && ` • ${sdkMessage.message.usage.service_tier}`}
           </Text>
         </View>
       )}

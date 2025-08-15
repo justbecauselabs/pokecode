@@ -9,7 +9,8 @@ interface UserMessageBubbleProps {
 }
 
 export const UserMessageBubble: React.FC<UserMessageBubbleProps> = ({ message }) => {
-  const hasTools = message.toolResults && message.toolResults.length > 0;
+  const toolCallsWithResults = message.toolCalls?.filter(toolCall => toolCall.result) || [];
+  const hasTools = toolCallsWithResults.length > 0;
 
   return (
     <View className="mb-2">
@@ -21,9 +22,9 @@ export const UserMessageBubble: React.FC<UserMessageBubbleProps> = ({ message })
       )}
 
       {/* Tool results */}
-      {message.toolResults && message.toolResults.length > 0 && (
+      {hasTools && (
         <View className="mb-1">
-          <ToolResultCard toolResults={message.toolResults} timestamp={message.timestamp} />
+          <ToolResultCard toolCalls={toolCallsWithResults} timestamp={message.timestamp} />
         </View>
       )}
     </View>

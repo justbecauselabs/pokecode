@@ -1,8 +1,6 @@
 import { defineConfig } from 'drizzle-kit';
 import { isTest } from '@/utils/env';
 
-console.log('isTest', isTest());
-
 export default defineConfig({
   dialect: 'sqlite',
   schema: './src/db/schema-sqlite/*',

@@ -4,20 +4,18 @@
  */
 
 import type {
-  NonNullableUsage,
-  SDKAssistantMessage,
-  SDKResultMessage,
-  SDKSystemMessage,
-  SDKUserMessage,
-} from '@anthropic-ai/claude-code';
-import { Usage } from '@anthropic-ai/sdk/resources/messages.mjs';
+  ClaudeCodeSDKAssistantMessage,
+  ClaudeCodeSDKResultMessage,
+  ClaudeCodeSDKSystemMessage,
+  ClaudeCodeSDKUserMessage,
+} from '../../src/schemas/message.schema';
 
-export const usage: NonNullableUsage = {
+export const usage = {
   input_tokens: 1500,
   output_tokens: 800,
   cache_creation_input_tokens: 0,
   cache_read_input_tokens: 0,
-  service_tier: 'standard',
+  service_tier: 'standard' as const,
   cache_creation: {
     ephemeral_1h_input_tokens: 0,
     ephemeral_5m_input_tokens: 0,
@@ -31,7 +29,7 @@ export const usage: NonNullableUsage = {
  * System initialization messages
  */
 export const systemMessages = {
-  init: (sessionId = 'test-session-1'): SDKSystemMessage => ({
+  init: (sessionId = 'test-session-1'): ClaudeCodeSDKSystemMessage => ({
     type: 'system',
     subtype: 'init',
     session_id: sessionId,
@@ -44,7 +42,7 @@ export const systemMessages = {
     slash_commands: [],
   }),
 
-  withCustomTools: (tools: string[], sessionId = 'test-session-1'): SDKSystemMessage => ({
+  withCustomTools: (tools: string[], sessionId = 'test-session-1'): ClaudeCodeSDKSystemMessage => ({
     type: 'system',
     subtype: 'init',
     session_id: sessionId,
@@ -62,7 +60,7 @@ export const systemMessages = {
  * User message fixtures
  */
 export const userMessages = {
-  simple: (text: string, sessionId = 'test-session-1'): SDKUserMessage => ({
+  simple: (text: string, sessionId = 'test-session-1'): ClaudeCodeSDKUserMessage => ({
     type: 'user',
     session_id: sessionId,
     parent_tool_use_id: null,
@@ -74,9 +72,9 @@ export const userMessages = {
 
   withToolResults: (
     text: string,
-    toolResults: any[],
+    toolResults: Array<{ type: string; [key: string]: unknown }>,
     sessionId = 'test-session-1',
-  ): SDKUserMessage => ({
+  ): ClaudeCodeSDKUserMessage => ({
     type: 'user',
     session_id: sessionId,
     parent_tool_use_id: null,
@@ -92,7 +90,7 @@ export const userMessages = {
     },
   }),
 
-  codeReview: (sessionId = 'test-session-1'): SDKUserMessage => ({
+  codeReview: (sessionId = 'test-session-1'): ClaudeCodeSDKUserMessage => ({
     type: 'user',
     session_id: sessionId,
     parent_tool_use_id: null,
@@ -102,7 +100,7 @@ export const userMessages = {
     },
   }),
 
-  fileAnalysis: (fileName: string, sessionId = 'test-session-1'): SDKUserMessage => ({
+  fileAnalysis: (fileName: string, sessionId = 'test-session-1'): ClaudeCodeSDKUserMessage => ({
     type: 'user',
     session_id: sessionId,
     parent_tool_use_id: null,
@@ -112,7 +110,7 @@ export const userMessages = {
     },
   }),
 
-  bugFix: (description: string, sessionId = 'test-session-1'): SDKUserMessage => ({
+  bugFix: (description: string, sessionId = 'test-session-1'): ClaudeCodeSDKUserMessage => ({
     type: 'user',
     session_id: sessionId,
     parent_tool_use_id: null,
@@ -127,7 +125,7 @@ export const userMessages = {
  * Assistant message fixtures
  */
 export const assistantMessages = {
-  textResponse: (text: string, sessionId = 'test-session-1'): SDKAssistantMessage => ({
+  textResponse: (text: string, sessionId = 'test-session-1'): ClaudeCodeSDKAssistantMessage => ({
     type: 'assistant',
     session_id: sessionId,
     parent_tool_use_id: null,
@@ -153,7 +151,7 @@ export const assistantMessages = {
     text: string,
     thinking: string,
     sessionId = 'test-session-1',
-  ): SDKAssistantMessage => ({
+  ): ClaudeCodeSDKAssistantMessage => ({
     type: 'assistant',
     session_id: sessionId,
     parent_tool_use_id: null,
@@ -183,9 +181,9 @@ export const assistantMessages = {
   withToolUse: (
     text: string,
     toolName: string,
-    input: Record<string, any>,
+    input: Record<string, unknown>,
     sessionId = 'test-session-1',
-  ): SDKAssistantMessage => ({
+  ): ClaudeCodeSDKAssistantMessage => ({
     type: 'assistant',
     session_id: sessionId,
     parent_tool_use_id: null,
@@ -213,7 +211,7 @@ export const assistantMessages = {
     },
   }),
 
-  fileRead: (fileName: string, sessionId = 'test-session-1'): SDKAssistantMessage =>
+  fileRead: (fileName: string, sessionId = 'test-session-1'): ClaudeCodeSDKAssistantMessage =>
     assistantMessages.withToolUse(
       `I'll read the ${fileName} file to understand its contents.`,
       'read',
@@ -225,7 +223,7 @@ export const assistantMessages = {
     fileName: string,
     content: string,
     sessionId = 'test-session-1',
-  ): SDKAssistantMessage =>
+  ): ClaudeCodeSDKAssistantMessage =>
     assistantMessages.withToolUse(
       `I'll create the ${fileName} file with the requested content.`,
       'write',
@@ -237,7 +235,7 @@ export const assistantMessages = {
     command: string,
     description: string,
     sessionId = 'test-session-1',
-  ): SDKAssistantMessage =>
+  ): ClaudeCodeSDKAssistantMessage =>
     assistantMessages.withToolUse(description, 'bash', { command }, sessionId),
 
   withCitations: (
@@ -252,7 +250,7 @@ export const assistantMessages = {
       end_char_index?: number;
     }>,
     sessionId = 'test-session-1',
-  ): SDKAssistantMessage => ({
+  ): ClaudeCodeSDKAssistantMessage => ({
     type: 'assistant',
     session_id: sessionId,
     parent_tool_use_id: null,
@@ -314,7 +312,7 @@ export const assistantMessages = {
       page_age?: string;
     }>,
     sessionId = 'test-session-1',
-  ): SDKAssistantMessage => ({
+  ): ClaudeCodeSDKAssistantMessage => ({
     type: 'assistant',
     session_id: sessionId,
     parent_tool_use_id: null,
@@ -351,7 +349,7 @@ export const assistantMessages = {
     text: string,
     data: string,
     sessionId = 'test-session-1',
-  ): SDKAssistantMessage => ({
+  ): ClaudeCodeSDKAssistantMessage => ({
     type: 'assistant',
     session_id: sessionId,
     parent_tool_use_id: null,
@@ -387,7 +385,7 @@ export const toolResultMessages = {
     output: string,
     isError = false,
     sessionId = 'test-session-1',
-  ): SDKUserMessage => ({
+  ): ClaudeCodeSDKUserMessage => ({
     type: 'user',
     session_id: sessionId,
     parent_tool_use_id: toolUseId,
@@ -408,7 +406,7 @@ export const toolResultMessages = {
     toolUseId: string,
     fileContent: string,
     sessionId = 'test-session-1',
-  ): SDKUserMessage => ({
+  ): ClaudeCodeSDKUserMessage => ({
     type: 'user',
     session_id: sessionId,
     parent_tool_use_id: toolUseId,
@@ -429,7 +427,7 @@ export const toolResultMessages = {
     toolUseId: string,
     errorMessage: string,
     sessionId = 'test-session-1',
-  ): SDKUserMessage => ({
+  ): ClaudeCodeSDKUserMessage => ({
     type: 'user',
     session_id: sessionId,
     parent_tool_use_id: toolUseId,
@@ -451,7 +449,7 @@ export const toolResultMessages = {
  * Result messages (end of conversation)
  */
 export const resultMessages = {
-  success: (sessionId = 'test-session-1'): SDKResultMessage => ({
+  success: (sessionId = 'test-session-1'): ClaudeCodeSDKResultMessage => ({
     type: 'result',
     subtype: 'success',
     session_id: sessionId,
@@ -464,7 +462,7 @@ export const resultMessages = {
     usage,
   }),
 
-  error: (sessionId = 'test-session-1'): SDKResultMessage => ({
+  error: (sessionId = 'test-session-1'): ClaudeCodeSDKResultMessage => ({
     type: 'result',
     subtype: 'error_during_execution',
     session_id: sessionId,
@@ -476,7 +474,7 @@ export const resultMessages = {
     usage,
   }),
 
-  withHighUsage: (sessionId = 'test-session-1'): SDKResultMessage => ({
+  withHighUsage: (sessionId = 'test-session-1'): ClaudeCodeSDKResultMessage => ({
     type: 'result',
     subtype: 'success',
     session_id: sessionId,

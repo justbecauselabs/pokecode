@@ -130,35 +130,33 @@ export default function SessionDetailScreen() {
           ),
         }}
       />
-      <SafeAreaView className="bg-background">
+      <SafeAreaView className="flex-1 bg-background">
         <KeyboardAvoidingView
           className="flex-1"
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
         >
-            <PanGestureHandler onGestureEvent={handleSwipeGesture}>
-              <Animated.View className="flex-1 bg-background">
+          <PanGestureHandler onGestureEvent={handleSwipeGesture}>
+            <Animated.View className="flex-1 bg-background">
+              <View className="flex-1">
                 <MessageList
                   messages={messages}
                   isLoading={isLoading}
                   error={error}
                   onMessageLongPress={handleMessageLongPress}
                 />
-                <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-                  <View>
-                    <MessageInput
-                      ref={messageInputRef}
-                      sessionId={sessionId}
-                      session={fullSession}
-                      onSendMessage={sendMessage}
-                      onShowSlashCommands={handleShowSlashCommands}
-                      isSending={isSending || isWorking}
-                      disabled={isLoading}
-                    />
-                  </View>
-                </TouchableWithoutFeedback>
-              </Animated.View>
-            </PanGestureHandler>
+              </View>
+              <MessageInput
+                ref={messageInputRef}
+                sessionId={sessionId}
+                session={fullSession}
+                onSendMessage={sendMessage}
+                onShowSlashCommands={handleShowSlashCommands}
+                isSending={isSending || isWorking}
+                disabled={isLoading}
+              />
+            </Animated.View>
+          </PanGestureHandler>
         </KeyboardAvoidingView>
 
         {/* Slash Commands Bottom Sheet */}

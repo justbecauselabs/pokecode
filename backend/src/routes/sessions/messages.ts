@@ -145,6 +145,65 @@ const messageRoutes: FastifyPluginAsync = async (fastify) => {
       }
     },
   );
+
+  // GET /sessions/:sessionId/messages/raw - Get raw messages from DB with parsed content_data
+  fastify.get<{
+    Params: { sessionId: string };
+  }>(
+    '/messages/raw',
+    {
+      schema: {
+        params: SessionIdParamsSchema,
+        // No response validation - return raw data
+      },
+    },
+    async (request, reply) => {
+      const { sessionId } = request.params;
+
+      try {
+        // Verify session exists
+        const session = await sessionService.getSession(sessionId);
+        if (!session) {
+          return reply.code(404).send({
+            error: 'Session not found',
+            code: 'NOT_FOUND',
+          });
+        }
+
+        // Get raw messages from database with parsed content_data
+        const rawMessages = await messageService.getRawMessages(sessionId);
+
+        // Extract only the contentData from each message
+        const contentDataOnly = rawMessages.map((msg) => msg.contentData).filter(Boolean);
+
+        logger.debug(
+          {
+            sessionId,
+            messageCount: contentDataOnly.length,
+          },
+          'Retrieved raw messages contentData',
+        );
+
+        return reply.send(contentDataOnly);
+      } catch (error) {
+        logger.error(
+          {
+            sessionId,
+            error: error instanceof Error ? error.message : String(error),
+          },
+          'Failed to get raw messages',
+        );
+
+        if (error instanceof Error && error.message === 'Session not found') {
+          return reply.code(404).send({
+            error: 'Session not found',
+            code: 'NOT_FOUND',
+          });
+        }
+        throw error;
+      }
+    },
+  );
 };
 
 export default messageRoutes;

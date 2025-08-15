@@ -112,11 +112,16 @@ export function useSessionMessages(sessionId: string) {
       if (previousMessages) {
         const optimisticUserMessage: Message = {
           id: `temp-${Date.now()}`,
-          sessionId,
-          role: 'user',
-          content: params.content,
-          timestamp: new Date().toISOString(),
-          children: [],
+          type: 'claude-code',
+          data: {
+            type: 'user',
+            message: {
+              role: 'user',
+              content: params.content,
+            },
+            parent_tool_use_id: null,
+            session_id: sessionId,
+          },
         };
 
         queryClient.setQueryData<GetMessagesResponse>(['sessionMessages', sessionId], {

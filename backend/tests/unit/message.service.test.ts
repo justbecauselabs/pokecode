@@ -1,10 +1,9 @@
-import { Database } from 'bun:sqlite';
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
-import type { SDKMessage } from '@anthropic-ai/claude-code';
-import { eq } from 'drizzle-orm';
 import { db } from '@/db';
 import { sessionMessages, sessions } from '@/db/schema-sqlite';
+import type { ClaudeCodeSDKAssistantMessage } from '@/schemas/message.schema';
 import { MessageService } from '@/services/message.service';
+import { extractMessageText } from '@/utils/message-parser';
 import {
   assistantMessages,
   conversationFixtures,
@@ -92,13 +91,13 @@ describe('MessageService', () => {
       const messages = await messageService.getMessages(testSessionId);
 
       expect(messages).toHaveLength(3);
-      expect(messages[0].messageType).toBe('system');
-      expect(messages[0].role).toBe('system');
-      expect(messages[0].content).toBe('[System: init]');
-      expect(messages[1].role).toBe('user');
-      expect(messages[1].content).toBe('Hello, can you help me?');
-      expect(messages[2].role).toBe('assistant');
-      expect(messages[2].content).toBe('Sure, I can help!');
+      expect(messages[0].type).toBe('claude-code');
+      expect(messages[0].data.type).toBe('system');
+      expect(extractMessageText(messages[0])).toBe('[System: init]');
+      expect(messages[1].data.type).toBe('user');
+      expect(extractMessageText(messages[1])).toBe('Hello, can you help me?');
+      expect(messages[2].data.type).toBe('assistant');
+      expect(extractMessageText(messages[2])).toBe('Sure, I can help!');
     });
 
     test('handles all system message variations', async () => {
@@ -120,12 +119,14 @@ describe('MessageService', () => {
       const messages = await messageService.getMessages(testSessionId);
 
       expect(messages).toHaveLength(2);
-      expect(messages[0].messageType).toBe('system');
-      expect(messages[0].role).toBe('system');
-      expect(messages[0].systemMetadata?.model).toBe('claude-3-5-sonnet-20241022');
-      expect(messages[1].messageType).toBe('system');
-      expect(messages[1].systemMetadata?.tools).toContain('bash');
-      expect(messages[1].systemMetadata?.tools).toContain('read');
+      expect(messages[0].type).toBe('claude-code');
+      expect(messages[0].data.type).toBe('system');
+      const systemMsg1 = messages[0].data as any;
+      expect(systemMsg1.model).toBe('claude-3-5-sonnet-20241022');
+      expect(messages[1].data.type).toBe('system');
+      const systemMsg2 = messages[1].data as any;
+      expect(systemMsg2.tools).toContain('bash');
+      expect(systemMsg2.tools).toContain('read');
     });
 
     test('handles all user message variations', async () => {
@@ -147,12 +148,14 @@ describe('MessageService', () => {
       const messages = await messageService.getMessages(testSessionId);
 
       expect(messages).toHaveLength(4);
-      expect(messages[0].content).toBe('Simple message');
-      expect(messages[1].content).toBe(
+      expect(extractMessageText(messages[0])).toBe('Simple message');
+      expect(extractMessageText(messages[1])).toBe(
         'Please review this code for best practices and potential issues',
       );
-      expect(messages[2].content).toBe('Analyze the file package.json and explain its purpose');
-      expect(messages[3].content).toBe('Fix this bug: Component not rendering');
+      expect(extractMessageText(messages[2])).toBe(
+        'Analyze the file package.json and explain its purpose',
+      );
+      expect(extractMessageText(messages[3])).toBe('Fix this bug: Component not rendering');
     });
 
     test('handles all assistant message variations', async () => {
@@ -180,22 +183,28 @@ describe('MessageService', () => {
       expect(messages).toHaveLength(4);
 
       // Test text response
-      expect(messages[0].content).toBe('Plain text response');
-      expect(messages[0].role).toBe('assistant');
+      expect(extractMessageText(messages[0])).toBe('Plain text response');
+      expect(messages[0].data.type).toBe('assistant');
 
       // Test thinking message
-      expect(messages[1].content).toBe('Response');
-      expect(messages[1].thinking).toBe('Let me think...');
+      expect(extractMessageText(messages[1])).toBe('Response');
+      const thinkingMsg = messages[1].data as ClaudeCodeSDKAssistantMessage;
+      expect(thinkingMsg.message.content.find((c: any) => c.type === 'thinking')?.thinking).toBe(
+        'Let me think...',
+      );
 
       // Test tool use messages
-      expect(messages[2].content).toBe(
+      expect(extractMessageText(messages[2])).toBe(
         `I'll read the config.json file to understand its contents.`,
       );
-      expect(messages[2].toolCalls).toBeDefined();
-      expect(messages[2].toolCalls?.[0].name).toBe('read');
+      const toolMsg2 = messages[2].data as ClaudeCodeSDKAssistantMessage;
+      const toolUse2 = toolMsg2.message.content.find((c: any) => c.type === 'tool_use');
+      expect(toolUse2?.name).toBe('read');
 
-      expect(messages[3].content).toBe('List files');
-      expect(messages[3].toolCalls?.[0].name).toBe('bash');
+      expect(extractMessageText(messages[3])).toBe('List files');
+      const toolMsg3 = messages[3].data as ClaudeCodeSDKAssistantMessage;
+      const toolUse3 = toolMsg3.message.content.find((c: any) => c.type === 'tool_use');
+      expect(toolUse3?.name).toBe('bash');
     });
 
     test('handles tool result messages', async () => {
@@ -231,62 +240,70 @@ describe('MessageService', () => {
 
       expect(messages).toHaveLength(3);
 
-      // All should be user messages with tool results converted to tool calls
-      expect(messages[0].role).toBe('user');
-      expect(messages[0].toolCalls).toBeDefined();
-      expect(messages[0].toolCalls?.[0].result?.content).toBe('{"name": "test"}');
-      expect(messages[0].toolCalls?.[0].id).toBe(toolUseId);
+      // All should be user messages with tool results in the data
+      expect(messages[0].data.type).toBe('user');
+      const userMsg1 = messages[0].data as any;
+      const toolResult1 = userMsg1.message.content.find((c: any) => c.type === 'tool_result');
+      expect(toolResult1?.content).toBe('{"name": "test"}');
+      expect(toolResult1?.tool_use_id).toBe(toolUseId);
 
-      expect(messages[1].toolCalls?.[0].result?.content).toBe('total 8\ndrwxr-xr-x 2 user user 4096');
-      expect(messages[2].toolCalls?.[0].result?.content).toBe('File not found');
-      expect(messages[2].toolCalls?.[0].result?.isError).toBe(true);
+      const userMsg2 = messages[1].data as any;
+      const toolResult2 = userMsg2.message.content.find((c: any) => c.type === 'tool_result');
+      expect(toolResult2?.content).toBe('total 8\ndrwxr-xr-x 2 user user 4096');
+
+      const userMsg3 = messages[2].data as any;
+      const toolResult3 = userMsg3.message.content.find((c: any) => c.type === 'tool_result');
+      expect(toolResult3?.content).toBe('File not found');
+      expect(toolResult3?.is_error).toBe(true);
     });
 
     test('combines tool calls with their results', async () => {
       // Create assistant message with tool calls
       const toolCallMsg = assistantMessages.fileRead('test.txt', testSessionId);
-      
+
       // Insert the tool call message
       await db.insert(sessionMessages).values({
         sessionId: testSessionId,
         type: 'assistant',
         contentData: JSON.stringify(toolCallMsg),
       });
-      
+
       // Get the tool ID from the message
-      const toolUseId = (toolCallMsg.message.content[1] as any).id;
-      
+      const toolUseContent = toolCallMsg.message.content.find((c: any) => c.type === 'tool_use');
+      const toolUseId = toolUseContent?.id;
+
       // Create a user message with the corresponding tool result
       const resultMsg = toolResultMessages.fileResult(
         toolUseId,
         'File contents here',
         testSessionId,
       );
-      
+
       // Insert the result message
       await db.insert(sessionMessages).values({
         sessionId: testSessionId,
         type: 'user',
         contentData: JSON.stringify(resultMsg),
       });
-      
+
       // Test that the service properly combines them
       const messages = await messageService.getMessages(testSessionId);
-      
+
       expect(messages).toHaveLength(2);
-      
+
       // The assistant message should have the tool call
-      expect(messages[0].role).toBe('assistant');
-      expect(messages[0].toolCalls).toBeDefined();
-      expect(messages[0].toolCalls?.[0].name).toBe('read');
-      expect(messages[0].toolCalls?.[0].id).toBe(toolUseId);
-      
-      // The user message should have tool results as tool calls with results
-      expect(messages[1].role).toBe('user');
-      expect(messages[1].toolCalls).toBeDefined();
-      expect(messages[1].toolCalls?.[0].id).toBe(toolUseId);
-      expect(messages[1].toolCalls?.[0].result?.content).toBe('File contents here');
-      expect(messages[1].toolCalls?.[0].name).toBe('tool_result')
+      expect(messages[0].data.type).toBe('assistant');
+      const assistantMsg = messages[0].data as ClaudeCodeSDKAssistantMessage;
+      const toolUseBlock = assistantMsg.message.content.find((c: any) => c.type === 'tool_use');
+      expect(toolUseBlock?.name).toBe('read');
+      expect(toolUseBlock?.id).toBe(toolUseId);
+
+      // The user message should have tool results
+      expect(messages[1].data.type).toBe('user');
+      const userMsg = messages[1].data as any;
+      const toolResultBlock = userMsg.message.content.find((c: any) => c.type === 'tool_result');
+      expect(toolResultBlock?.tool_use_id).toBe(toolUseId);
+      expect(toolResultBlock?.content).toBe('File contents here');
     });
 
     test('handles result messages', async () => {
@@ -309,17 +326,20 @@ describe('MessageService', () => {
       expect(messages).toHaveLength(3);
 
       // Test success result
-      expect(messages[0].messageType).toBe('result');
-      expect(messages[0].resultMetadata?.isError).toBe(false);
-      expect(messages[0].resultMetadata?.result).toBe('Task completed successfully');
-      expect(messages[0].resultMetadata?.totalCostUsd).toBe(0.093);
+      expect(messages[0].data.type).toBe('result');
+      const successMsg = messages[0].data as any;
+      expect(successMsg.is_error).toBe(false);
+      expect(successMsg.result).toBe('Task completed successfully');
+      expect(successMsg.total_cost_usd).toBe(0.093);
 
       // Test error result
-      expect(messages[1].resultMetadata?.isError).toBe(true);
+      const errorMsg = messages[1].data as any;
+      expect(errorMsg.is_error).toBe(true);
 
       // Test high usage result
-      expect(messages[2].resultMetadata?.totalCostUsd).toBe(0.75);
-      expect(messages[2].resultMetadata?.numTurns).toBe(10);
+      const highUsageMsg = messages[2].data as any;
+      expect(highUsageMsg.total_cost_usd).toBe(0.75);
+      expect(highUsageMsg.num_turns).toBe(10);
     });
 
     test('handles complex assistant messages with citations', async () => {
@@ -346,10 +366,14 @@ describe('MessageService', () => {
       const messages = await messageService.getMessages(testSessionId);
 
       expect(messages).toHaveLength(1);
-      expect(messages[0].content).toBe('Based on the documentation, here are the key points.');
-      expect(messages[0].citations).toBeDefined();
-      expect(messages[0].citations).toHaveLength(1);
-      expect(messages[0].citations?.[0].citedText).toBe('API documentation');
+      expect(extractMessageText(messages[0])).toBe(
+        'Based on the documentation, here are the key points.',
+      );
+      const citationMsg = messages[0].data as ClaudeCodeSDKAssistantMessage;
+      const textBlock = citationMsg.message.content.find((c: any) => c.type === 'text');
+      expect(textBlock?.citations).toBeDefined();
+      expect(textBlock?.citations).toHaveLength(1);
+      expect(textBlock?.citations?.[0].cited_text).toBe('API documentation');
     });
 
     test('handles web search messages', async () => {
@@ -375,10 +399,14 @@ describe('MessageService', () => {
       const messages = await messageService.getMessages(testSessionId);
 
       expect(messages).toHaveLength(1);
-      expect(messages[0].content).toBe('I found some relevant information.');
-      expect(messages[0].webSearchResults).toBeDefined();
-      expect(messages[0].webSearchResults).toHaveLength(1);
-      expect(messages[0].webSearchResults?.[0].url).toBe('https://example.com');
+      expect(extractMessageText(messages[0])).toBe('I found some relevant information.');
+      const webSearchMsgData = messages[0].data as ClaudeCodeSDKAssistantMessage;
+      const webSearchBlock = webSearchMsgData.message.content.find(
+        (c: any) => c.type === 'web_search_tool_result',
+      );
+      expect(webSearchBlock?.content).toBeDefined();
+      expect(Array.isArray(webSearchBlock?.content)).toBe(true);
+      expect((webSearchBlock?.content as any[])?.[0].url).toBe('https://example.com');
     });
 
     test('handles redacted thinking messages', async () => {
@@ -397,8 +425,12 @@ describe('MessageService', () => {
       const messages = await messageService.getMessages(testSessionId);
 
       expect(messages).toHaveLength(1);
-      expect(messages[0].content).toBe('Here is my response.');
-      expect(messages[0].thinking).toBe('redacted_thinking_data');
+      expect(extractMessageText(messages[0])).toBe('Here is my response.');
+      const thinkingMsgData = messages[0].data as ClaudeCodeSDKAssistantMessage;
+      const redactedBlock = thinkingMsgData.message.content.find(
+        (c: any) => c.type === 'redacted_thinking',
+      );
+      expect(redactedBlock?.data).toBe('redacted_thinking_data');
     });
 
     test('handles complete conversation flows', async () => {
@@ -420,11 +452,13 @@ describe('MessageService', () => {
       const messages = await messageService.getMessages(testSessionId);
 
       expect(messages).toHaveLength(3);
-      expect(messages[0].messageType).toBe('system');
-      expect(messages[1].role).toBe('user');
-      expect(messages[1].content).toBe('Hello, can you help me with a task?');
-      expect(messages[2].role).toBe('assistant');
-      expect(messages[2].content).toBe("Hello! I'd be happy to help. What can I do for you?");
+      expect(messages[0].data.type).toBe('system');
+      expect(messages[1].data.type).toBe('user');
+      expect(extractMessageText(messages[1])).toBe('Hello, can you help me with a task?');
+      expect(messages[2].data.type).toBe('assistant');
+      expect(extractMessageText(messages[2])).toBe(
+        "Hello! I'd be happy to help. What can I do for you?",
+      );
     });
 
     test('skips malformed messages and logs warnings', async () => {
@@ -453,8 +487,8 @@ describe('MessageService', () => {
 
       // Mock console.warn to capture warnings
       const originalWarn = console.warn;
-      const warnings: any[] = [];
-      console.warn = (...args: any[]) => warnings.push(args);
+      const warnings: unknown[][] = [];
+      console.warn = (...args: unknown[]) => warnings.push(args);
 
       const messages = await messageService.getMessages(testSessionId);
 
@@ -463,8 +497,8 @@ describe('MessageService', () => {
 
       // Should only return the valid messages
       expect(messages).toHaveLength(2);
-      expect(messages[0].content).toBe('Valid message');
-      expect(messages[1].content).toBe('Another valid message');
+      expect(extractMessageText(messages[0])).toBe('Valid message');
+      expect(extractMessageText(messages[1])).toBe('Another valid message');
 
       // Should have logged a warning for the malformed message
       expect(warnings).toHaveLength(1);
@@ -498,7 +532,7 @@ describe('MessageService', () => {
 
       // Should only return the valid message
       expect(messages).toHaveLength(1);
-      expect(messages[0].content).toBe('Valid message');
+      expect(extractMessageText(messages[0])).toBe('Valid message');
     });
 
     test('handles messages from different sessions separately', async () => {
@@ -524,10 +558,10 @@ describe('MessageService', () => {
       const session2Messages = await messageService.getMessages(otherSessionId);
 
       expect(session1Messages).toHaveLength(1);
-      expect(session1Messages[0].content).toBe('Message in session 1');
+      expect(extractMessageText(session1Messages[0])).toBe('Message in session 1');
 
       expect(session2Messages).toHaveLength(1);
-      expect(session2Messages[0].content).toBe('Message in session 2');
+      expect(extractMessageText(session2Messages[0])).toBe('Message in session 2');
     });
   });
 });

@@ -1,7 +1,12 @@
 import type React from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
 import Markdown from 'react-native-markdown-display';
-import type { Citation } from '../../types/messages';
+// Citation type is now extracted from the actual message content
+type Citation = {
+  type: string;
+  cited_text: string;
+  [key: string]: any;
+};
 
 interface MarkdownRendererProps {
   content: string;
@@ -114,7 +119,7 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, cit
             }}
           >
             <Text className="text-xs font-mono text-blue-600 dark:text-blue-400 mb-1">
-              "{citation.citedText}"
+              "{citation.cited_text}"
             </Text>
             <View className="flex-row items-center space-x-2">
               <Text className="text-xs font-mono text-blue-500 dark:text-blue-500">
@@ -125,14 +130,14 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, cit
                   • {citation.url}
                 </Text>
               )}
-              {citation.documentTitle && (
+              {citation.document_title && (
                 <Text className="text-xs font-mono text-blue-500 dark:text-blue-500">
-                  • {citation.documentTitle}
+                  • {citation.document_title}
                 </Text>
               )}
-              {citation.source && (
+              {citation.title && (
                 <Text className="text-xs font-mono text-blue-500 dark:text-blue-500">
-                  • {citation.source}
+                  • {citation.title}
                 </Text>
               )}
             </View>
