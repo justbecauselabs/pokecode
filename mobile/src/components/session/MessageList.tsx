@@ -41,15 +41,15 @@ export const MessageList: React.FC<MessageListProps> = ({
   );
 
   const renderEmpty = () => (
-    <View className="flex-1 justify-center items-center p-8">
-      <Text className="text-center font-mono text-muted-foreground">No messages yet</Text>
+    <View>
+      <Text>No messages yet</Text>
     </View>
   );
 
   const renderError = () => (
-    <View className="flex-1 justify-center items-center p-8">
-      <Text className="text-center mb-2 font-mono text-destructive">Error loading messages</Text>
-      <Text className="text-center text-sm font-mono text-muted-foreground">
+    <View>
+      <Text>Error loading messages</Text>
+      <Text>
         {error?.message || 'Unknown error occurred'}
       </Text>
     </View>
@@ -60,7 +60,7 @@ export const MessageList: React.FC<MessageListProps> = ({
   }
 
   return (
-    <View className="flex-1">
+    <View>
       {isLoading && messages.length === 0 ? (
         <LoadingState />
       ) : (
@@ -70,9 +70,6 @@ export const MessageList: React.FC<MessageListProps> = ({
           renderItem={renderMessage}
           keyExtractor={(item) => item.id}
           inverted={true}
-          contentContainerStyle={{
-            padding: 16,
-          }}
           ListEmptyComponent={renderEmpty}
         />
       )}
