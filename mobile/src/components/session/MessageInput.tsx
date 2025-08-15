@@ -1,8 +1,8 @@
 import { Feather } from '@expo/vector-icons';
 import { forwardRef, useImperativeHandle, useRef, useState } from 'react';
-import { Alert, Keyboard, type TextInput, TouchableOpacity, View, Text } from 'react-native';
-import { Pill, TextField } from '../common';
+import { Alert, Keyboard, Text, type TextInput, TouchableOpacity, View } from 'react-native';
 import type { GetApiClaudeCodeSessionsBySessionIdResponse } from '@/api/generated';
+import { Pill, TextField } from '../common';
 
 export interface MessageInputRef {
   insertCommand: (params: { commandName: string }) => void;
@@ -20,7 +20,14 @@ interface MessageInputProps {
 }
 
 export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>((props, ref) => {
-  const { session, onSendMessage, onShowSlashCommands, onShowAgents, isSending = false, disabled } = props;
+  const {
+    session,
+    onSendMessage,
+    onShowSlashCommands,
+    onShowAgents,
+    isSending = false,
+    disabled,
+  } = props;
   const [message, setMessage] = useState('');
   const [selectedCommand, setSelectedCommand] = useState<string | null>(null);
   const [selectedAgent, setSelectedAgent] = useState<string | null>(null);
@@ -64,7 +71,7 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>((prop
 
       await onSendMessage({
         content: finalMessage,
-        agent: selectedAgent || undefined
+        agent: selectedAgent || undefined,
       });
 
       setMessage('');
@@ -118,10 +125,14 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>((prop
       <View className="mt-3 flex-row gap-2 items-start">
         <Pill
           variant={selectedAgent ? 'active' : 'default'}
-          onPress={selectedAgent ? () => setSelectedAgent(null) : () => {
-            Keyboard.dismiss();
-            onShowAgents?.();
-          }}
+          onPress={
+            selectedAgent
+              ? () => setSelectedAgent(null)
+              : () => {
+                  Keyboard.dismiss();
+                  onShowAgents?.();
+                }
+          }
           disabled={disabled || isSending}
         >
           {selectedAgent ? selectedAgent : 'agent'}
@@ -129,10 +140,14 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>((prop
 
         <Pill
           variant={selectedCommand ? 'active' : 'default'}
-          onPress={selectedCommand ? () => setSelectedCommand(null) : () => {
-            Keyboard.dismiss();
-            onShowSlashCommands?.();
-          }}
+          onPress={
+            selectedCommand
+              ? () => setSelectedCommand(null)
+              : () => {
+                  Keyboard.dismiss();
+                  onShowSlashCommands?.();
+                }
+          }
           disabled={disabled || isSending}
         >
           {selectedCommand ? `/${selectedCommand}` : 'slash command'}

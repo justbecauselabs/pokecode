@@ -68,7 +68,13 @@ export default function RowsPlaygroundScreen() {
               <Row
                 title="Settings"
                 subtitle="App preferences and configuration"
-                leading={{ type: 'icon', library: 'MaterialIcons', name: 'settings', size: 22, color: '#528bff' }}
+                leading={{
+                  type: 'icon',
+                  library: 'MaterialIcons',
+                  name: 'settings',
+                  size: 22,
+                  color: '#528bff',
+                }}
                 showCaret
                 className="border-b border-border/50"
                 onPress={() => handleRowPress('Settings')}
@@ -76,7 +82,13 @@ export default function RowsPlaygroundScreen() {
               <Row
                 title="Notifications"
                 subtitle="Push notifications and alerts"
-                leading={{ type: 'icon', library: 'Ionicons', name: 'notifications', size: 20, color: '#f59e0b' }}
+                leading={{
+                  type: 'icon',
+                  library: 'Ionicons',
+                  name: 'notifications',
+                  size: 20,
+                  color: '#f59e0b',
+                }}
                 showCaret
                 className="border-b border-border/50"
                 onPress={() => handleRowPress('Notifications')}
@@ -92,7 +104,12 @@ export default function RowsPlaygroundScreen() {
               <Row
                 title="John Smith"
                 subtitle="john.smith@example.com"
-                leading={{ type: 'avatar', initials: 'JS', backgroundColor: '#528bff', size: 'medium' }}
+                leading={{
+                  type: 'avatar',
+                  initials: 'JS',
+                  backgroundColor: '#528bff',
+                  size: 'medium',
+                }}
                 showCaret
                 className="border-b border-border/50"
                 onPress={() => handleRowPress('John Smith')}
@@ -126,17 +143,21 @@ export default function RowsPlaygroundScreen() {
               <Row
                 title="App Version"
                 subtitle="Current installed version"
-                trailing={{ type: 'text', content: 'v1.2.3', className: 'font-mono text-muted-foreground' }}
+                trailing={{
+                  type: 'text',
+                  content: 'v1.2.3',
+                  className: 'font-mono text-muted-foreground',
+                }}
                 className="border-b border-border/50"
                 onPress={() => handleRowPress('App Version')}
               />
               <Row
                 title="Dark Mode"
                 subtitle="Toggle dark theme appearance"
-                trailing={{ 
-                  type: 'switch', 
-                  value: darkMode, 
-                  onValueChange: setDarkMode 
+                trailing={{
+                  type: 'switch',
+                  value: darkMode,
+                  onValueChange: setDarkMode,
                 }}
                 onPress={() => handleRowPress('Dark Mode')}
                 className="border-b border-border/50"
@@ -144,10 +165,10 @@ export default function RowsPlaygroundScreen() {
               <Row
                 title="Download Progress"
                 subtitle="App update in progress"
-                trailing={{ 
-                  type: 'progress', 
-                  value: 73, 
-                  showPercentage: true 
+                trailing={{
+                  type: 'progress',
+                  value: 73,
+                  showPercentage: true,
                 }}
                 className="border-b border-border/50"
                 onPress={() => handleRowPress('Download Progress')}
@@ -155,9 +176,9 @@ export default function RowsPlaygroundScreen() {
               <Row
                 title="User Status"
                 subtitle="Current availability"
-                trailing={{ 
-                  type: 'status', 
-                  variant: 'online'
+                trailing={{
+                  type: 'status',
+                  variant: 'online',
                 }}
                 className="border-b border-border/50"
                 onPress={() => handleRowPress('User Status')}
@@ -165,10 +186,10 @@ export default function RowsPlaygroundScreen() {
               <Row
                 title="Unread Count"
                 subtitle="New messages received"
-                trailing={{ 
-                  type: 'badge', 
-                  count: 12, 
-                  backgroundColor: '#22c55e' 
+                trailing={{
+                  type: 'badge',
+                  count: 12,
+                  backgroundColor: '#22c55e',
                 }}
                 className="border-b border-border/50"
                 onPress={() => handleRowPress('Unread Count')}
@@ -176,12 +197,12 @@ export default function RowsPlaygroundScreen() {
               <Row
                 title="Favorite"
                 subtitle="Add to favorites"
-                trailing={{ 
-                  type: 'icon', 
-                  library: 'MaterialIcons', 
-                  name: 'favorite-border', 
-                  size: 20, 
-                  color: '#ef4444' 
+                trailing={{
+                  type: 'icon',
+                  library: 'MaterialIcons',
+                  name: 'favorite-border',
+                  size: 20,
+                  color: '#ef4444',
                 }}
                 onPress={() => handleRowPress('Favorite')}
               />
@@ -199,11 +220,16 @@ export default function RowsPlaygroundScreen() {
               <Row
                 title="Notifications"
                 subtitle="Push notifications and alerts"
-                leading={{ type: 'icon', library: 'Ionicons', name: 'notifications', color: '#f59e0b' }}
-                trailing={{ 
-                  type: 'switch', 
-                  value: notifications, 
-                  onValueChange: setNotifications 
+                leading={{
+                  type: 'icon',
+                  library: 'Ionicons',
+                  name: 'notifications',
+                  color: '#f59e0b',
+                }}
+                trailing={{
+                  type: 'switch',
+                  value: notifications,
+                  onValueChange: setNotifications,
                 }}
                 showCaret
                 className="border-b border-border/50"
@@ -212,7 +238,12 @@ export default function RowsPlaygroundScreen() {
               <Row
                 title="Jane Cooper"
                 subtitle="jane.cooper@example.com • Designer"
-                leading={{ type: 'avatar', initials: 'JC', backgroundColor: '#8b5cf6', size: 'large' }}
+                leading={{
+                  type: 'avatar',
+                  initials: 'JC',
+                  backgroundColor: '#8b5cf6',
+                  size: 'large',
+                }}
                 trailing={{ type: 'status', variant: 'online' }}
                 showCaret
                 className="border-b border-border/50"
@@ -230,7 +261,12 @@ export default function RowsPlaygroundScreen() {
               <Row
                 title="Photo Backup"
                 subtitle="Uploading 127 photos to cloud"
-                leading={{ type: 'icon', library: 'MaterialIcons', name: 'cloud-upload', color: '#22c55e' }}
+                leading={{
+                  type: 'icon',
+                  library: 'MaterialIcons',
+                  name: 'cloud-upload',
+                  color: '#22c55e',
+                }}
                 trailing={{ type: 'progress', value: 45, showPercentage: true }}
                 className="border-b border-border/50"
                 onPress={() => handleRowPress('Photo Backup')}
@@ -315,15 +351,36 @@ export default function RowsPlaygroundScreen() {
               <Row
                 title="Avatar Sizes"
                 subtitle="Small, medium, large avatars"
-                leading={{ type: 'avatar', initials: 'SM', size: 'small', backgroundColor: '#ef4444' }}
-                trailing={{ type: 'icon', library: 'Feather', name: 'user', size: 18, color: '#6b7280' }}
+                leading={{
+                  type: 'avatar',
+                  initials: 'SM',
+                  size: 'small',
+                  backgroundColor: '#ef4444',
+                }}
+                trailing={{
+                  type: 'icon',
+                  library: 'Feather',
+                  name: 'user',
+                  size: 18,
+                  color: '#6b7280',
+                }}
                 className="border-b border-border/50"
               />
               <Row
                 title="Icon Libraries"
                 subtitle="MaterialIcons, Ionicons, Feather, AntDesign"
-                leading={{ type: 'icon', library: 'AntDesign', name: 'appstore-o', color: '#3b82f6' }}
-                trailing={{ type: 'icon', library: 'Feather', name: 'chevron-right', color: '#6b7280' }}
+                leading={{
+                  type: 'icon',
+                  library: 'AntDesign',
+                  name: 'appstore-o',
+                  color: '#3b82f6',
+                }}
+                trailing={{
+                  type: 'icon',
+                  library: 'Feather',
+                  name: 'chevron-right',
+                  color: '#6b7280',
+                }}
               />
             </View>
           </View>
@@ -342,14 +399,25 @@ export default function RowsPlaygroundScreen() {
               <Row
                 title="System Information"
                 subtitle="iOS 17.0 • iPhone 15 Pro"
-                leading={{ type: 'icon', library: 'MaterialIcons', name: 'phone-iphone', color: '#6b7280' }}
+                leading={{
+                  type: 'icon',
+                  library: 'MaterialIcons',
+                  name: 'phone-iphone',
+                  color: '#6b7280',
+                }}
                 trailing={{ type: 'text', content: 'Read-only' }}
                 className="border-b border-border/50"
               />
               <Row
                 title="Build Number"
                 subtitle="Internal build identifier"
-                leading={{ type: 'icon', library: 'MaterialIcons', name: 'info-outline', size: 18, color: '#6b7280' }}
+                leading={{
+                  type: 'icon',
+                  library: 'MaterialIcons',
+                  name: 'info-outline',
+                  size: 18,
+                  color: '#6b7280',
+                }}
                 trailing={{ type: 'text', content: '2024.01.15.1', className: 'font-mono text-xs' }}
               />
             </View>

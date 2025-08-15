@@ -27,17 +27,13 @@ export const ThinkingCard: React.FC<ThinkingCardProps> = ({ thinking, timestamp 
       >
         <View className="flex-row items-center">
           <View className="w-2 h-2 bg-yellow-500 rounded-full mr-2" />
-          <Text className="text-sm font-mono font-semibold text-yellow-600">
-            Thinking
-          </Text>
+          <Text className="text-sm font-mono font-semibold text-yellow-600">Thinking</Text>
         </View>
         <View className="flex-row items-center">
           <Text className="text-xs text-muted-foreground font-mono mr-2">
             {formatTime(timestamp)}
           </Text>
-          <Text className="text-yellow-600 font-mono">
-            {isExpanded ? '−' : '+'}
-          </Text>
+          <Text className="text-yellow-600 font-mono">{isExpanded ? '−' : '+'}</Text>
         </View>
       </TouchableOpacity>
 

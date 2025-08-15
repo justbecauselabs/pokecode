@@ -1,13 +1,22 @@
 import type React from 'react';
-import { Text, View } from 'react-native';
+import { Text, Pressable, View } from 'react-native';
 import type { Message, ToolCall, ToolResult, WebSearchResult } from '../../types/messages';
 import { MarkdownRenderer } from './MarkdownRenderer';
 
 interface MessageBubbleProps {
   message: Message;
+  onLongPress?: () => void;
 }
 
-export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
+export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, onLongPress }) => {
+  const handleLongPress = () => {
+    console.log('MessageBubble onLongPress called for message:', message.id);
+    onLongPress?.();
+  };
+
+  const handlePress = () => {
+    console.log('MessageBubble onPress called for message:', message.id);
+  };
   const isUser = message.role === 'user';
   const isSystem = message.role === 'system';
   const isResult = message.messageType === 'result';
@@ -23,7 +32,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
   // Render tool calls
   const renderToolCalls = (toolCalls: ToolCall[]) => {
     if (!toolCalls?.length) return null;
-    
+
     return (
       <View className="mt-3 space-y-2">
         {toolCalls.map((toolCall, index) => (
@@ -42,7 +51,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
                   } catch {
                     return String(toolCall.input);
                   }
-                })()}
+                })() as string}
               </Text>
             )}
           </View>
@@ -54,30 +63,32 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
   // Render tool results
   const renderToolResults = (toolResults: ToolResult[]) => {
     if (!toolResults?.length) return null;
-    
+
     return (
       <View className="mt-3 space-y-2">
         {toolResults.map((result, index) => (
-          <View 
-            key={result.toolUseId || index} 
+          <View
+            key={result.toolUseId || index}
             className={`p-3 rounded-lg ${
-              result.isError 
-                ? 'bg-red-50 dark:bg-red-950' 
-                : 'bg-green-50 dark:bg-green-950'
+              result.isError ? 'bg-red-50 dark:bg-red-950' : 'bg-green-50 dark:bg-green-950'
             }`}
           >
-            <Text className={`text-sm font-mono font-medium mb-1 ${
-              result.isError 
-                ? 'text-red-700 dark:text-red-300' 
-                : 'text-green-700 dark:text-green-300'
-            }`}>
+            <Text
+              className={`text-sm font-mono font-medium mb-1 ${
+                result.isError
+                  ? 'text-red-700 dark:text-red-300'
+                  : 'text-green-700 dark:text-green-300'
+              }`}
+            >
               {result.isError ? '❌ Tool Error' : '✅ Tool Result'}
             </Text>
-            <Text className={`text-xs font-mono ${
-              result.isError 
-                ? 'text-red-600 dark:text-red-400' 
-                : 'text-green-600 dark:text-green-400'
-            }`}>
+            <Text
+              className={`text-xs font-mono ${
+                result.isError
+                  ? 'text-red-600 dark:text-red-400'
+                  : 'text-green-600 dark:text-green-400'
+              }`}
+            >
               {result.content}
             </Text>
           </View>
@@ -89,15 +100,13 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
   // Render thinking content
   const renderThinking = (thinking: string) => {
     if (!thinking?.trim()) return null;
-    
+
     return (
       <View className="mt-3 bg-purple-50 dark:bg-purple-950 p-3 rounded-lg">
         <Text className="text-sm font-mono font-medium text-purple-700 dark:text-purple-300 mb-1">
           💭 Thinking
         </Text>
-        <Text className="text-xs font-mono text-purple-600 dark:text-purple-400">
-          {thinking}
-        </Text>
+        <Text className="text-xs font-mono text-purple-600 dark:text-purple-400">{thinking}</Text>
       </View>
     );
   };
@@ -105,7 +114,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
   // Render web search results
   const renderWebSearchResults = (webSearchResults: WebSearchResult[]) => {
     if (!webSearchResults?.length) return null;
-    
+
     return (
       <View className="mt-3 space-y-2">
         <Text className="text-sm font-mono font-medium text-orange-700 dark:text-orange-300">
@@ -133,7 +142,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
   // Render system metadata
   const renderSystemMetadata = () => {
     if (!isSystem || !message.systemMetadata) return null;
-    
+
     const metadata = message.systemMetadata;
     return (
       <View className="mt-3 bg-gray-50 dark:bg-gray-950 p-3 rounded-lg">
@@ -164,7 +173,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
   // Render result metadata
   const renderResultMetadata = () => {
     if (!isResult || !message.resultMetadata) return null;
-    
+
     const metadata = message.resultMetadata;
     return (
       <View className="mt-3 bg-blue-50 dark:bg-blue-950 p-3 rounded-lg">
@@ -196,17 +205,21 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
   };
 
   return (
-    <View className="mb-6">
+    <Pressable 
+      onPress={handlePress}
+      onLongPress={handleLongPress} 
+      className="mb-6"
+      style={({ pressed }) => [
+        { opacity: pressed ? 0.8 : 1 }
+      ]}
+    >
       <Text className="text-sm font-mono font-medium mb-2 text-foreground">
         {getRoleDisplayName()}
       </Text>
 
       <View>
         {message.content.trim() ? (
-          <MarkdownRenderer 
-            content={message.content} 
-            citations={message.citations}
-          />
+          <MarkdownRenderer content={message.content} citations={message.citations} />
         ) : (
           <Text className="text-muted-foreground italic font-mono">[No content]</Text>
         )}
@@ -239,6 +252,6 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
           </Text>
         </View>
       )}
-    </View>
+    </Pressable>
   );
 };

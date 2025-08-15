@@ -15,9 +15,9 @@ export default function ButtonsPlaygroundScreen() {
   };
 
   const handleLoadingDemo = (buttonId: string) => {
-    setLoadingStates(prev => ({ ...prev, [buttonId]: true }));
+    setLoadingStates((prev) => ({ ...prev, [buttonId]: true }));
     setTimeout(() => {
-      setLoadingStates(prev => ({ ...prev, [buttonId]: false }));
+      setLoadingStates((prev) => ({ ...prev, [buttonId]: false }));
     }, 2000);
   };
 
@@ -96,7 +96,9 @@ export default function ButtonsPlaygroundScreen() {
               </View>
 
               <View>
-                <Text className="text-sm text-muted-foreground font-mono mb-2">Medium (Default)</Text>
+                <Text className="text-sm text-muted-foreground font-mono mb-2">
+                  Medium (Default)
+                </Text>
                 <Button
                   title="Medium Button"
                   size="medium"
@@ -123,10 +125,7 @@ export default function ButtonsPlaygroundScreen() {
             <View className="space-y-3">
               <View>
                 <Text className="text-sm text-muted-foreground font-mono mb-2">Normal</Text>
-                <Button
-                  title="Normal State"
-                  onPress={() => handleButtonPress('Normal')}
-                />
+                <Button title="Normal State" onPress={() => handleButtonPress('Normal')} />
               </View>
 
               <View>
@@ -222,15 +221,11 @@ export default function ButtonsPlaygroundScreen() {
               <Button
                 title="Destructive Action"
                 variant="destructive"
-                onPress={() => 
-                  Alert.alert(
-                    'Destructive Action',
-                    'This would perform a destructive action',
-                    [
-                      { text: 'Cancel', style: 'cancel' },
-                      { text: 'Confirm', style: 'destructive' }
-                    ]
-                  )
+                onPress={() =>
+                  Alert.alert('Destructive Action', 'This would perform a destructive action', [
+                    { text: 'Cancel', style: 'cancel' },
+                    { text: 'Confirm', style: 'destructive' },
+                  ])
                 }
               />
             </View>

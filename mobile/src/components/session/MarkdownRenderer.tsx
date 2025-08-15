@@ -1,5 +1,5 @@
 import type React from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { Text, TouchableOpacity, View } from 'react-native';
 import Markdown from 'react-native-markdown-display';
 import type { Citation } from '../../types/messages';
 
@@ -99,7 +99,7 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, cit
   // Render citations
   const renderCitations = () => {
     if (!citations?.length) return null;
-    
+
     return (
       <View className="mt-3 space-y-2">
         <Text className="text-sm font-mono font-medium text-blue-700 dark:text-blue-300">
