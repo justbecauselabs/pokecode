@@ -2,17 +2,33 @@ import type React from 'react';
 import { Text, View } from 'react-native';
 import { memo } from 'react';
 import { MarkdownRenderer } from './MarkdownRenderer';
+import { MessageToolView } from './MessageToolView';
 import { MESSAGE_TYPE_STYLES } from './messageColors';
 
+// Updated types based on backend schema
 interface UserMessage {
   content: string;
 }
 
+interface AssistantMessageMessage {
+  content: string;
+}
+
+interface TodoToolUse {
+  todos: Array<{
+    content: string;
+    status: 'pending' | 'in_progress' | 'completed';
+  }>;
+}
+
+interface AssistantMessageToolUse {
+  type: 'todo';
+  data: TodoToolUse;
+}
+
 interface AssistantMessage {
   type: 'message' | 'tool_use' | 'tool_result';
-  data: {
-    content: string;
-  };
+  data: AssistantMessageMessage | AssistantMessageToolUse;
 }
 
 interface Message {
@@ -63,7 +79,19 @@ export const MessageView: React.FC<MessageViewProps> = memo(({ message, onLongPr
   const renderAssistantMessage = (assistantMessage: AssistantMessage) => {
     const styles = MESSAGE_TYPE_STYLES.assistant;
     
-    if (!assistantMessage.data || !assistantMessage.data.content) {
+    // Handle tool_use messages
+    if (assistantMessage.type === 'tool_use') {
+      const toolData = assistantMessage.data as AssistantMessageToolUse;
+      return (
+        <View className={`${styles.background}`} style={{ backgroundColor: styles.backgroundColor }}>
+          <MessageToolView toolUse={toolData} />
+        </View>
+      );
+    }
+    
+    // Handle regular message content
+    const messageData = assistantMessage.data as AssistantMessageMessage;
+    if (!messageData || !messageData.content) {
       return (
         <View className={`p-3 ${styles.background}`} style={{ backgroundColor: styles.backgroundColor }}>
           <Text style={{
@@ -78,7 +106,7 @@ export const MessageView: React.FC<MessageViewProps> = memo(({ message, onLongPr
 
     return (
       <View className={`p-3 ${styles.background}`} style={{ backgroundColor: styles.backgroundColor }}>
-        <MarkdownRenderer content={assistantMessage.data.content} />
+        <MarkdownRenderer content={messageData.content} />
       </View>
     );
   };

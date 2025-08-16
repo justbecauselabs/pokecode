@@ -1,5 +1,5 @@
-import { Type } from '@sinclair/typebox';
 import type { FastifyPluginAsync } from 'fastify';
+import { z } from 'zod';
 import {
   CreateMessageBodySchema,
   type CreateMessageRequest,
@@ -23,7 +23,7 @@ const messageRoutes: FastifyPluginAsync = async (fastify) => {
         params: SessionIdParamsSchema,
         body: CreateMessageBodySchema,
         response: {
-          202: Type.Object({}), // Empty response
+          202: z.object({}), // Empty response
           404: ErrorResponseSchema,
         },
       },
@@ -114,16 +114,25 @@ const messageRoutes: FastifyPluginAsync = async (fastify) => {
           'Retrieved messages',
         );
 
-        // Include session info in response
+        // Include full session info in response
         return reply.send({
           messages,
           session: {
             id: session.id,
+            projectPath: session.projectPath,
             name: session.name,
+            claudeDirectoryPath: session.claudeDirectoryPath,
+            context: session.context,
+            status: session.status,
+            metadata: session.metadata,
+            createdAt: session.createdAt,
+            updatedAt: session.updatedAt,
+            lastAccessedAt: session.lastAccessedAt,
             isWorking: session.isWorking,
             currentJobId: session.currentJobId,
             lastJobStatus: session.lastJobStatus,
-            status: session.status,
+            messageCount: session.messageCount,
+            tokenCount: session.tokenCount,
           },
         });
       } catch (error) {

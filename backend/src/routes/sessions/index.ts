@@ -1,11 +1,15 @@
-import { type Static, Type } from '@sinclair/typebox';
 import type { FastifyPluginAsync } from 'fastify';
+import { z } from 'zod';
 import {
+  type CreateSessionRequest,
   CreateSessionRequestSchema,
+  type ListSessionsQuery,
   ListSessionsQuerySchema,
   ListSessionsResponseSchema,
+  type SessionParams,
   SessionParamsSchema,
-  SessionResponseSchema,
+  SessionSchema,
+  type UpdateSessionRequest,
   UpdateSessionRequestSchema,
 } from '@/schemas/session.schema';
 import { sessionService } from '@/services/session.service';
@@ -18,17 +22,17 @@ function isApiError(error: unknown): error is { name: string; message: string; c
 const sessionRoutes: FastifyPluginAsync = async (fastify) => {
   // Create session
   fastify.post<{
-    Body: Static<typeof CreateSessionRequestSchema>;
+    Body: CreateSessionRequest;
   }>(
     '/',
     {
       schema: {
         body: CreateSessionRequestSchema,
         response: {
-          201: SessionResponseSchema,
-          400: Type.Object({
-            error: Type.String(),
-            code: Type.Optional(Type.String()),
+          201: SessionSchema,
+          400: z.object({
+            error: z.string(),
+            code: z.string().optional(),
           }),
         },
       },
@@ -51,7 +55,7 @@ const sessionRoutes: FastifyPluginAsync = async (fastify) => {
 
   // List sessions
   fastify.get<{
-    Querystring: Static<typeof ListSessionsQuerySchema>;
+    Querystring: ListSessionsQuery;
   }>(
     '/',
     {
@@ -70,17 +74,17 @@ const sessionRoutes: FastifyPluginAsync = async (fastify) => {
 
   // Get session
   fastify.get<{
-    Params: Static<typeof SessionParamsSchema>;
+    Params: SessionParams;
   }>(
     '/:sessionId',
     {
       schema: {
         params: SessionParamsSchema,
         response: {
-          200: SessionResponseSchema,
-          404: Type.Object({
-            error: Type.String(),
-            code: Type.Optional(Type.String()),
+          200: SessionSchema,
+          404: z.object({
+            error: z.string(),
+            code: z.string().optional(),
           }),
         },
       },
@@ -105,8 +109,8 @@ const sessionRoutes: FastifyPluginAsync = async (fastify) => {
 
   // Update session
   fastify.patch<{
-    Params: Static<typeof SessionParamsSchema>;
-    Body: Static<typeof UpdateSessionRequestSchema>;
+    Params: SessionParams;
+    Body: UpdateSessionRequest;
   }>(
     '/:sessionId',
     {
@@ -114,14 +118,14 @@ const sessionRoutes: FastifyPluginAsync = async (fastify) => {
         params: SessionParamsSchema,
         body: UpdateSessionRequestSchema,
         response: {
-          200: SessionResponseSchema,
-          400: Type.Object({
-            error: Type.String(),
-            code: Type.Optional(Type.String()),
+          200: SessionSchema,
+          400: z.object({
+            error: z.string(),
+            code: z.string().optional(),
           }),
-          404: Type.Object({
-            error: Type.String(),
-            code: Type.Optional(Type.String()),
+          404: z.object({
+            error: z.string(),
+            code: z.string().optional(),
           }),
         },
       },
@@ -146,17 +150,17 @@ const sessionRoutes: FastifyPluginAsync = async (fastify) => {
 
   // Delete session
   fastify.delete<{
-    Params: Static<typeof SessionParamsSchema>;
+    Params: SessionParams;
   }>(
     '/:sessionId',
     {
       schema: {
         params: SessionParamsSchema,
         response: {
-          200: Type.Object({ success: Type.Boolean() }),
-          404: Type.Object({
-            error: Type.String(),
-            code: Type.Optional(Type.String()),
+          200: z.object({ success: z.boolean() }),
+          404: z.object({
+            error: z.string(),
+            code: z.string().optional(),
           }),
         },
       },

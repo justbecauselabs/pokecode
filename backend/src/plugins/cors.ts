@@ -7,22 +7,22 @@ const corsPlugin: FastifyPluginAsync = async (fastify) => {
   await fastify.register(cors, {
     origin: (origin, cb) => {
       // Log the origin for debugging
-      fastify.log.info({ origin }, 'CORS origin check');
+      fastify.log.debug({ origin }, 'CORS origin check');
 
       // Allow requests with no origin (like mobile apps or Postman)
       if (!origin) {
-        fastify.log.info('CORS: Allowing request with no origin');
+        fastify.log.debug('CORS: Allowing request with no origin');
         cb(null, true);
         return;
       }
 
       // Parse allowed origins from config
       const allowedOrigins = config.CORS_ORIGIN.split(',').map((o) => o.trim());
-      fastify.log.info({ allowedOrigins, requestedOrigin: origin }, 'CORS: Checking origin');
+      fastify.log.debug({ allowedOrigins, requestedOrigin: origin }, 'CORS: Checking origin');
 
       // Check if origin is allowed
       if (allowedOrigins.includes('*') || allowedOrigins.includes(origin)) {
-        fastify.log.info({ origin }, 'CORS: Origin allowed');
+        fastify.log.debug({ origin }, 'CORS: Origin allowed');
         cb(null, true);
       } else {
         fastify.log.warn({ origin, allowedOrigins }, 'CORS: Origin not allowed');

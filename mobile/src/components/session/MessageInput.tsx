@@ -1,7 +1,7 @@
 import { Feather } from '@expo/vector-icons';
 import { forwardRef, useImperativeHandle, useRef, useState } from 'react';
 import { Alert, Keyboard, Text, type TextInput, TouchableOpacity, View } from 'react-native';
-import type { GetApiClaudeCodeSessionsBySessionIdResponse } from '@/api/generated';
+import type { SessionInfo } from '@/types/messages';
 import { Pill, TextField } from '../common';
 
 export interface MessageInputRef {
@@ -11,7 +11,7 @@ export interface MessageInputRef {
 
 interface MessageInputProps {
   sessionId: string;
-  session?: GetApiClaudeCodeSessionsBySessionIdResponse;
+  session?: SessionInfo;
   onSendMessage: (params: { content: string; agent?: string }) => Promise<unknown>;
   onShowSlashCommands?: () => void;
   onShowAgents?: () => void;

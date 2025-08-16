@@ -20,11 +20,14 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, cit
       lineHeight: 24,
       color: '#abb2bf', // One Dark Pro foreground
       fontFamily: 'JetBrains Mono, Fira Code, SF Mono, Monaco, Menlo, Courier New, monospace',
+      margin: 0,
+      padding: 0,
     },
     paragraph: {
       fontSize: 16,
       lineHeight: 24,
-      marginBottom: 12,
+      marginBottom: 0,
+      marginTop: 0,
       color: '#abb2bf', // One Dark Pro foreground
       fontFamily: 'JetBrains Mono, Fira Code, SF Mono, Monaco, Menlo, Courier New, monospace',
     },
@@ -58,7 +61,7 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, cit
       fontSize: 14,
       lineHeight: 20,
       padding: 12,
-      marginVertical: 8,
+      marginVertical: 4,
       borderRadius: 4,
     },
     fence: {
@@ -68,7 +71,7 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, cit
       fontSize: 14,
       lineHeight: 20,
       padding: 12,
-      marginVertical: 8,
+      marginVertical: 4,
       borderRadius: 4,
     },
     list_item: {
@@ -86,18 +89,24 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, cit
       fontFamily: 'JetBrains Mono, Fira Code, SF Mono, Monaco, Menlo, Courier New, monospace',
       fontWeight: 'bold' as const,
       fontSize: 24,
+      marginTop: 0,
+      marginBottom: 4,
     },
     heading2: {
       color: '#528bff', // One Dark Pro blue
       fontFamily: 'JetBrains Mono, Fira Code, SF Mono, Monaco, Menlo, Courier New, monospace',
       fontWeight: 'bold' as const,
       fontSize: 20,
+      marginTop: 0,
+      marginBottom: 4,
     },
     heading3: {
       color: '#528bff', // One Dark Pro blue
       fontFamily: 'JetBrains Mono, Fira Code, SF Mono, Monaco, Menlo, Courier New, monospace',
       fontWeight: 'bold' as const,
       fontSize: 18,
+      marginTop: 0,
+      marginBottom: 4,
     },
   };
 

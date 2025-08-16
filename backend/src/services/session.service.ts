@@ -3,6 +3,11 @@ import fs from 'node:fs';
 import { desc, eq, sql } from 'drizzle-orm';
 import { db } from '@/db';
 import { sessions } from '@/db/schema-sqlite';
+import type {
+  CreateSessionRequest,
+  ListSessionsQuery,
+  UpdateSessionRequest,
+} from '@/schemas/session.schema';
 import { repositoryService } from '@/services/repository.service';
 import { NotFoundError, ValidationError } from '@/types';
 import {
@@ -17,12 +22,7 @@ import {
 import { logger } from '@/utils/logger';
 
 export class SessionService {
-  async createSession(data: {
-    projectPath?: string;
-    folderName?: string;
-    context?: string;
-    metadata?: Record<string, unknown>;
-  }) {
+  async createSession(data: CreateSessionRequest) {
     // Validate that either projectPath or folderName is provided
     if (!data.projectPath && !data.folderName) {
       throw new ValidationError('Either projectPath or folderName must be provided');
@@ -107,9 +107,7 @@ export class SessionService {
     return this.formatSession(session);
   }
 
-  async listSessions(
-    options: { status?: 'active' | 'idle' | 'expired'; limit?: number; offset?: number } = {},
-  ) {
+  async listSessions(options: ListSessionsQuery = {}) {
     logger.info({ options }, 'Listing sessions');
 
     const { limit = 20, offset = 0 } = options;
@@ -151,13 +149,7 @@ export class SessionService {
     };
   }
 
-  async updateSession(
-    sessionId: string,
-    data: {
-      context?: string;
-      metadata?: Record<string, unknown>;
-    },
-  ) {
+  async updateSession(sessionId: string, data: UpdateSessionRequest) {
     // Verify session exists
     const session = await db.query.sessions.findFirst({
       where: eq(sessions.id, sessionId),
@@ -247,9 +239,9 @@ export class SessionService {
     const timeDiff = now.getTime() - updatedAt.getTime();
     const hoursAgo = timeDiff / (1000 * 60 * 60);
 
-    if (hoursAgo < 1) {
+    if (hoursAgo < 6) {
       return 'active';
-    } else if (hoursAgo < 3) {
+    } else if (hoursAgo < 12) {
       return 'idle';
     } else {
       return 'expired';

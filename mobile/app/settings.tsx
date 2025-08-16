@@ -182,15 +182,6 @@ export default function SettingsScreen() {
                 </Text>
               </Pressable>
 
-              <Pressable
-                onPress={() => router.push('/playground/message-types')}
-                className="py-3 px-4 rounded-lg bg-muted border border-border active:opacity-80"
-              >
-                <Text className="text-foreground font-mono font-medium">Message Types</Text>
-                <Text className="text-xs text-muted-foreground font-mono mt-1">
-                  Chat message components and their variations
-                </Text>
-              </Pressable>
 
               <Pressable
                 onPress={() => router.push('/playground/rows')}
@@ -199,6 +190,16 @@ export default function SettingsScreen() {
                 <Text className="text-foreground font-mono font-medium">Rows</Text>
                 <Text className="text-xs text-muted-foreground font-mono mt-1">
                   Flexible row components with leading/trailing elements
+                </Text>
+              </Pressable>
+
+              <Pressable
+                onPress={() => router.push('/playground/message-view')}
+                className="py-3 px-4 rounded-lg bg-muted border border-border active:opacity-80"
+              >
+                <Text className="text-foreground font-mono font-medium">Message View</Text>
+                <Text className="text-xs text-muted-foreground font-mono mt-1">
+                  API message components for user and assistant conversations
                 </Text>
               </Pressable>
             </View>

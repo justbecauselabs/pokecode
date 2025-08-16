@@ -1,7 +1,18 @@
-import { Type } from '@sinclair/typebox';
 import type { FastifyPluginAsync } from 'fastify';
+import { z } from 'zod';
 import { checkDatabaseHealth } from '@/db';
 import { sqliteQueueService } from '@/services/queue-sqlite.service';
+
+const HealthResponseSchema = z.object({
+  status: z.union([z.literal('healthy'), z.literal('unhealthy')]),
+  timestamp: z.string().datetime(),
+  services: z.object({
+    database: z.union([z.literal('healthy'), z.literal('unhealthy'), z.literal('unknown')]),
+    queue: z.union([z.literal('healthy'), z.literal('unhealthy'), z.literal('unknown')]),
+  }),
+  version: z.string(),
+  uptime: z.number(),
+});
 
 const healthRoute: FastifyPluginAsync = async (fastify) => {
   fastify.get(
@@ -9,42 +20,8 @@ const healthRoute: FastifyPluginAsync = async (fastify) => {
     {
       schema: {
         response: {
-          200: Type.Object({
-            status: Type.Union([Type.Literal('healthy'), Type.Literal('unhealthy')]),
-            timestamp: Type.String({ format: 'date-time' }),
-            services: Type.Object({
-              database: Type.Union([
-                Type.Literal('healthy'),
-                Type.Literal('unhealthy'),
-                Type.Literal('unknown'),
-              ]),
-              queue: Type.Union([
-                Type.Literal('healthy'),
-                Type.Literal('unhealthy'),
-                Type.Literal('unknown'),
-              ]),
-            }),
-            version: Type.String(),
-            uptime: Type.Number(),
-          }),
-          503: Type.Object({
-            status: Type.Union([Type.Literal('healthy'), Type.Literal('unhealthy')]),
-            timestamp: Type.String({ format: 'date-time' }),
-            services: Type.Object({
-              database: Type.Union([
-                Type.Literal('healthy'),
-                Type.Literal('unhealthy'),
-                Type.Literal('unknown'),
-              ]),
-              queue: Type.Union([
-                Type.Literal('healthy'),
-                Type.Literal('unhealthy'),
-                Type.Literal('unknown'),
-              ]),
-            }),
-            version: Type.String(),
-            uptime: Type.Number(),
-          }),
+          200: HealthResponseSchema,
+          503: HealthResponseSchema,
         },
       },
     },
@@ -109,9 +86,9 @@ const healthRoute: FastifyPluginAsync = async (fastify) => {
     {
       schema: {
         response: {
-          200: Type.Object({
-            status: Type.Literal('ok'),
-            timestamp: Type.String(),
+          200: z.object({
+            status: z.literal('ok'),
+            timestamp: z.string(),
           }),
         },
       },
@@ -130,14 +107,14 @@ const healthRoute: FastifyPluginAsync = async (fastify) => {
     {
       schema: {
         response: {
-          200: Type.Object({
-            status: Type.Literal('ready'),
-            timestamp: Type.String(),
+          200: z.object({
+            status: z.literal('ready'),
+            timestamp: z.string(),
           }),
-          503: Type.Object({
-            status: Type.Literal('not_ready'),
-            timestamp: Type.String(),
-            reason: Type.String(),
+          503: z.object({
+            status: z.literal('not_ready'),
+            timestamp: z.string(),
+            reason: z.string(),
           }),
         },
       },

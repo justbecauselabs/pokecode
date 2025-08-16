@@ -374,6 +374,13 @@ export const assistantMessages = {
       usage,
     },
   }),
+
+  todoToolUse: (
+    text: string,
+    todos: Array<{ content: string; status: 'completed' | 'pending' | 'in_progress'; id: string }>,
+    sessionId = 'test-session-1',
+  ): ClaudeCodeSDKAssistantMessage =>
+    assistantMessages.withToolUse(text, 'TodoWrite', { todos }, sessionId),
 };
 
 /**
@@ -499,6 +506,7 @@ export const sdkMessageFixtures = {
   assistantWithCitations: assistantMessages.withCitations,
   assistantWithWebSearch: assistantMessages.withWebSearch,
   assistantWithRedactedThinking: assistantMessages.withRedactedThinking,
+  assistantTodoToolUse: assistantMessages.todoToolUse,
   assistantFileRead: assistantMessages.fileRead,
   assistantFileWrite: assistantMessages.fileWrite,
   assistantBashCommand: assistantMessages.bashCommand,

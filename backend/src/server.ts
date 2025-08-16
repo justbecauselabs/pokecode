@@ -1,25 +1,23 @@
-import type { TypeBoxTypeProvider } from '@fastify/type-provider-typebox';
 import Fastify from 'fastify';
+import type { ZodTypeProvider } from 'fastify-type-provider-zod';
+import { serializerCompiler, validatorCompiler } from 'fastify-type-provider-zod';
 import { app } from './app';
 import { config } from './config';
 import { logger } from './utils/logger';
 
-// Create Fastify instance with TypeBox
+// Create Fastify instance with Zod
 const server = Fastify({
   logger,
-  ajv: {
-    customOptions: {
-      removeAdditional: 'all' as const,
-      coerceTypes: true,
-      useDefaults: true,
-    },
-  },
   trustProxy: true,
   requestIdHeader: 'x-request-id',
   requestIdLogLabel: 'reqId',
   disableRequestLogging: false,
   bodyLimit: 10485760, // 10MB
-}).withTypeProvider<TypeBoxTypeProvider>();
+}).withTypeProvider<ZodTypeProvider>();
+
+// Set up Zod validator and serializer
+server.setValidatorCompiler(validatorCompiler);
+server.setSerializerCompiler(serializerCompiler);
 
 // Register application
 server.register(app);

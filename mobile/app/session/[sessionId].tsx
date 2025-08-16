@@ -7,7 +7,6 @@ import {
   Platform,
   Text,
   TouchableOpacity,
-  TouchableWithoutFeedback,
   View,
 } from 'react-native';
 import { PanGestureHandler } from 'react-native-gesture-handler';
@@ -18,7 +17,6 @@ import { MessageInput, type MessageInputRef } from '../../src/components/session
 import { MessageList } from '../../src/components/session/MessageList';
 import { SlashCommandBottomSheet } from '../../src/components/session/SlashCommandBottomSheet';
 import { useSessionMessages } from '../../src/hooks/useSessionMessages';
-import { useSession } from '../../src/hooks/useSessions';
 import { useSlashCommands } from '../../src/hooks/useSlashCommands';
 import type { Message } from '../../src/types/messages';
 
@@ -35,8 +33,8 @@ export default function SessionDetailScreen() {
     isWorking,
   } = useSessionMessages(sessionId ?? '');
 
-  // Fetch full session data for counts
-  const { data: fullSession } = useSession(sessionId ?? '');
+  // Session data is now included in messages endpoint response (messageSession)
+  // Contains full session details including messageCount and tokenCount
 
   // Fetch slash commands
   const {
@@ -149,7 +147,7 @@ export default function SessionDetailScreen() {
               <MessageInput
                 ref={messageInputRef}
                 sessionId={sessionId}
-                session={fullSession}
+                session={messageSession} // Now includes full session data from messages endpoint
                 onSendMessage={sendMessage}
                 onShowSlashCommands={handleShowSlashCommands}
                 isSending={isSending || isWorking}

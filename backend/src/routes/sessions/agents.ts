@@ -1,6 +1,10 @@
-import { type Static, Type } from '@sinclair/typebox';
 import type { FastifyPluginAsync } from 'fastify';
-import { ListAgentsQuerySchema, ListAgentsResponseSchema } from '@/schemas/agent.schema';
+import { z } from 'zod';
+import {
+  type ListAgentsQuery,
+  ListAgentsQuerySchema,
+  ListAgentsResponseSchema,
+} from '@/schemas/agent.schema';
 import { agentService } from '@/services/agent.service';
 import { sessionService } from '@/services/session.service';
 
@@ -19,7 +23,7 @@ const agentRoutes: FastifyPluginAsync = async (fastify) => {
   // List available agents
   fastify.get<{
     Params: { sessionId: string };
-    Querystring: Static<typeof ListAgentsQuerySchema>;
+    Querystring: ListAgentsQuery;
   }>(
     '/',
     {
@@ -27,21 +31,21 @@ const agentRoutes: FastifyPluginAsync = async (fastify) => {
         summary: 'List available agents',
         description: 'Discover agents from both user Claude home directory and project directory',
         tags: ['Agents'],
-        params: Type.Object({ sessionId: Type.String({ format: 'uuid' }) }),
+        params: z.object({ sessionId: z.string().uuid() }),
         querystring: ListAgentsQuerySchema,
         response: {
           200: ListAgentsResponseSchema,
-          400: Type.Object({
-            error: Type.String(),
-            code: Type.Optional(Type.String()),
+          400: z.object({
+            error: z.string(),
+            code: z.string().optional(),
           }),
-          403: Type.Object({
-            error: Type.String(),
-            code: Type.Optional(Type.String()),
+          403: z.object({
+            error: z.string(),
+            code: z.string().optional(),
           }),
-          404: Type.Object({
-            error: Type.String(),
-            code: Type.Optional(Type.String()),
+          404: z.object({
+            error: z.string(),
+            code: z.string().optional(),
           }),
         },
       },

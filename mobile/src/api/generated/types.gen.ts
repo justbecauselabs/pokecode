@@ -119,23 +119,11 @@ export type GetApiClaudeCodeRepositoriesResponses = {
      */
     200: {
         repositories: Array<{
-            /**
-             * The folder name of the repository
-             */
             folderName: string;
-            /**
-             * The absolute path to the repository
-             */
             path: string;
-            /**
-             * Whether the folder contains a .git directory
-             */
             isGitRepository: boolean;
         }>;
         total: number;
-        /**
-         * The configured GITHUB_REPOS_DIRECTORY
-         */
         githubReposDirectory: string;
     };
 };
@@ -146,9 +134,51 @@ export type GetApiClaudeCodeSessionsData = {
     body?: never;
     path?: never;
     query?: {
-        status?: 'active' | 'idle' | 'expired';
-        limit?: number;
-        offset?: number;
+        '~standard'?: unknown;
+        def?: {
+            [key: string]: unknown;
+        };
+        check?: unknown;
+        clone?: unknown;
+        brand?: unknown;
+        register?: unknown;
+        parse?: unknown;
+        safeParse?: unknown;
+        parseAsync?: unknown;
+        safeParseAsync?: unknown;
+        spa?: unknown;
+        refine?: unknown;
+        superRefine?: unknown;
+        overwrite?: unknown;
+        optional?: unknown;
+        nullable?: unknown;
+        nullish?: unknown;
+        nonoptional?: unknown;
+        array?: unknown;
+        or?: unknown;
+        and?: unknown;
+        transform?: unknown;
+        default?: unknown;
+        prefault?: unknown;
+        catch?: unknown;
+        pipe?: unknown;
+        readonly?: unknown;
+        describe?: unknown;
+        meta?: unknown;
+        isOptional?: unknown;
+        isNullable?: unknown;
+        keyof?: unknown;
+        catchall?: unknown;
+        passthrough?: unknown;
+        loose?: unknown;
+        strict?: unknown;
+        strip?: unknown;
+        extend?: unknown;
+        merge?: unknown;
+        pick?: unknown;
+        omit?: unknown;
+        partial?: unknown;
+        required?: unknown;
     };
     url: '/api/claude-code/sessions/';
 };
@@ -162,16 +192,16 @@ export type GetApiClaudeCodeSessionsResponses = {
             id: string;
             projectPath: string;
             name: string;
-            claudeDirectoryPath?: string;
-            context?: string;
+            claudeDirectoryPath: string | unknown;
+            context: string | unknown;
             status: 'active' | 'idle' | 'expired';
-            metadata?: unknown;
+            metadata: unknown;
             createdAt: string;
             updatedAt: string;
             lastAccessedAt: string;
             isWorking: boolean;
-            currentJobId?: string;
-            lastJobStatus?: string;
+            currentJobId: string | unknown;
+            lastJobStatus: string | unknown;
             messageCount: number;
             tokenCount: number;
         }>;
@@ -219,16 +249,16 @@ export type PostApiClaudeCodeSessionsResponses = {
         id: string;
         projectPath: string;
         name: string;
-        claudeDirectoryPath?: string;
-        context?: string;
+        claudeDirectoryPath: string | unknown;
+        context: string | unknown;
         status: 'active' | 'idle' | 'expired';
-        metadata?: unknown;
+        metadata: unknown;
         createdAt: string;
         updatedAt: string;
         lastAccessedAt: string;
         isWorking: boolean;
-        currentJobId?: string;
-        lastJobStatus?: string;
+        currentJobId: string | unknown;
+        lastJobStatus: string | unknown;
         messageCount: number;
         tokenCount: number;
     };
@@ -239,7 +269,51 @@ export type PostApiClaudeCodeSessionsResponse = PostApiClaudeCodeSessionsRespons
 export type DeleteApiClaudeCodeSessionsBySessionIdData = {
     body?: never;
     path: {
-        sessionId: string;
+        '~standard': unknown;
+        def: {
+            [key: string]: unknown;
+        };
+        check: unknown;
+        clone: unknown;
+        brand: unknown;
+        register: unknown;
+        parse: unknown;
+        safeParse: unknown;
+        parseAsync: unknown;
+        safeParseAsync: unknown;
+        spa: unknown;
+        refine: unknown;
+        superRefine: unknown;
+        overwrite: unknown;
+        optional: unknown;
+        nullable: unknown;
+        nullish: unknown;
+        nonoptional: unknown;
+        array: unknown;
+        or: unknown;
+        and: unknown;
+        transform: unknown;
+        default: unknown;
+        prefault: unknown;
+        catch: unknown;
+        pipe: unknown;
+        readonly: unknown;
+        describe: unknown;
+        meta: unknown;
+        isOptional: unknown;
+        isNullable: unknown;
+        keyof: unknown;
+        catchall: unknown;
+        passthrough: unknown;
+        loose: unknown;
+        strict: unknown;
+        strip: unknown;
+        extend: unknown;
+        merge: unknown;
+        pick: unknown;
+        omit: unknown;
+        partial: unknown;
+        required: unknown;
     };
     query?: never;
     url: '/api/claude-code/sessions/{sessionId}';
@@ -271,7 +345,51 @@ export type DeleteApiClaudeCodeSessionsBySessionIdResponse = DeleteApiClaudeCode
 export type GetApiClaudeCodeSessionsBySessionIdData = {
     body?: never;
     path: {
-        sessionId: string;
+        '~standard': unknown;
+        def: {
+            [key: string]: unknown;
+        };
+        check: unknown;
+        clone: unknown;
+        brand: unknown;
+        register: unknown;
+        parse: unknown;
+        safeParse: unknown;
+        parseAsync: unknown;
+        safeParseAsync: unknown;
+        spa: unknown;
+        refine: unknown;
+        superRefine: unknown;
+        overwrite: unknown;
+        optional: unknown;
+        nullable: unknown;
+        nullish: unknown;
+        nonoptional: unknown;
+        array: unknown;
+        or: unknown;
+        and: unknown;
+        transform: unknown;
+        default: unknown;
+        prefault: unknown;
+        catch: unknown;
+        pipe: unknown;
+        readonly: unknown;
+        describe: unknown;
+        meta: unknown;
+        isOptional: unknown;
+        isNullable: unknown;
+        keyof: unknown;
+        catchall: unknown;
+        passthrough: unknown;
+        loose: unknown;
+        strict: unknown;
+        strip: unknown;
+        extend: unknown;
+        merge: unknown;
+        pick: unknown;
+        omit: unknown;
+        partial: unknown;
+        required: unknown;
     };
     query?: never;
     url: '/api/claude-code/sessions/{sessionId}';
@@ -297,16 +415,16 @@ export type GetApiClaudeCodeSessionsBySessionIdResponses = {
         id: string;
         projectPath: string;
         name: string;
-        claudeDirectoryPath?: string;
-        context?: string;
+        claudeDirectoryPath: string | unknown;
+        context: string | unknown;
         status: 'active' | 'idle' | 'expired';
-        metadata?: unknown;
+        metadata: unknown;
         createdAt: string;
         updatedAt: string;
         lastAccessedAt: string;
         isWorking: boolean;
-        currentJobId?: string;
-        lastJobStatus?: string;
+        currentJobId: string | unknown;
+        lastJobStatus: string | unknown;
         messageCount: number;
         tokenCount: number;
     };
@@ -320,7 +438,51 @@ export type PatchApiClaudeCodeSessionsBySessionIdData = {
         metadata?: unknown;
     };
     path: {
-        sessionId: string;
+        '~standard': unknown;
+        def: {
+            [key: string]: unknown;
+        };
+        check: unknown;
+        clone: unknown;
+        brand: unknown;
+        register: unknown;
+        parse: unknown;
+        safeParse: unknown;
+        parseAsync: unknown;
+        safeParseAsync: unknown;
+        spa: unknown;
+        refine: unknown;
+        superRefine: unknown;
+        overwrite: unknown;
+        optional: unknown;
+        nullable: unknown;
+        nullish: unknown;
+        nonoptional: unknown;
+        array: unknown;
+        or: unknown;
+        and: unknown;
+        transform: unknown;
+        default: unknown;
+        prefault: unknown;
+        catch: unknown;
+        pipe: unknown;
+        readonly: unknown;
+        describe: unknown;
+        meta: unknown;
+        isOptional: unknown;
+        isNullable: unknown;
+        keyof: unknown;
+        catchall: unknown;
+        passthrough: unknown;
+        loose: unknown;
+        strict: unknown;
+        strip: unknown;
+        extend: unknown;
+        merge: unknown;
+        pick: unknown;
+        omit: unknown;
+        partial: unknown;
+        required: unknown;
     };
     query?: never;
     url: '/api/claude-code/sessions/{sessionId}';
@@ -353,16 +515,16 @@ export type PatchApiClaudeCodeSessionsBySessionIdResponses = {
         id: string;
         projectPath: string;
         name: string;
-        claudeDirectoryPath?: string;
-        context?: string;
+        claudeDirectoryPath: string | unknown;
+        context: string | unknown;
         status: 'active' | 'idle' | 'expired';
-        metadata?: unknown;
+        metadata: unknown;
         createdAt: string;
         updatedAt: string;
         lastAccessedAt: string;
         isWorking: boolean;
-        currentJobId?: string;
-        lastJobStatus?: string;
+        currentJobId: string | unknown;
+        lastJobStatus: string | unknown;
         messageCount: number;
         tokenCount: number;
     };
@@ -373,7 +535,51 @@ export type PatchApiClaudeCodeSessionsBySessionIdResponse = PatchApiClaudeCodeSe
 export type GetApiClaudeCodeSessionsBySessionIdMessagesData = {
     body?: never;
     path: {
-        sessionId: string;
+        '~standard': unknown;
+        def: {
+            [key: string]: unknown;
+        };
+        check: unknown;
+        clone: unknown;
+        brand: unknown;
+        register: unknown;
+        parse: unknown;
+        safeParse: unknown;
+        parseAsync: unknown;
+        safeParseAsync: unknown;
+        spa: unknown;
+        refine: unknown;
+        superRefine: unknown;
+        overwrite: unknown;
+        optional: unknown;
+        nullable: unknown;
+        nullish: unknown;
+        nonoptional: unknown;
+        array: unknown;
+        or: unknown;
+        and: unknown;
+        transform: unknown;
+        default: unknown;
+        prefault: unknown;
+        catch: unknown;
+        pipe: unknown;
+        readonly: unknown;
+        describe: unknown;
+        meta: unknown;
+        isOptional: unknown;
+        isNullable: unknown;
+        keyof: unknown;
+        catchall: unknown;
+        passthrough: unknown;
+        loose: unknown;
+        strict: unknown;
+        strip: unknown;
+        extend: unknown;
+        merge: unknown;
+        pick: unknown;
+        omit: unknown;
+        partial: unknown;
+        required: unknown;
     };
     query?: never;
     url: '/api/claude-code/sessions/{sessionId}/messages';
@@ -398,19 +604,41 @@ export type GetApiClaudeCodeSessionsBySessionIdMessagesResponses = {
     200: {
         messages: Array<{
             id: string;
-            type: 'claude-code';
+            type: unknown;
             data: {
-                type: 'assistant' | 'user' | 'result' | 'system';
-                [key: string]: unknown | ('assistant' | 'user' | 'result' | 'system');
+                content: string;
+            } | {
+                type: unknown;
+                data: {
+                    content: string;
+                } | {
+                    type: unknown;
+                    data: {
+                        todos: Array<{
+                            content: string;
+                            status: unknown;
+                        }>;
+                    };
+                };
             };
+            parentToolUseId: string | unknown;
         }>;
         session: {
             id: string;
+            projectPath: string;
             name: string;
-            isWorking: boolean;
-            currentJobId?: string | unknown;
-            lastJobStatus?: string | unknown;
+            claudeDirectoryPath: string | unknown;
+            context: string | unknown;
             status: 'active' | 'idle' | 'expired';
+            metadata: unknown;
+            createdAt: string;
+            updatedAt: string;
+            lastAccessedAt: string;
+            isWorking: boolean;
+            currentJobId: string | unknown;
+            lastJobStatus: string | unknown;
+            messageCount: number;
+            tokenCount: number;
         };
     };
 };
@@ -418,16 +646,57 @@ export type GetApiClaudeCodeSessionsBySessionIdMessagesResponses = {
 export type GetApiClaudeCodeSessionsBySessionIdMessagesResponse = GetApiClaudeCodeSessionsBySessionIdMessagesResponses[keyof GetApiClaudeCodeSessionsBySessionIdMessagesResponses];
 
 export type PostApiClaudeCodeSessionsBySessionIdMessagesData = {
-    body: {
+    body?: {
         content: string;
         allowedTools?: Array<string>;
-        /**
-         * Agent name to use for this message
-         */
         agent?: string;
     };
     path: {
-        sessionId: string;
+        '~standard': unknown;
+        def: {
+            [key: string]: unknown;
+        };
+        check: unknown;
+        clone: unknown;
+        brand: unknown;
+        register: unknown;
+        parse: unknown;
+        safeParse: unknown;
+        parseAsync: unknown;
+        safeParseAsync: unknown;
+        spa: unknown;
+        refine: unknown;
+        superRefine: unknown;
+        overwrite: unknown;
+        optional: unknown;
+        nullable: unknown;
+        nullish: unknown;
+        nonoptional: unknown;
+        array: unknown;
+        or: unknown;
+        and: unknown;
+        transform: unknown;
+        default: unknown;
+        prefault: unknown;
+        catch: unknown;
+        pipe: unknown;
+        readonly: unknown;
+        describe: unknown;
+        meta: unknown;
+        isOptional: unknown;
+        isNullable: unknown;
+        keyof: unknown;
+        catchall: unknown;
+        passthrough: unknown;
+        loose: unknown;
+        strict: unknown;
+        strip: unknown;
+        extend: unknown;
+        merge: unknown;
+        pick: unknown;
+        omit: unknown;
+        partial: unknown;
+        required: unknown;
     };
     query?: never;
     url: '/api/claude-code/sessions/{sessionId}/messages';
@@ -459,7 +728,51 @@ export type PostApiClaudeCodeSessionsBySessionIdMessagesResponse = PostApiClaude
 export type GetApiClaudeCodeSessionsBySessionIdMessagesRawData = {
     body?: never;
     path: {
-        sessionId: string;
+        '~standard': unknown;
+        def: {
+            [key: string]: unknown;
+        };
+        check: unknown;
+        clone: unknown;
+        brand: unknown;
+        register: unknown;
+        parse: unknown;
+        safeParse: unknown;
+        parseAsync: unknown;
+        safeParseAsync: unknown;
+        spa: unknown;
+        refine: unknown;
+        superRefine: unknown;
+        overwrite: unknown;
+        optional: unknown;
+        nullable: unknown;
+        nullish: unknown;
+        nonoptional: unknown;
+        array: unknown;
+        or: unknown;
+        and: unknown;
+        transform: unknown;
+        default: unknown;
+        prefault: unknown;
+        catch: unknown;
+        pipe: unknown;
+        readonly: unknown;
+        describe: unknown;
+        meta: unknown;
+        isOptional: unknown;
+        isNullable: unknown;
+        keyof: unknown;
+        catchall: unknown;
+        passthrough: unknown;
+        loose: unknown;
+        strict: unknown;
+        strip: unknown;
+        extend: unknown;
+        merge: unknown;
+        pick: unknown;
+        omit: unknown;
+        partial: unknown;
+        required: unknown;
     };
     query?: never;
     url: '/api/claude-code/sessions/{sessionId}/messages/raw';
@@ -475,17 +788,98 @@ export type GetApiClaudeCodeSessionsBySessionIdMessagesRawResponses = {
 export type GetApiClaudeCodeSessionsBySessionIdCommandsData = {
     body?: never;
     path: {
-        sessionId: string;
+        '~standard': unknown;
+        def: {
+            [key: string]: unknown;
+        };
+        check: unknown;
+        clone: unknown;
+        brand: unknown;
+        register: unknown;
+        parse: unknown;
+        safeParse: unknown;
+        parseAsync: unknown;
+        safeParseAsync: unknown;
+        spa: unknown;
+        refine: unknown;
+        superRefine: unknown;
+        overwrite: unknown;
+        optional: unknown;
+        nullable: unknown;
+        nullish: unknown;
+        nonoptional: unknown;
+        array: unknown;
+        or: unknown;
+        and: unknown;
+        transform: unknown;
+        default: unknown;
+        prefault: unknown;
+        catch: unknown;
+        pipe: unknown;
+        readonly: unknown;
+        describe: unknown;
+        meta: unknown;
+        isOptional: unknown;
+        isNullable: unknown;
+        keyof: unknown;
+        catchall: unknown;
+        passthrough: unknown;
+        loose: unknown;
+        strict: unknown;
+        strip: unknown;
+        extend: unknown;
+        merge: unknown;
+        pick: unknown;
+        omit: unknown;
+        partial: unknown;
+        required: unknown;
     };
     query?: {
-        /**
-         * Filter commands by type
-         */
-        type?: 'user' | 'project' | 'all';
-        /**
-         * Search commands by name or content
-         */
-        search?: string;
+        '~standard'?: unknown;
+        def?: {
+            [key: string]: unknown;
+        };
+        check?: unknown;
+        clone?: unknown;
+        brand?: unknown;
+        register?: unknown;
+        parse?: unknown;
+        safeParse?: unknown;
+        parseAsync?: unknown;
+        safeParseAsync?: unknown;
+        spa?: unknown;
+        refine?: unknown;
+        superRefine?: unknown;
+        overwrite?: unknown;
+        optional?: unknown;
+        nullable?: unknown;
+        nullish?: unknown;
+        nonoptional?: unknown;
+        array?: unknown;
+        or?: unknown;
+        and?: unknown;
+        transform?: unknown;
+        default?: unknown;
+        prefault?: unknown;
+        catch?: unknown;
+        pipe?: unknown;
+        readonly?: unknown;
+        describe?: unknown;
+        meta?: unknown;
+        isOptional?: unknown;
+        isNullable?: unknown;
+        keyof?: unknown;
+        catchall?: unknown;
+        passthrough?: unknown;
+        loose?: unknown;
+        strict?: unknown;
+        strip?: unknown;
+        extend?: unknown;
+        merge?: unknown;
+        pick?: unknown;
+        omit?: unknown;
+        partial?: unknown;
+        required?: unknown;
     };
     url: '/api/claude-code/sessions/{sessionId}/commands/';
 };
@@ -522,27 +916,12 @@ export type GetApiClaudeCodeSessionsBySessionIdCommandsResponses = {
      */
     200: {
         commands: Array<{
-            /**
-             * Command name (filename without .md extension)
-             */
             name: string;
-            /**
-             * Contents of the command file
-             */
             body: string;
-            /**
-             * Command type: user (from Claude home) or project (from repo)
-             */
             type: 'user' | 'project';
         }>;
         sources: {
-            /**
-             * Path to user commands directory
-             */
             userCommandsPath?: string;
-            /**
-             * Path to project commands directory
-             */
             projectCommandsPath?: string;
         };
     };
@@ -553,17 +932,98 @@ export type GetApiClaudeCodeSessionsBySessionIdCommandsResponse = GetApiClaudeCo
 export type GetApiClaudeCodeSessionsBySessionIdAgentsData = {
     body?: never;
     path: {
-        sessionId: string;
+        '~standard': unknown;
+        def: {
+            [key: string]: unknown;
+        };
+        check: unknown;
+        clone: unknown;
+        brand: unknown;
+        register: unknown;
+        parse: unknown;
+        safeParse: unknown;
+        parseAsync: unknown;
+        safeParseAsync: unknown;
+        spa: unknown;
+        refine: unknown;
+        superRefine: unknown;
+        overwrite: unknown;
+        optional: unknown;
+        nullable: unknown;
+        nullish: unknown;
+        nonoptional: unknown;
+        array: unknown;
+        or: unknown;
+        and: unknown;
+        transform: unknown;
+        default: unknown;
+        prefault: unknown;
+        catch: unknown;
+        pipe: unknown;
+        readonly: unknown;
+        describe: unknown;
+        meta: unknown;
+        isOptional: unknown;
+        isNullable: unknown;
+        keyof: unknown;
+        catchall: unknown;
+        passthrough: unknown;
+        loose: unknown;
+        strict: unknown;
+        strip: unknown;
+        extend: unknown;
+        merge: unknown;
+        pick: unknown;
+        omit: unknown;
+        partial: unknown;
+        required: unknown;
     };
     query?: {
-        /**
-         * Filter agents by type
-         */
-        type?: 'user' | 'project' | 'all';
-        /**
-         * Search agents by name or description
-         */
-        search?: string;
+        '~standard'?: unknown;
+        def?: {
+            [key: string]: unknown;
+        };
+        check?: unknown;
+        clone?: unknown;
+        brand?: unknown;
+        register?: unknown;
+        parse?: unknown;
+        safeParse?: unknown;
+        parseAsync?: unknown;
+        safeParseAsync?: unknown;
+        spa?: unknown;
+        refine?: unknown;
+        superRefine?: unknown;
+        overwrite?: unknown;
+        optional?: unknown;
+        nullable?: unknown;
+        nullish?: unknown;
+        nonoptional?: unknown;
+        array?: unknown;
+        or?: unknown;
+        and?: unknown;
+        transform?: unknown;
+        default?: unknown;
+        prefault?: unknown;
+        catch?: unknown;
+        pipe?: unknown;
+        readonly?: unknown;
+        describe?: unknown;
+        meta?: unknown;
+        isOptional?: unknown;
+        isNullable?: unknown;
+        keyof?: unknown;
+        catchall?: unknown;
+        passthrough?: unknown;
+        loose?: unknown;
+        strict?: unknown;
+        strip?: unknown;
+        extend?: unknown;
+        merge?: unknown;
+        pick?: unknown;
+        omit?: unknown;
+        partial?: unknown;
+        required?: unknown;
     };
     url: '/api/claude-code/sessions/{sessionId}/agents/';
 };
@@ -600,35 +1060,14 @@ export type GetApiClaudeCodeSessionsBySessionIdAgentsResponses = {
      */
     200: {
         agents: Array<{
-            /**
-             * Agent name from YAML frontmatter
-             */
             name: string;
-            /**
-             * Agent description from YAML frontmatter
-             */
             description: string;
-            /**
-             * Agent color from YAML frontmatter
-             */
             color?: string;
-            /**
-             * Main content of the agent file (after frontmatter)
-             */
             content: string;
-            /**
-             * Agent type: user (from Claude home) or project (from repo)
-             */
             type: 'user' | 'project';
         }>;
         sources: {
-            /**
-             * Path to user agents directory
-             */
             userAgentsPath?: string;
-            /**
-             * Path to project agents directory
-             */
             projectAgentsPath?: string;
         };
     };

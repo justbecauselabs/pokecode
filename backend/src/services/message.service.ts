@@ -2,12 +2,12 @@ import { and, asc, desc, eq, isNotNull, sql } from 'drizzle-orm';
 import { db } from '../db';
 import { sessions } from '../db/schema-sqlite';
 import { sessionMessages } from '../db/schema-sqlite/session_messages';
+import type { Message as NewMessage } from '../schemas/message.schema';
 import type {
   ClaudeCodeSDKMessage,
   ClaudeCodeSDKUserMessage,
-  Message,
-} from '../schemas/message.schema';
-import { extractTokenCount, sdkToMessage } from '../utils/message-parser';
+} from '../schemas/messages-deprecated.schema';
+import { extractTokenCount, parseDbMessage } from '../utils/message-parser';
 import { sqliteQueueService } from './queue-sqlite.service';
 
 export class MessageService {
@@ -38,9 +38,9 @@ export class MessageService {
   }
 
   /**
-   * Get all messages as Message wrapper objects
+   * Get all messages using new Message format
    */
-  async getMessages(sessionId: string): Promise<Message[]> {
+  async getMessages(sessionId: string): Promise<NewMessage[]> {
     // Get DB messages in chronological order
     const dbMessages = await db
       .select()
@@ -48,22 +48,12 @@ export class MessageService {
       .where(eq(sessionMessages.sessionId, sessionId))
       .orderBy(asc(sessionMessages.createdAt));
 
-    const results: Message[] = [];
+    const results: NewMessage[] = [];
 
     for (const dbMsg of dbMessages) {
-      if (!dbMsg.contentData) {
-        continue;
-      }
-
-      try {
-        const rawData = JSON.parse(dbMsg.contentData);
-
-        // Convert to Message wrapper format
-        const message = sdkToMessage(rawData, dbMsg.id);
-        results.push(message);
-      } catch (error) {
-        // Skip malformed messages
-        console.warn(`Failed to parse message ${dbMsg.id}:`, error);
+      const parsedMessage = parseDbMessage(dbMsg);
+      if (parsedMessage) {
+        results.push(parsedMessage);
       }
     }
 

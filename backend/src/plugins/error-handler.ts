@@ -61,6 +61,73 @@ const errorHandlerPlugin: FastifyPluginAsync = async (fastify) => {
       });
     }
 
+    // Handle response serialization errors with detailed logging
+    if (error.message?.includes('does not match schema definition')) {
+      // Try to extract more detailed error information
+      const errorDetails: Record<string, unknown> = {
+        message: error.message,
+        stack: error.stack,
+        requestUrl: request.url,
+        requestMethod: request.method,
+        errorName: error.name,
+        errorCode: (error as unknown as Record<string, unknown>).code,
+        allErrorKeys: Object.keys(error),
+        errorConstructor: error.constructor.name,
+      };
+
+      // Check for AJV/validation specific properties
+      if ('validation' in error) {
+        errorDetails.validation = (error as unknown as Record<string, unknown>).validation;
+      }
+      if ('validationContext' in error) {
+        errorDetails.validationContext = (
+          error as unknown as Record<string, unknown>
+        ).validationContext;
+      }
+      if ('schemaPath' in error) {
+        errorDetails.schemaPath = (error as unknown as Record<string, unknown>).schemaPath;
+      }
+      if ('instancePath' in error) {
+        errorDetails.instancePath = (error as unknown as Record<string, unknown>).instancePath;
+      }
+      if ('params' in error) {
+        errorDetails.params = (error as unknown as Record<string, unknown>).params;
+      }
+
+      // Check for fast-json-stringify specific properties
+      if ('serialization' in error) {
+        errorDetails.serialization = (error as unknown as Record<string, unknown>).serialization;
+        fastify.log.error(
+          {
+            fastJsonStringifyError: (error as unknown as Record<string, unknown>).serialization,
+          },
+          'fast-json-stringify serialization details',
+        );
+      }
+
+      fastify.log.error(
+        {
+          serializationError: errorDetails,
+        },
+        'Response serialization error - schema mismatch detected',
+      );
+
+      return reply.code(500).send({
+        error: 'Response serialization error',
+        code: 'SERIALIZATION_ERROR',
+        statusCode: 500,
+        details: error.message,
+        debug:
+          process.env.NODE_ENV === 'development'
+            ? {
+                allErrorKeys: Object.keys(error),
+                errorConstructor: error.constructor.name,
+                errorName: error.name,
+              }
+            : undefined,
+      });
+    }
+
     // Handle JWT errors
     if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
       return reply.code(401).send({

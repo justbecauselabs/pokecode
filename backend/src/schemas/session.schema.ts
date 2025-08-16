@@ -1,82 +1,78 @@
-import { type Static, Type } from '@sinclair/typebox';
+import { z } from 'zod';
 
 // Create session schemas
-export const CreateSessionRequestSchema = Type.Object({
-  projectPath: Type.Optional(
-    Type.String({
-      pattern: '^[a-zA-Z0-9._/-]+$',
-      minLength: 1,
-      maxLength: 255,
-    }),
-  ),
-  folderName: Type.Optional(
-    Type.String({
-      pattern: '^[a-zA-Z0-9._-]+$',
-      minLength: 1,
-      maxLength: 100,
-    }),
-  ),
-  context: Type.Optional(Type.String({ maxLength: 5000 })),
-  metadata: Type.Optional(
-    Type.Object({
-      repository: Type.Optional(Type.String()),
-      branch: Type.Optional(Type.String()),
-      allowedTools: Type.Optional(Type.Array(Type.String())),
-    }),
-  ),
+export const CreateSessionRequestSchema = z.object({
+  projectPath: z
+    .string()
+    .regex(/^[a-zA-Z0-9._/-]+$/)
+    .min(1)
+    .max(255)
+    .optional(),
+  folderName: z
+    .string()
+    .regex(/^[a-zA-Z0-9._-]+$/)
+    .min(1)
+    .max(100)
+    .optional(),
+  context: z.string().max(5000).optional(),
+  metadata: z
+    .object({
+      repository: z.string().optional(),
+      branch: z.string().optional(),
+      allowedTools: z.array(z.string()).optional(),
+    })
+    .optional(),
 });
 
-export const SessionResponseSchema = Type.Object({
-  id: Type.String({ format: 'uuid' }),
-  projectPath: Type.String(),
-  name: Type.String(),
-  claudeDirectoryPath: Type.Optional(Type.String()),
-  context: Type.Optional(Type.String()),
-  status: Type.Union([Type.Literal('active'), Type.Literal('idle'), Type.Literal('expired')]),
-  metadata: Type.Optional(Type.Any()),
-  createdAt: Type.String({ format: 'date-time' }),
-  updatedAt: Type.String({ format: 'date-time' }),
-  lastAccessedAt: Type.String({ format: 'date-time' }),
+export const SessionSchema = z.object({
+  id: z.string().uuid(),
+  projectPath: z.string(),
+  name: z.string(),
+  claudeDirectoryPath: z.string().nullable(),
+  context: z.string().nullable(),
+  status: z.union([z.literal('active'), z.literal('idle'), z.literal('expired')]),
+  metadata: z.any().nullable(),
+  createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime(),
+  lastAccessedAt: z.string().datetime(),
   // Working state fields
-  isWorking: Type.Boolean(),
-  currentJobId: Type.Optional(Type.String()),
-  lastJobStatus: Type.Optional(Type.String()),
+  isWorking: z.boolean(),
+  currentJobId: z.string().nullable(),
+  lastJobStatus: z.string().nullable(),
   // Token and message tracking
-  messageCount: Type.Integer({ minimum: 0, default: 0 }),
-  tokenCount: Type.Integer({ minimum: 0, default: 0 }),
+  messageCount: z.number().int().min(0).default(0),
+  tokenCount: z.number().int().min(0).default(0),
 });
 
 // List sessions schemas
-export const ListSessionsQuerySchema = Type.Object({
-  status: Type.Optional(
-    Type.Union([Type.Literal('active'), Type.Literal('idle'), Type.Literal('expired')]),
-  ),
-  limit: Type.Optional(Type.Integer({ minimum: 1, maximum: 100, default: 20 })),
-  offset: Type.Optional(Type.Integer({ minimum: 0, default: 0 })),
+export const ListSessionsQuerySchema = z.object({
+  status: z.union([z.literal('active'), z.literal('idle'), z.literal('expired')]).optional(),
+  limit: z.number().int().min(1).max(100).default(20).optional(),
+  offset: z.number().int().min(0).default(0).optional(),
 });
 
-export const ListSessionsResponseSchema = Type.Object({
-  sessions: Type.Array(SessionResponseSchema),
-  total: Type.Integer(),
-  limit: Type.Integer(),
-  offset: Type.Integer(),
+export const ListSessionsResponseSchema = z.object({
+  sessions: z.array(SessionSchema),
+  total: z.number().int(),
+  limit: z.number().int(),
+  offset: z.number().int(),
 });
 
 // Update session schemas
-export const UpdateSessionRequestSchema = Type.Object({
-  context: Type.Optional(Type.String({ maxLength: 5000 })),
-  metadata: Type.Optional(Type.Any()),
+export const UpdateSessionRequestSchema = z.object({
+  context: z.string().max(5000).optional(),
+  metadata: z.any().optional(),
 });
 
 // Session params schema
-export const SessionParamsSchema = Type.Object({
-  sessionId: Type.String({ format: 'uuid' }),
+export const SessionParamsSchema = z.object({
+  sessionId: z.string().uuid(),
 });
 
 // Type exports
-export type CreateSessionRequest = Static<typeof CreateSessionRequestSchema>;
-export type SessionResponse = Static<typeof SessionResponseSchema>;
-export type ListSessionsQuery = Static<typeof ListSessionsQuerySchema>;
-export type ListSessionsResponse = Static<typeof ListSessionsResponseSchema>;
-export type UpdateSessionRequest = Static<typeof UpdateSessionRequestSchema>;
-export type SessionParams = Static<typeof SessionParamsSchema>;
+export type CreateSessionRequest = z.infer<typeof CreateSessionRequestSchema>;
+export type Session = z.infer<typeof SessionSchema>;
+export type ListSessionsQuery = z.infer<typeof ListSessionsQuerySchema>;
+export type ListSessionsResponse = z.infer<typeof ListSessionsResponseSchema>;
+export type UpdateSessionRequest = z.infer<typeof UpdateSessionRequestSchema>;
+export type SessionParams = z.infer<typeof SessionParamsSchema>;
