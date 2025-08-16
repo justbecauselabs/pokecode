@@ -22,7 +22,17 @@ export const AssistantMessageMessageSchema = z.object({
 });
 
 // Tool result type schema
-export const ToolTypeSchema = z.enum(['todo', 'read', 'bash', 'edit', 'multiedit', 'task', 'grep']);
+export const ToolTypeSchema = z.enum([
+  'todo',
+  'read',
+  'bash',
+  'edit',
+  'multiedit',
+  'task',
+  'grep',
+  'glob',
+  'ls',
+]);
 
 // Todo tool use data schema (nested data part)
 export const TodoToolUseDataSchema = z.object({
@@ -82,6 +92,16 @@ export const GrepToolUseDataSchema = z.object({
   contextLines: z.number().optional(),
 });
 
+// Glob tool use data schema (nested data part)
+export const GlobToolUseDataSchema = z.object({
+  pattern: z.string(),
+  path: z.string().optional(),
+});
+
+// LS tool use data schema (nested data part)
+export const LsToolUseDataSchema = z.object({
+  path: z.string(),
+});
 
 // Tool use schema with the actual nested structure
 export const AssistantMessageToolUseSchema = z.discriminatedUnion('type', [
@@ -119,6 +139,16 @@ export const AssistantMessageToolUseSchema = z.discriminatedUnion('type', [
     type: z.literal('grep'),
     toolId: z.string(),
     data: GrepToolUseDataSchema,
+  }),
+  z.object({
+    type: z.literal('glob'),
+    toolId: z.string(),
+    data: GlobToolUseDataSchema,
+  }),
+  z.object({
+    type: z.literal('ls'),
+    toolId: z.string(),
+    data: LsToolUseDataSchema,
   }),
 ]);
 
@@ -192,6 +222,8 @@ export type EditToolUseData = z.infer<typeof EditToolUseDataSchema>;
 export type MultiEditToolUseData = z.infer<typeof MultiEditToolUseDataSchema>;
 export type TaskToolUseData = z.infer<typeof TaskToolUseDataSchema>;
 export type GrepToolUseData = z.infer<typeof GrepToolUseDataSchema>;
+export type GlobToolUseData = z.infer<typeof GlobToolUseDataSchema>;
+export type LsToolUseData = z.infer<typeof LsToolUseDataSchema>;
 export type AssistantMessageToolUse = z.infer<typeof AssistantMessageToolUseSchema>;
 export type AssistantMessageToolResult = z.infer<typeof AssistantMessageToolResultSchema>;
 export type AssistantMessage = z.infer<typeof AssistantMessageSchema>;

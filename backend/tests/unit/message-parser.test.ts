@@ -2254,6 +2254,378 @@ describe('parseDbMessage - Grep Tool Parsing', () => {
   });
 });
 
+describe('parseDbMessage - Glob Tool Parsing', () => {
+  test('parses Glob tool use with pattern only', () => {
+    const sdkMessage = {
+      type: 'assistant',
+      message: {
+        id: 'msg_01GlobPattern',
+        content: [
+          {
+            type: 'tool_use',
+            id: 'toolu_01GgvuMJZNzyqaFcFnpxZQmv',
+            name: 'Glob',
+            input: {
+              pattern: '**/BetTextFormatter.swift',
+            },
+          },
+        ],
+        model: 'claude-sonnet-4-20250514',
+        role: 'assistant',
+        stop_reason: null,
+        stop_sequence: null,
+        type: 'message',
+        usage: {
+          input_tokens: 30,
+          output_tokens: 15,
+          service_tier: null,
+        },
+      },
+      parent_tool_use_id: null,
+      session_id: 'test-session',
+    };
+
+    const dbMessage = createMockDbMessage(sdkMessage, 'assistant');
+    const result = parseDbMessage(dbMessage);
+
+    expect(result).not.toBeNull();
+    expect(result?.type).toBe('assistant');
+    expect(result?.data).toMatchObject({
+      type: 'tool_use',
+      data: {
+        type: 'glob',
+        toolId: 'toolu_01GgvuMJZNzyqaFcFnpxZQmv',
+        data: {
+          pattern: '**/BetTextFormatter.swift',
+          path: undefined,
+        },
+      },
+    });
+    expect(result?.parentToolUseId).toBeNull();
+  });
+
+  test('parses Glob tool use with pattern and path', () => {
+    const sdkMessage = {
+      type: 'assistant',
+      message: {
+        id: 'msg_1',
+        content: [
+          {
+            type: 'tool_use',
+            id: 'toolu_glob_with_path',
+            name: 'Glob',
+            input: {
+              pattern: '*.swift',
+              path: '/Users/billy/workspace/bms/ios',
+            },
+          },
+        ],
+        model: 'claude-sonnet-4-20250514',
+        role: 'assistant',
+        stop_reason: 'tool_use',
+        stop_sequence: null,
+        type: 'message',
+        usage: {
+          input_tokens: 25,
+          output_tokens: 10,
+          service_tier: null,
+        },
+      },
+      parent_tool_use_id: null,
+      session_id: 'test-session',
+    };
+
+    const dbMessage = createMockDbMessage(sdkMessage, 'assistant');
+    const result = parseDbMessage(dbMessage);
+
+    expect(result).not.toBeNull();
+    expect(result?.data).toMatchObject({
+      type: 'tool_use',
+      data: {
+        type: 'glob',
+        toolId: 'toolu_glob_with_path',
+        data: {
+          pattern: '*.swift',
+          path: '/Users/billy/workspace/bms/ios',
+        },
+      },
+    });
+  });
+
+  test('parses Glob tool use with relative path when project path matches', () => {
+    const projectPath = '/Users/billy/workspace/bms';
+    const sdkMessage = {
+      type: 'assistant',
+      message: {
+        id: 'msg_1',
+        content: [
+          {
+            type: 'tool_use',
+            id: 'toolu_glob_relative',
+            name: 'Glob',
+            input: {
+              pattern: '**/*.rs',
+              path: '/Users/billy/workspace/bms/crates',
+            },
+          },
+        ],
+        model: 'claude-sonnet-4-20250514',
+        role: 'assistant',
+        stop_reason: 'tool_use',
+        stop_sequence: null,
+        type: 'message',
+        usage: {
+          input_tokens: 25,
+          output_tokens: 10,
+          service_tier: null,
+        },
+      },
+      parent_tool_use_id: null,
+      session_id: 'test-session',
+    };
+
+    const dbMessage = createMockDbMessage(sdkMessage, 'assistant');
+    const result = parseDbMessage(dbMessage, projectPath);
+
+    expect(result).not.toBeNull();
+    expect(result?.data).toMatchObject({
+      type: 'tool_use',
+      data: {
+        type: 'glob',
+        toolId: 'toolu_glob_relative',
+        data: {
+          pattern: '**/*.rs',
+          path: 'crates', // Should be relative path
+        },
+      },
+    });
+  });
+
+  test('returns null for Glob tool use missing pattern', () => {
+    const sdkMessage = {
+      type: 'assistant',
+      message: {
+        id: 'msg_1',
+        content: [
+          {
+            type: 'tool_use',
+            id: 'toolu_glob_no_pattern',
+            name: 'Glob',
+            input: {
+              path: '/some/path',
+              // Missing pattern
+            },
+          },
+        ],
+        model: 'claude-sonnet-4-20250514',
+        role: 'assistant',
+        stop_reason: 'tool_use',
+        stop_sequence: null,
+        type: 'message',
+        usage: {
+          input_tokens: 15,
+          output_tokens: 5,
+          service_tier: null,
+        },
+      },
+      parent_tool_use_id: null,
+      session_id: 'test-session',
+    };
+
+    const dbMessage = createMockDbMessage(sdkMessage, 'assistant');
+    const result = parseDbMessage(dbMessage);
+
+    expect(result).toBeNull();
+  });
+});
+
+describe('parseDbMessage - LS Tool Parsing', () => {
+  test('parses LS tool use with absolute path', () => {
+    const sdkMessage = {
+      type: 'assistant',
+      message: {
+        id: 'msg_01LSAbsolute',
+        content: [
+          {
+            type: 'tool_use',
+            id: 'toolu_01ANqycqe3Vugqz9naz1idyY',
+            name: 'LS',
+            input: {
+              path: '/Users/billy/workspace/bms',
+            },
+          },
+        ],
+        model: 'claude-sonnet-4-20250514',
+        role: 'assistant',
+        stop_reason: null,
+        stop_sequence: null,
+        type: 'message',
+        usage: {
+          input_tokens: 20,
+          output_tokens: 10,
+          service_tier: null,
+        },
+      },
+      parent_tool_use_id: null,
+      session_id: 'test-session',
+    };
+
+    const dbMessage = createMockDbMessage(sdkMessage, 'assistant');
+    const result = parseDbMessage(dbMessage);
+
+    expect(result).not.toBeNull();
+    expect(result?.type).toBe('assistant');
+    expect(result?.data).toMatchObject({
+      type: 'tool_use',
+      data: {
+        type: 'ls',
+        toolId: 'toolu_01ANqycqe3Vugqz9naz1idyY',
+        data: {
+          path: '/Users/billy/workspace/bms',
+        },
+      },
+    });
+    expect(result?.parentToolUseId).toBeNull();
+  });
+
+  test('parses LS tool use with relative path when project path matches', () => {
+    const projectPath = '/Users/billy/workspace/bms';
+    const sdkMessage = {
+      type: 'assistant',
+      message: {
+        id: 'msg_1',
+        content: [
+          {
+            type: 'tool_use',
+            id: 'toolu_ls_relative',
+            name: 'LS',
+            input: {
+              path: '/Users/billy/workspace/bms/ios/Sources',
+            },
+          },
+        ],
+        model: 'claude-sonnet-4-20250514',
+        role: 'assistant',
+        stop_reason: 'tool_use',
+        stop_sequence: null,
+        type: 'message',
+        usage: {
+          input_tokens: 20,
+          output_tokens: 10,
+          service_tier: null,
+        },
+      },
+      parent_tool_use_id: null,
+      session_id: 'test-session',
+    };
+
+    const dbMessage = createMockDbMessage(sdkMessage, 'assistant');
+    const result = parseDbMessage(dbMessage, projectPath);
+
+    expect(result).not.toBeNull();
+    expect(result?.data).toMatchObject({
+      type: 'tool_use',
+      data: {
+        type: 'ls',
+        toolId: 'toolu_ls_relative',
+        data: {
+          path: 'ios/Sources', // Should be relative path
+        },
+      },
+    });
+  });
+
+  test('returns null for LS tool use missing path', () => {
+    const sdkMessage = {
+      type: 'assistant',
+      message: {
+        id: 'msg_1',
+        content: [
+          {
+            type: 'tool_use',
+            id: 'toolu_ls_no_path',
+            name: 'LS',
+            input: {
+              // Missing path
+            },
+          },
+        ],
+        model: 'claude-sonnet-4-20250514',
+        role: 'assistant',
+        stop_reason: 'tool_use',
+        stop_sequence: null,
+        type: 'message',
+        usage: {
+          input_tokens: 15,
+          output_tokens: 5,
+          service_tier: null,
+        },
+      },
+      parent_tool_use_id: null,
+      session_id: 'test-session',
+    };
+
+    const dbMessage = createMockDbMessage(sdkMessage, 'assistant');
+    const result = parseDbMessage(dbMessage);
+
+    expect(result).toBeNull();
+  });
+
+  test('prioritizes Glob and LS tools over Read when multiple tools present', () => {
+    const sdkMessage = {
+      type: 'assistant',
+      message: {
+        id: 'msg_1',
+        content: [
+          {
+            type: 'tool_use',
+            id: 'toolu_read_1',
+            name: 'Read',
+            input: {
+              file_path: '/some/file.txt',
+            },
+          },
+          {
+            type: 'tool_use',
+            id: 'toolu_glob_1',
+            name: 'Glob',
+            input: {
+              pattern: '*.txt',
+            },
+          },
+        ],
+        model: 'claude-sonnet-4-20250514',
+        role: 'assistant',
+        stop_reason: 'tool_use',
+        stop_sequence: null,
+        type: 'message',
+        usage: {
+          input_tokens: 30,
+          output_tokens: 15,
+          service_tier: null,
+        },
+      },
+      parent_tool_use_id: null,
+      session_id: 'test-session',
+    };
+
+    const dbMessage = createMockDbMessage(sdkMessage, 'assistant');
+    const result = parseDbMessage(dbMessage);
+
+    expect(result).not.toBeNull();
+    expect(result?.data).toMatchObject({
+      type: 'tool_use',
+      data: {
+        type: 'glob',
+        toolId: 'toolu_glob_1',
+        data: {
+          pattern: '*.txt',
+        },
+      },
+    });
+  });
+});
+
 describe('extractMessageText - MultiEdit Tool Display', () => {
   test('extracts display text for MultiEdit tool use', () => {
     const message = {
@@ -2339,6 +2711,73 @@ describe('extractMessageText - MultiEdit Tool Display', () => {
     const result = extractMessageText(message);
 
     expect(result).toBe('[Searching for "unwrap\\(\\)" in crates]');
+  });
+
+  test('extracts display text for Glob tool use with path', () => {
+    const message = {
+      id: 'msg_1',
+      type: 'assistant' as const,
+      data: {
+        type: 'tool_use',
+        toolId: 'toolu_glob_123',
+        data: {
+          type: 'glob',
+          data: {
+            pattern: '**/*.swift',
+            path: 'ios',
+          },
+        },
+      },
+      parentToolUseId: null,
+    };
+
+    const result = extractMessageText(message);
+
+    expect(result).toBe('[Finding files matching "**/*.swift" in ios]');
+  });
+
+  test('extracts display text for Glob tool use without path', () => {
+    const message = {
+      id: 'msg_1',
+      type: 'assistant' as const,
+      data: {
+        type: 'tool_use',
+        toolId: 'toolu_glob_no_path_123',
+        data: {
+          type: 'glob',
+          data: {
+            pattern: '**/BetTextFormatter.swift',
+          },
+        },
+      },
+      parentToolUseId: null,
+    };
+
+    const result = extractMessageText(message);
+
+    expect(result).toBe('[Finding files matching "**/BetTextFormatter.swift"]');
+  });
+
+  test('extracts display text for LS tool use', () => {
+    const message = {
+      id: 'msg_1',
+      type: 'assistant' as const,
+      data: {
+        type: 'tool_use',
+        toolId: 'toolu_ls_123',
+        data: {
+          type: 'ls',
+          data: {
+            path: 'ios/Sources',
+          },
+        },
+      },
+      parentToolUseId: null,
+    };
+
+    const result = extractMessageText(message);
+
+    expect(result).toBe('[Listing directory: ios/Sources]');
   });
 
   test('extracts display text for MultiEdit tool use with absolute path', () => {

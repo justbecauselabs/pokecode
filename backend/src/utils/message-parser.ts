@@ -6,11 +6,7 @@ import type {
   ToolUseBlockParam,
 } from '@anthropic-ai/sdk/resources/messages';
 import type { SessionMessage } from '../db/schema-sqlite/session_messages';
-import type {
-  AssistantMessage,
-  Message,
-  UserMessage,
-} from '../schemas/message.schema';
+import type { AssistantMessage, Message, UserMessage } from '../schemas/message.schema';
 import { logger } from './logger';
 
 /**
@@ -373,6 +369,81 @@ function parseGrepToolUse(
 }
 
 /**
+ * Parse Glob tool use from content blocks
+ */
+function parseGlobToolUse(
+  toolUseBlocks: Array<ToolUseBlockParam>,
+  projectPath?: string,
+): {
+  toolId: string;
+  pattern: string;
+  path?: string;
+} | null {
+  const globBlock = toolUseBlocks.find((block) => block.name === 'Glob');
+
+  if (globBlock) {
+    const input = globBlock.input as {
+      pattern?: string;
+      path?: string;
+    };
+
+    if (input?.pattern && globBlock.id) {
+      let path = input.path;
+
+      // If project path is provided and the path starts with it, show relative path
+      if (projectPath && path && path.startsWith(projectPath)) {
+        const relativePath = path.slice(projectPath.length);
+        // Remove leading slash if present
+        path = relativePath.startsWith('/') ? relativePath.slice(1) : relativePath;
+      }
+
+      return {
+        toolId: globBlock.id,
+        pattern: input.pattern,
+        path,
+      };
+    }
+  }
+  return null;
+}
+
+/**
+ * Parse LS tool use from content blocks
+ */
+function parseLsToolUse(
+  toolUseBlocks: Array<ToolUseBlockParam>,
+  projectPath?: string,
+): {
+  toolId: string;
+  path: string;
+} | null {
+  const lsBlock = toolUseBlocks.find((block) => block.name === 'LS');
+
+  if (lsBlock) {
+    const input = lsBlock.input as {
+      path?: string;
+    };
+
+    if (input?.path && lsBlock.id) {
+      let path = input.path;
+
+      // If project path is provided and the path starts with it, show relative path
+      if (projectPath && path.startsWith(projectPath)) {
+        const relativePath = path.slice(projectPath.length);
+        // Remove leading slash if present
+        path = relativePath.startsWith('/') ? relativePath.slice(1) : relativePath;
+      }
+
+      return {
+        toolId: lsBlock.id,
+        path,
+      };
+    }
+  }
+  return null;
+}
+
+/**
  * Extract text content from assistant message content blocks
  */
 function extractTextContent(content: Array<ContentBlockParam>): string {
@@ -464,6 +535,47 @@ function parseAssistantMessage(
               lineNumbers: grepData.lineNumbers,
               headLimit: grepData.headLimit,
               contextLines: grepData.contextLines,
+            },
+          },
+        },
+        parentToolUseId: sdkMessage.parent_tool_use_id,
+      };
+    }
+
+    // Handle Glob tool specifically
+    const globData = parseGlobToolUse(toolUseBlocks, projectPath);
+    if (globData) {
+      return {
+        id: dbMessage.id,
+        type: 'assistant',
+        data: {
+          type: 'tool_use',
+          data: {
+            type: 'glob',
+            toolId: globData.toolId,
+            data: {
+              pattern: globData.pattern,
+              path: globData.path,
+            },
+          },
+        },
+        parentToolUseId: sdkMessage.parent_tool_use_id,
+      };
+    }
+
+    // Handle LS tool specifically
+    const lsData = parseLsToolUse(toolUseBlocks, projectPath);
+    if (lsData) {
+      return {
+        id: dbMessage.id,
+        type: 'assistant',
+        data: {
+          type: 'tool_use',
+          data: {
+            type: 'ls',
+            toolId: lsData.toolId,
+            data: {
+              path: lsData.path,
             },
           },
         },
@@ -670,6 +782,15 @@ export function extractMessageText(message: Message): string {
 
         if (toolUse.type === 'grep') {
           return `[Searching for "${toolUse.data.pattern}" in ${toolUse.data.path}]`;
+        }
+
+        if (toolUse.type === 'glob') {
+          const pathText = toolUse.data.path ? ` in ${toolUse.data.path}` : '';
+          return `[Finding files matching "${toolUse.data.pattern}"${pathText}]`;
+        }
+
+        if (toolUse.type === 'ls') {
+          return `[Listing directory: ${toolUse.data.path}]`;
         }
 
         return '[Tool used]';
