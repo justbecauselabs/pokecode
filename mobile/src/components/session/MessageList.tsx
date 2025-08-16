@@ -4,7 +4,27 @@ import { useEffect, useMemo, useRef } from 'react';
 import { Text, View } from 'react-native';
 import type { Message } from '../../types/messages';
 import { LoadingState } from '../common';
-import { EnhancedMessageBubble } from './EnhancedMessageBubble';
+import { MessageView } from './MessageView';
+import { MESSAGE_TYPE_STYLES } from './messageColors';
+
+// Type header component
+const TypeHeader: React.FC<{ type: Message['type'] }> = ({ type }) => {
+  const styles = MESSAGE_TYPE_STYLES[type] || MESSAGE_TYPE_STYLES.assistant;
+  const displayName = type.charAt(0).toUpperCase() + type.slice(1);
+  
+  return (
+    <View className={`px-3 py-1 pt-3 ${styles.background}`} style={{ backgroundColor: styles.backgroundColor }}>
+      <Text style={{
+        color: styles.headerTextColor,
+        fontFamily: 'JetBrains Mono, Fira Code, SF Mono, Monaco, Menlo, Courier New, monospace',
+        fontSize: 12,
+        fontWeight: '600'
+      }}>
+        {displayName}
+      </Text>
+    </View>
+  );
+};
 
 interface MessageListProps {
   messages: Message[];
@@ -43,9 +63,18 @@ export const MessageList: React.FC<MessageListProps> = ({
     return messages.toReversed();
   }, [messages]);
 
-  const renderMessage = ({ item }: { item: Message }) => (
-    <EnhancedMessageBubble message={item} onLongPress={() => onMessageLongPress?.(item)} />
-  );
+  const renderMessage = ({ item, index }: { item: Message; index: number }) => {
+    // Since the list is inverted, we need to check the next item (which is actually the previous message)
+    const nextMessage = finalMessages[index + 1];
+    const shouldShowHeader = !nextMessage || nextMessage.type !== item.type;
+    
+    return (
+      <View>
+        {shouldShowHeader && <TypeHeader type={item.type} />}
+        <MessageView message={item} onLongPress={() => onMessageLongPress?.(item)} />
+      </View>
+    );
+  };
 
   const renderEmpty = () => (
     <View>
