@@ -1,4 +1,3 @@
-import type { Message } from '../../types/messages';
 import { darkTheme } from '../../constants/theme';
 
 // Message type styling configuration using theme constants

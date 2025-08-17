@@ -4,10 +4,8 @@
 
 import { memo } from 'react';
 import { ActionSheetIOS, Alert, Platform, Pressable, Text, View } from 'react-native';
-import type { GetApiClaudeCodeSessionsResponse } from '@/api/generated';
+import type { Session } from '@/api/client';
 import { formatRelativeTime } from '@/utils/format';
-
-type Session = GetApiClaudeCodeSessionsResponse['sessions'][0];
 
 interface SessionCardProps {
   session: Session;

@@ -5,7 +5,6 @@ import Fastify, { type FastifyPluginAsync } from 'fastify';
 import corsPlugin from './plugins/cors';
 import errorHandlerPlugin from './plugins/error-handler';
 import requestLoggerPlugin from './plugins/request-logger';
-import swaggerPlugin from './plugins/swagger';
 // Import routes
 import healthRoutes from './routes/health';
 import repositoryRoutes from './routes/repositories';
@@ -22,7 +21,6 @@ export const app: FastifyPluginAsync = async (fastify, _opts) => {
   await fastify.register(errorHandlerPlugin);
   await fastify.register(corsPlugin);
   await fastify.register(requestLoggerPlugin);
-  await fastify.register(swaggerPlugin);
   // Rate limiting plugin removed (was Redis-based)
 
   // Register routes

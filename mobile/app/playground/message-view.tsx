@@ -1,7 +1,7 @@
 import { ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from '@/components/common';
 import { MessageView } from '@/components/session/MessageView';
-import type { Message } from '@/api/generated/types.gen';
+import type { Message } from '@/schemas/message.schema';
 
 const sampleUserMessage: Message = {
   id: "4cd7cf3b-26fa-4eb1-ba23-fe50ce956034",
@@ -190,7 +190,7 @@ export default function MessageViewPlayground() {
             Message View
           </Text>
           <Text className="text-muted-foreground font-mono">
-            Terminal-style left-aligned messages with caret (>) and dot (●) indicators
+            Terminal-style left-aligned messages with caret (&gt;) and dot (●) indicators
           </Text>
         </View>
 
@@ -202,7 +202,7 @@ export default function MessageViewPlayground() {
               Simple Messages
             </Text>
             <Text className="text-sm text-muted-foreground mb-4 font-mono">
-              User messages start with > and assistant messages start with ● (aligned at top)
+              User messages start with &gt; and assistant messages start with ● (aligned at top)
             </Text>
             
             <View className="space-y-3">
@@ -280,7 +280,7 @@ export default function MessageViewPlayground() {
                 </Text>
                 <Text className="text-xs text-muted-foreground font-mono">
                   • Terminal-style left-aligned design{'\n'}
-                  • User messages: > prefix{'\n'}
+                  • User messages: &gt; prefix{'\n'}
                   • Assistant messages: ● prefix{'\n'}
                   • Markdown support for assistant messages{'\n'}
                   • Token usage display{'\n'}

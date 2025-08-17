@@ -10,12 +10,10 @@ import {
   Text,
   View,
 } from 'react-native';
-import type { GetApiClaudeCodeSessionsResponse } from '@/api/generated';
+import type { Session } from '@/api/client';
 import { LoadingState, SafeAreaView } from '@/components/common';
 import { useDeleteSession, useSessions } from '@/hooks/useSessions';
 import { formatRelativeTime } from '@/utils/format';
-
-type Session = GetApiClaudeCodeSessionsResponse['sessions'][0];
 
 export default function HomeScreen() {
   const { data: sessions = [], isLoading, error, refetch } = useSessions();

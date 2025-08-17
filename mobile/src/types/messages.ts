@@ -1,17 +1,22 @@
 // Type aliases for message-related types
-import type { GetApiClaudeCodeSessionsBySessionIdMessagesResponse } from '../api/generated';
+import type { GetMessagesResponse } from '../api/client';
+import type { 
+  Message, 
+  UserMessage, 
+  AssistantMessage,
+  AssistantMessageMessage
+} from '../schemas/message.schema';
 
-// Extract the Message type from the generated response type
-export type Message = GetApiClaudeCodeSessionsBySessionIdMessagesResponse['messages'][number];
-
-// Extract the Session type
-export type SessionInfo = GetApiClaudeCodeSessionsBySessionIdMessagesResponse['session'];
+// Re-export from schemas for compatibility
+export type { Message } from '../schemas/message.schema';
+export type { Session as SessionInfo } from '../schemas/session.schema';
 
 // Full response type
-export type GetMessagesResponse = GetApiClaudeCodeSessionsBySessionIdMessagesResponse;
+export type { GetMessagesResponse };
 
 // Helper types for the new Claude Code SDK message structure
 export type ClaudeCodeSDKMessage = Message['data'];
+
 
 // Helper function to extract text content from various message types
 export const extractMessageText = (message: Message): string => {
@@ -20,40 +25,26 @@ export const extractMessageText = (message: Message): string => {
     return '[Invalid message data]';
   }
   
-  const sdkMessage = message.data;
+  if (message.type === 'user') {
+    const userMsg = message.data as UserMessage;
+    return userMsg.content;
+  }
   
-  if (sdkMessage.type === 'user') {
-    const userMsg = sdkMessage as any;
-    if (typeof userMsg.message?.content === 'string') {
-      return userMsg.message.content;
-    }
-    if (Array.isArray(userMsg.message?.content)) {
-      return userMsg.message.content
-        .filter((block: any) => block.type === 'text')
-        .map((block: any) => block.text)
-        .join('\n');
+  if (message.type === 'assistant') {
+    const assistantMsg = message.data as AssistantMessage;
+    if (assistantMsg.type === 'message') {
+      const messageData = assistantMsg.data as AssistantMessageMessage;
+      return messageData.content;
     }
     return '';
   }
   
-  if (sdkMessage.type === 'assistant') {
-    const assistantMsg = sdkMessage as any;
-    if (Array.isArray(assistantMsg.message?.content)) {
-      return assistantMsg.message.content
-        .filter((block: any) => block.type === 'text')
-        .map((block: any) => block.text)
-        .join('\n');
-    }
-    return '';
+  if (message.type === 'system') {
+    return '[System: message]';
   }
   
-  if (sdkMessage.type === 'system') {
-    return `[System: ${(sdkMessage as any).subtype || 'message'}]`;
-  }
-  
-  if (sdkMessage.type === 'result') {
-    const resultMsg = sdkMessage as any;
-    return resultMsg.result || `[Result: ${resultMsg.subtype || 'completed'}]`;
+  if (message.type === 'result') {
+    return '[Result: completed]';
   }
   
   return '[Unknown message type]';
@@ -61,9 +52,9 @@ export const extractMessageText = (message: Message): string => {
 
 // Helper function to get message role for styling
 export const getMessageRole = (message: Message): 'user' | 'assistant' | 'system' | 'result' => {
-  if (!message?.data?.type) {
-    console.warn('getMessageRole: message.data.type is undefined', message);
+  if (!message?.type) {
+    console.warn('getMessageRole: message.type is undefined', message);
     return 'user'; // Default fallback
   }
-  return message.data.type;
+  return message.type;
 };

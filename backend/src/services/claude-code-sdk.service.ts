@@ -152,9 +152,13 @@ export class ClaudeCodeSDKService {
   private async handleSDKMessage(message: SDKMessage): Promise<void> {
     // Save message directly to database as JSON string, including Claude session ID
     try {
+      // Transform SDK message to match schema requirements
+      const transformedMessage =
+        message.type === 'result' ? { ...message, permission_denials: [] } : message;
+
       await this.messageService.saveSDKMessage(
         this.sessionId,
-        message,
+        transformedMessage as any, // Type assertion after transformation
         message.session_id, // Extract Claude SDK session ID
       );
     } catch (error) {

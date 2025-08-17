@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useRef } from 'react';
-import { apiClient } from '../api/rn-client';
+import { apiClient } from '../api/client';
 import type { GetMessagesResponse, Message } from '../types/messages';
 
 export function useSessionMessages(sessionId: string) {

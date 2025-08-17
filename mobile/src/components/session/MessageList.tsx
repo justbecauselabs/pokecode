@@ -6,12 +6,13 @@ import type { Message } from '../../types/messages';
 import { LoadingState } from '../common';
 import { MessageView } from './MessageView';
 import { MESSAGE_TYPE_STYLES } from './messageColors';
+import type { AssistantMessageToolResult } from '../../schemas/message.schema';
 
 // Type header component
 const TypeHeader: React.FC<{ type: Message['type'] }> = ({ type }) => {
   const styles = MESSAGE_TYPE_STYLES[type] || MESSAGE_TYPE_STYLES.assistant;
   const displayName = type.charAt(0).toUpperCase() + type.slice(1);
-  
+
   return (
     <View className={`px-3 py-1 pt-3 ${styles.background}`} style={{ backgroundColor: styles.backgroundColor }}>
       <Text style={{
@@ -31,6 +32,7 @@ interface MessageListProps {
   isLoading: boolean;
   error: Error | null;
   onMessageLongPress?: (message: Message) => void;
+  onToolResultPress?: (result: AssistantMessageToolResult) => void;
 }
 
 export const MessageList: React.FC<MessageListProps> = ({
@@ -38,6 +40,7 @@ export const MessageList: React.FC<MessageListProps> = ({
   isLoading,
   error,
   onMessageLongPress,
+  onToolResultPress,
 }) => {
   const flashListRef = useRef<FlashList<Message>>(null);
   const isInitialLoad = useRef(true);
@@ -47,7 +50,7 @@ export const MessageList: React.FC<MessageListProps> = ({
       // Get current scroll offset directly from the ref
       const scrollMetrics = flashListRef.current.getScrollableNode()?.getScrollMetrics?.();
       const currentOffset = scrollMetrics?.offset?.y || 0;
-      
+
       // Only auto-scroll if user is near the bottom (scroll offset <= 50)
       if (currentOffset <= 50) {
         // Small delay to ensure content is rendered
@@ -59,19 +62,41 @@ export const MessageList: React.FC<MessageListProps> = ({
     }
   }, [messages.length]);
 
-  const finalMessages = useMemo(() => {
-    return messages.toReversed();
+  const { finalMessages, toolResults } = useMemo(() => {
+    // Create a dictionary of tool results keyed by tool_use_id
+    const toolResultsDict: Record<string, AssistantMessageToolResult> = {};
+
+    // Filter out tool result messages and collect them in the dictionary
+    const filteredMessages = messages.filter(message => {
+      if (message.type === 'assistant' && message.data) {
+        const assistantData = message.data;
+        if (assistantData.type === 'tool_result') {
+          const toolResultData = assistantData.data;
+          toolResultsDict[toolResultData.tool_use_id] = toolResultData;
+          return false; // Filter out tool result messages
+        }
+      }
+      return true; // Keep all other messages
+    });
+
+    console.log("toolResultsDict", Object.keys(toolResultsDict).length);
+    console.log(Object.keys(toolResultsDict));
+
+    return {
+      finalMessages: filteredMessages.toReversed(),
+      toolResults: toolResultsDict
+    };
   }, [messages]);
 
   const renderMessage = ({ item, index }: { item: Message; index: number }) => {
     // Since the list is inverted, we need to check the next item (which is actually the previous message)
     const nextMessage = finalMessages[index + 1];
     const shouldShowHeader = !nextMessage || nextMessage.type !== item.type;
-    
+
     return (
       <View>
         {shouldShowHeader && <TypeHeader type={item.type} />}
-        <MessageView message={item} onLongPress={() => onMessageLongPress?.(item)} />
+        <MessageView message={item} toolResults={toolResults} onLongPress={() => onMessageLongPress?.(item)} onToolResultPress={onToolResultPress} />
       </View>
     );
   };

@@ -104,7 +104,7 @@ const messageRoutes: FastifyPluginAsync = async (fastify) => {
         }
 
         // Get all messages parsed from SDK format to API format
-        const messages = await messageService.getMessages(sessionId);
+        const messages = await messageService.getMessages(sessionId, session.projectPath);
 
         logger.debug(
           {

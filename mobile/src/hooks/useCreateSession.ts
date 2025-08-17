@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
-import { apiClient } from '@/api/rn-client';
+import { apiClient } from '@/api/client';
 import type { Repository } from './useRepositories';
 
 interface CreateSessionParams {

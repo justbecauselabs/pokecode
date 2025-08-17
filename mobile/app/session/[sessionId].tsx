@@ -16,9 +16,11 @@ import { MessageDebugBottomSheet } from '../../src/components/session/MessageDeb
 import { MessageInput, type MessageInputRef } from '../../src/components/session/MessageInput';
 import { MessageList } from '../../src/components/session/MessageList';
 import { SlashCommandBottomSheet } from '../../src/components/session/SlashCommandBottomSheet';
+import { ToolResultBottomSheet } from '../../src/components/session/ToolResultBottomSheet';
 import { useSessionMessages } from '../../src/hooks/useSessionMessages';
 import { useSlashCommands } from '../../src/hooks/useSlashCommands';
 import type { Message } from '../../src/types/messages';
+import type { AssistantMessageToolResult } from '../../src/schemas/message.schema';
 
 export default function SessionDetailScreen() {
   const { sessionId } = useLocalSearchParams<{ sessionId: string }>();
@@ -48,11 +50,15 @@ export default function SessionDetailScreen() {
 
   // Bottom sheet refs and state
   const slashCommandBottomSheetRef = useRef<BottomSheetModal>(null);
+  const toolResultBottomSheetRef = useRef<BottomSheetModal>(null);
   const messageInputRef = useRef<MessageInputRef>(null);
   
   // Debug state
   const [debugMessage, setDebugMessage] = useState<Message | null>(null);
   const [isDebugVisible, setIsDebugVisible] = useState(false);
+  
+  // Tool result state
+  const [toolResult, setToolResult] = useState<AssistantMessageToolResult | null>(null);
 
   // Slash command handlers
   const handleShowSlashCommands = () => {
@@ -87,6 +93,12 @@ export default function SessionDetailScreen() {
   const handleCloseDebug = () => {
     setIsDebugVisible(false);
     setDebugMessage(null);
+  };
+
+  // Tool result handlers
+  const handleToolResultPress = (result: AssistantMessageToolResult) => {
+    setToolResult(result);
+    toolResultBottomSheetRef.current?.present();
   };
 
   // Gesture handler for swipe to dismiss keyboard
@@ -142,6 +154,7 @@ export default function SessionDetailScreen() {
                   isLoading={isLoading}
                   error={error}
                   onMessageLongPress={handleMessageLongPress}
+                  onToolResultPress={handleToolResultPress}
                 />
               </View>
               <MessageInput
@@ -172,6 +185,12 @@ export default function SessionDetailScreen() {
           message={debugMessage}
           isVisible={isDebugVisible}
           onClose={handleCloseDebug}
+        />
+
+        {/* Tool Result Bottom Sheet */}
+        <ToolResultBottomSheet 
+          ref={toolResultBottomSheetRef}
+          result={toolResult}
         />
       </SafeAreaView>
     </>

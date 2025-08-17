@@ -1,12 +1,9 @@
+import type { SDKMessage } from '@anthropic-ai/claude-code';
 import { and, asc, desc, eq, isNotNull, sql } from 'drizzle-orm';
 import { db } from '../db';
 import { sessions } from '../db/schema-sqlite';
 import { sessionMessages } from '../db/schema-sqlite/session_messages';
-import type { Message as NewMessage } from '../schemas/message.schema';
-import type {
-  ClaudeCodeSDKMessage,
-  ClaudeCodeSDKUserMessage,
-} from '../schemas/messages-deprecated.schema';
+import type { Message } from '../schemas/message.schema';
 import { extractTokenCount, parseDbMessage } from '../utils/message-parser';
 import { sqliteQueueService } from './queue-sqlite.service';
 
@@ -40,7 +37,7 @@ export class MessageService {
   /**
    * Get all messages using new Message format
    */
-  async getMessages(sessionId: string): Promise<NewMessage[]> {
+  async getMessages(sessionId: string, projectPath?: string): Promise<Message[]> {
     // Get DB messages in chronological order
     const dbMessages = await db
       .select()
@@ -48,10 +45,10 @@ export class MessageService {
       .where(eq(sessionMessages.sessionId, sessionId))
       .orderBy(asc(sessionMessages.createdAt));
 
-    const results: NewMessage[] = [];
+    const results: Message[] = [];
 
     for (const dbMsg of dbMessages) {
-      const parsedMessage = parseDbMessage(dbMsg);
+      const parsedMessage = parseDbMessage(dbMsg, projectPath);
       if (parsedMessage) {
         results.push(parsedMessage);
       }
@@ -63,10 +60,7 @@ export class MessageService {
   /**
    * Update message with content data (stored as JSON string)
    */
-  async updateMessageContentData(
-    messageId: string,
-    contentData: ClaudeCodeSDKMessage,
-  ): Promise<void> {
+  async updateMessageContentData(messageId: string, contentData: SDKMessage): Promise<void> {
     await db
       .update(sessionMessages)
       .set({
@@ -80,7 +74,7 @@ export class MessageService {
    */
   async saveSDKMessage(
     sessionId: string,
-    sdkMessage: ClaudeCodeSDKMessage,
+    sdkMessage: SDKMessage,
     claudeCodeSessionId?: string,
   ): Promise<void> {
     // Determine message type for database - map all to user/assistant for compatibility
@@ -121,7 +115,7 @@ export class MessageService {
    */
   async saveUserMessage(sessionId: string, content: string): Promise<void> {
     // Create user message in Claude SDK format
-    const userMessage: ClaudeCodeSDKUserMessage = {
+    const userMessage: SDKMessage & { type: 'user' } = {
       type: 'user',
       message: {
         role: 'user',
@@ -178,7 +172,7 @@ export class MessageService {
       id: string;
       sessionId: string;
       type: string;
-      contentData: ClaudeCodeSDKMessage; // Parsed JSON object
+      contentData: SDKMessage; // Parsed JSON object
       claudeCodeSessionId: string | null;
       tokenCount: number | null;
       createdAt: Date;

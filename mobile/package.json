@@ -18,7 +18,7 @@
     "prebuild": "bunx expo prebuild",
     "eas:build:preview": "bunx eas build --profile preview",
     "eas:build:production": "bunx eas build --profile production",
-    "openapi:generate": "bunx openapi-ts -i http://localhost:3001/docs/json -o src/api/generated --client '@hey-api/client-fetch'"
+    "copy-schemas": "node scripts/copy-schemas.js"
   },
   "dependencies": {
     "@expo/vector-icons": "^14.1.0",
@@ -45,12 +45,12 @@
     "react-native-web": "^0.20.0",
     "tailwindcss": "^3.4.0",
     "tailwindcss-react-native": "^1.7.10",
+    "zod": "^4.0.17",
     "zustand": "^4.5.2"
   },
   "devDependencies": {
     "@babel/core": "^7.24.0",
     "@biomejs/biome": "^2.1.4",
-    "@hey-api/openapi-ts": "^0.80.8",
     "@testing-library/react-native": "^12.8.1",
     "@types/bun": "latest",
     "@types/react": "~19.0.10",

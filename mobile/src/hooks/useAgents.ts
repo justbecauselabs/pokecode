@@ -1,16 +1,16 @@
 import { useQuery } from '@tanstack/react-query';
-import { apiClient } from '../api/rn-client';
-import type { GetAgentsQuery, GetAgentsResponse } from '../types/agents';
+import { apiClient } from '../api/client';
+import type { ListAgentsQuery, ListAgentsResponse } from '../api/client';
 
 /**
  * Hook to fetch available agents for a session
  */
-export function useAgents(params: { sessionId: string; query?: GetAgentsQuery }) {
+export function useAgents(params: { sessionId: string; query?: ListAgentsQuery }) {
   const { sessionId, query } = params;
 
   return useQuery({
     queryKey: ['agents', sessionId, query],
-    queryFn: (): Promise<GetAgentsResponse> => {
+    queryFn: (): Promise<ListAgentsResponse> => {
       return apiClient.getAgents({ sessionId, query });
     },
     enabled: !!sessionId,

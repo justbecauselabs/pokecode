@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/api/client';
-import type { GetApiClaudeCodeSessionsBySessionIdCommandsResponse } from '@/api/generated';
+import type { ListCommandsResponse } from '@/api/client';
 
 interface UseSlashCommandsParams {
   sessionId: string;
@@ -17,7 +17,7 @@ export function useSlashCommands(params: UseSlashCommandsParams) {
 
   return useQuery({
     queryKey: ['slash-commands', sessionId, type, search],
-    queryFn: async (): Promise<GetApiClaudeCodeSessionsBySessionIdCommandsResponse> => {
+    queryFn: async (): Promise<ListCommandsResponse> => {
       return apiClient.getCommands({
         sessionId,
         query: { type, search },
@@ -33,7 +33,7 @@ export function useSlashCommands(params: UseSlashCommandsParams) {
  * Extract command names from the API response
  */
 export function extractCommandNames(
-  commandsData: GetApiClaudeCodeSessionsBySessionIdCommandsResponse | undefined
+  commandsData: ListCommandsResponse | undefined
 ): string[] {
   if (!commandsData?.commands) return [];
   return commandsData.commands.map((cmd) => cmd.name);

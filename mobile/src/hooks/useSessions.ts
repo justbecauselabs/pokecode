@@ -4,9 +4,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/api/client';
-import type { GetApiClaudeCodeSessionsResponse } from '@/api/generated';
-
-type Session = GetApiClaudeCodeSessionsResponse['sessions'][0];
+import type { Session } from '@/api/client';
 
 export const SESSIONS_QUERY_KEY = ['sessions'] as const;
 
