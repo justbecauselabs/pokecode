@@ -398,6 +398,17 @@ class APIClient {
     });
   }
 
+  async cancelSession(params: { sessionId: string }): Promise<{ success: boolean }> {
+    const validatedParams = SessionIdParamsSchema.parse(params);
+
+    return this.request({
+      path: '/api/claude-code/sessions/{sessionId}/cancel',
+      pathParams: validatedParams,
+      options: { method: 'POST' },
+      responseSchema: z.object({ success: z.boolean() }),
+    });
+  }
+
   // File endpoints
   async getFiles(params: {
     sessionId: string;

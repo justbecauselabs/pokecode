@@ -1,11 +1,14 @@
 import type { SDKMessage } from '@anthropic-ai/claude-code';
+import type { Message } from '@pokecode/api';
 import { and, asc, desc, eq, isNotNull, sql } from 'drizzle-orm';
 import { db } from '../db';
 import { sessions } from '../db/schema-sqlite';
 import { sessionMessages } from '../db/schema-sqlite/session_messages';
-import type { Message } from '@pokecode/api';
+import { createChildLogger } from '../utils/logger';
 import { extractTokenCount, parseDbMessage } from '../utils/message-parser';
 import { sqliteQueueService } from './queue-sqlite.service';
+
+const logger = createChildLogger('message-service');
 
 export class MessageService {
   /**
@@ -195,6 +198,46 @@ export class MessageService {
       tokenCount: msg.tokenCount,
       createdAt: msg.createdAt,
     }));
+  }
+
+  /**
+   * Cancel current session processing
+   */
+  async cancelSession(sessionId: string): Promise<void> {
+    // Get the current session to check if it's working
+    const session = await db.query.sessions.findFirst({
+      where: eq(sessions.id, sessionId),
+      columns: {
+        currentJobId: true,
+        isWorking: true,
+      },
+    });
+
+    if (!session || !session.isWorking) {
+      logger.debug(
+        { sessionId, hasSession: !!session, isWorking: session?.isWorking },
+        'No active session to cancel',
+      );
+      return;
+    }
+
+    logger.info({ sessionId, currentJobId: session.currentJobId }, 'Cancelling active session');
+
+    // Cancel all jobs for this session (simplified approach since we can only have one active job per session)
+    await sqliteQueueService.cancelJobsForSession(sessionId);
+
+    // Update session state immediately
+    await db
+      .update(sessions)
+      .set({
+        isWorking: false,
+        currentJobId: null,
+        lastJobStatus: 'cancelled',
+        updatedAt: new Date(),
+      })
+      .where(eq(sessions.id, sessionId));
+
+    logger.info({ sessionId }, 'Successfully cancelled session');
   }
 }
 

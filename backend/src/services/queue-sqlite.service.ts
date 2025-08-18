@@ -48,29 +48,54 @@ export class SQLiteQueueService {
     return jobId;
   }
 
-  async cancelJob(jobId: string, promptId: string) {
-    // Update job status to cancelled
+  async cancelJobsForSession(sessionId: string) {
+    logger.info({ sessionId }, 'Queue service received session cancellation request');
+
+    // Get all active jobs for this session
+    const activeJobs = await db
+      .select({ id: jobQueue.id, promptId: jobQueue.promptId })
+      .from(jobQueue)
+      .where(
+        and(
+          eq(jobQueue.sessionId, sessionId),
+          sql`${jobQueue.status} IN ('pending', 'processing')`,
+        ),
+      );
+
+    if (activeJobs.length === 0) {
+      logger.debug({ sessionId }, 'No active jobs found for session');
+      return;
+    }
+
+    logger.info({ sessionId, jobCount: activeJobs.length }, 'Cancelling active jobs for session');
+
+    // Update all active jobs to cancelled
     await db
       .update(jobQueue)
       .set({
         status: 'cancelled',
         completedAt: new Date(),
       })
-      .where(eq(jobQueue.id, jobId));
+      .where(
+        and(
+          eq(jobQueue.sessionId, sessionId),
+          sql`${jobQueue.status} IN ('pending', 'processing')`,
+        ),
+      );
 
-    // Remove from processing set if it was being processed
-    this.processingJobs.delete(jobId);
+    // Remove from processing set
+    for (const job of activeJobs) {
+      this.processingJobs.delete(job.id);
+    }
 
-    logger.info({ jobId, promptId }, 'Job cancelled');
+    logger.info(
+      { sessionId, cancelledJobs: activeJobs.length },
+      'Queue service marked all session jobs as cancelled',
+    );
 
-    // Get session ID for event publishing
-    const job = await db.query.jobQueue.findFirst({
-      where: eq(jobQueue.id, jobId),
-      columns: { sessionId: true },
-    });
-
-    if (job) {
-      await this.publishEvent(job.sessionId, promptId, {
+    // Publish completion events for all cancelled jobs
+    for (const job of activeJobs) {
+      await this.publishEvent(sessionId, job.promptId, {
         type: 'complete',
         summary: {
           duration: 0,

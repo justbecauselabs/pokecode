@@ -37,7 +37,9 @@ export default function SessionDetailScreen() {
 		isLoading,
 		error,
 		sendMessage,
+		cancelSession,
 		isSending,
+		isCancelling,
 		isWorking,
 	} = useSessionMessages(sessionId ?? "");
 
@@ -234,10 +236,13 @@ export default function SessionDetailScreen() {
 								sessionId={sessionId}
 								session={messageSession} // Now includes full session data from messages endpoint
 								onSendMessage={sendMessage}
+								onCancelSession={cancelSession}
 								onShowSlashCommands={handleShowSlashCommands}
 								onShowAgents={handleShowAgents}
 								selectedAgents={selectedAgents}
-								isSending={isSending || isWorking}
+								isSending={isSending}
+								isWorking={isWorking}
+								isCancelling={isCancelling}
 								disabled={isLoading}
 							/>
 						</Animated.View>

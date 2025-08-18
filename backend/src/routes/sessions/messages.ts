@@ -1,5 +1,3 @@
-import type { FastifyPluginAsync } from 'fastify';
-import { z } from 'zod';
 import {
   CreateMessageBodySchema,
   type CreateMessageRequest,
@@ -7,6 +5,8 @@ import {
   GetMessagesResponseSchema,
   SessionIdParamsSchema,
 } from '@pokecode/api';
+import type { FastifyPluginAsync } from 'fastify';
+import { z } from 'zod';
 import { messageService } from '@/services/message.service';
 import { sessionService } from '@/services/session.service';
 import { logger } from '@/utils/logger';
@@ -209,6 +209,57 @@ const messageRoutes: FastifyPluginAsync = async (fastify) => {
             code: 'NOT_FOUND',
           });
         }
+        throw error;
+      }
+    },
+  );
+
+  // POST /sessions/:sessionId/cancel - Cancel current session processing
+  fastify.post<{
+    Params: { sessionId: string };
+  }>(
+    '/cancel',
+    {
+      schema: {
+        params: SessionIdParamsSchema,
+        response: {
+          200: z.object({ success: z.boolean() }),
+          404: ErrorResponseSchema,
+        },
+      },
+    },
+    async (request, reply) => {
+      const { sessionId } = request.params;
+
+      try {
+        // Verify session exists
+        const session = await sessionService.getSession(sessionId);
+        if (!session) {
+          return reply.code(404).send({
+            error: 'Session not found',
+            code: 'NOT_FOUND',
+          });
+        }
+
+        // Cancel the current session processing
+        await messageService.cancelSession(sessionId);
+
+        logger.debug(
+          {
+            sessionId,
+          },
+          'Session cancelled successfully',
+        );
+
+        return reply.send({ success: true });
+      } catch (error) {
+        logger.error(
+          {
+            sessionId,
+            error: error instanceof Error ? error.message : String(error),
+          },
+          'Failed to cancel session',
+        );
         throw error;
       }
     },

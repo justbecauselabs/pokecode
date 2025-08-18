@@ -152,6 +152,51 @@ export function useSessionMessages(sessionId: string) {
     },
   });
 
+  const cancelSessionMutation = useMutation({
+    mutationFn: async () => {
+      return apiClient.cancelSession({ sessionId });
+    },
+    onMutate: async () => {
+      console.log('[Cancel Mutation] Starting session cancellation');
+
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['sessionMessages', sessionId] });
+
+      // Snapshot previous value
+      const previousMessages = queryClient.getQueryData<GetMessagesResponse>([
+        'sessionMessages',
+        sessionId,
+      ]);
+
+      // Optimistically update session state to not working
+      if (previousMessages?.session) {
+        queryClient.setQueryData<GetMessagesResponse>(['sessionMessages', sessionId], {
+          ...previousMessages,
+          session: {
+            ...previousMessages.session,
+            isWorking: false,
+            lastJobStatus: 'cancelled',
+          },
+        });
+      }
+
+      return { previousMessages };
+    },
+    onError: (_, __, context) => {
+      console.log('[Cancel Mutation] Session cancellation failed');
+
+      if (context?.previousMessages) {
+        queryClient.setQueryData(['sessionMessages', sessionId], context.previousMessages);
+      }
+    },
+    onSuccess: () => {
+      console.log('[Cancel Mutation] Session cancelled successfully, invalidating query');
+
+      // Invalidate to get fresh data from server
+      queryClient.invalidateQueries({ queryKey: ['sessionMessages', sessionId] });
+    },
+  });
+
   const invalidateMessages = () => {
     queryClient.invalidateQueries({ queryKey: ['sessionMessages', sessionId] });
   };
@@ -165,6 +210,11 @@ export function useSessionMessages(sessionId: string) {
     return result;
   };
 
+  const cancelSession = async () => {
+    const result = await cancelSessionMutation.mutateAsync();
+    return result;
+  };
+
   return {
     messages: data?.messages || [],
     session: data?.session,
@@ -173,7 +223,9 @@ export function useSessionMessages(sessionId: string) {
     refetch,
     invalidateMessages,
     sendMessage,
+    cancelSession,
     isSending: sendMessageMutation.isPending,
+    isCancelling: cancelSessionMutation.isPending,
     isWorking: data?.session?.isWorking || false, // Use server state
   };
 }

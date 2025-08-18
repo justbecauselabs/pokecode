@@ -12,10 +12,13 @@ interface MessageInputProps {
   sessionId: string;
   session?: SessionInfo;
   onSendMessage: (params: { content: string }) => Promise<unknown>;
+  onCancelSession?: () => Promise<unknown>;
   onShowSlashCommands?: () => void;
   onShowAgents?: () => void;
   selectedAgents: string[];
   isSending?: boolean;
+  isWorking?: boolean;
+  isCancelling?: boolean;
   disabled?: boolean;
 }
 
@@ -23,10 +26,13 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>((prop
   const {
     session,
     onSendMessage,
+    onCancelSession,
     onShowSlashCommands,
     onShowAgents,
     selectedAgents,
     isSending = false,
+    isWorking = false,
+    isCancelling = false,
     disabled,
   } = props;
   const [message, setMessage] = useState('');
@@ -79,6 +85,17 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>((prop
     }
   };
 
+  const handleCancel = async () => {
+    if (!onCancelSession || isCancelling) return;
+
+    try {
+      await onCancelSession();
+    } catch (error) {
+      console.error('Failed to cancel session:', error);
+      Alert.alert('Error', 'Failed to cancel session. Please try again.');
+    }
+  };
+
   return (
     <View className="border-t border-border bg-background p-4">
       <View className="flex-row items-end gap-3">
@@ -96,25 +113,44 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>((prop
           />
         </View>
 
-        {/* Send Button with Up Arrow */}
-        <TouchableOpacity
-          className={`w-8 h-8 rounded-full items-center justify-center active:opacity-70 ${
-            disabled || !message.trim() || isSending ? 'bg-gray-500' : 'bg-white'
-          }`}
-          onPress={handleSend}
-          disabled={disabled || !message.trim() || isSending}
-          activeOpacity={0.7}
-        >
-          {isSending ? (
-            <View className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
-          ) : (
-            <Feather
-              name="arrow-up"
-              size={16}
-              color={disabled || !message.trim() || isSending ? '#9ca3af' : '#282c34'} // Using design tokens for muted vs primary-foreground
-            />
-          )}
-        </TouchableOpacity>
+        {/* Send/Stop Button */}
+        {isWorking ? (
+          // Stop button when session is working
+          <TouchableOpacity
+            className={`w-8 h-8 rounded items-center justify-center active:opacity-70 ${
+              disabled || isCancelling ? 'bg-gray-500' : 'bg-red-500'
+            }`}
+            onPress={handleCancel}
+            disabled={disabled || isCancelling}
+            activeOpacity={0.7}
+          >
+            {isCancelling ? (
+              <View className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <View className="w-3 h-3 bg-white rounded-sm" />
+            )}
+          </TouchableOpacity>
+        ) : (
+          // Send button when session is not working
+          <TouchableOpacity
+            className={`w-8 h-8 rounded-full items-center justify-center active:opacity-70 ${
+              disabled || !message.trim() || isSending ? 'bg-gray-500' : 'bg-white'
+            }`}
+            onPress={handleSend}
+            disabled={disabled || !message.trim() || isSending}
+            activeOpacity={0.7}
+          >
+            {isSending ? (
+              <View className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <Feather
+                name="arrow-up"
+                size={16}
+                color={disabled || !message.trim() || isSending ? '#9ca3af' : '#282c34'} // Using design tokens for muted vs primary-foreground
+              />
+            )}
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* Agent and Slash Command Links Below Input */}

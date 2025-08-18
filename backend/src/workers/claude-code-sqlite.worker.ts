@@ -1,6 +1,7 @@
-import { eq } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 import { db } from '@/db';
 import { sessions } from '@/db/schema-sqlite';
+import { jobQueue } from '@/db/schema-sqlite/job_queue';
 import { ClaudeCodeSDKService } from '@/services/claude-code-sdk.service';
 import { messageService } from '@/services/message.service';
 import { sqliteQueueService } from '@/services/queue-sqlite.service';
@@ -19,6 +20,7 @@ export class ClaudeCodeSQLiteWorker {
   private activeSessions: Map<string, ClaudeCodeSDKService> = new Map();
   private processingJobs = 0;
   private pollingTimer: Timer | null = null;
+  private cancellationCheckers: Map<string, Timer> = new Map(); // Track cancellation check timers
 
   /**
    * Starts the worker polling loop
@@ -84,6 +86,17 @@ export class ClaudeCodeSQLiteWorker {
     logger.info({ jobId, promptId, sessionId, attempts: job.attempts }, 'Processing job');
 
     try {
+      // Check if session has been cancelled before we start processing
+      const hasActiveJobs = await this.hasActiveJobsForSession(sessionId);
+      if (!hasActiveJobs) {
+        logger.info(
+          { jobId, promptId, sessionId },
+          'Worker detected session cancellation before processing started',
+        );
+        this.processingJobs--;
+        return;
+      }
+
       // Mark job as processing
       await sqliteQueueService.markJobProcessing(jobId);
 
@@ -105,14 +118,39 @@ export class ClaudeCodeSQLiteWorker {
         messageService, // Inject message service for direct saving
       });
 
-      // Store the service for potential cleanup
+      // Store the service for potential cleanup and abortion
       this.activeSessions.set(promptId, sdkService);
+      logger.debug(
+        { jobId, promptId, sessionId },
+        'Worker stored active SDK session for potential cancellation',
+      );
+
+      // Start periodic cancellation checking during SDK execution
+      this.startCancellationChecker(jobId, promptId, sessionId, sdkService);
 
       // Execute the prompt (SDK saves messages directly to DB)
+      logger.debug({ jobId, promptId, sessionId }, 'Worker starting Claude SDK execution');
       const result = await sdkService.execute(data.prompt);
+      logger.debug(
+        { jobId, promptId, sessionId, success: result.success },
+        'Worker completed Claude SDK execution',
+      );
+
+      // Stop cancellation checking
+      this.stopCancellationChecker(promptId);
 
       // Clean up
       this.activeSessions.delete(promptId);
+
+      // Check if session was cancelled during execution
+      const stillHasActiveJobs = await this.hasActiveJobsForSession(sessionId);
+      if (!stillHasActiveJobs) {
+        logger.info(
+          { jobId, promptId, sessionId },
+          'Worker detected session cancellation after SDK execution completed',
+        );
+        return;
+      }
 
       if (result.success) {
         // Mark job as completed
@@ -145,9 +183,20 @@ export class ClaudeCodeSQLiteWorker {
       }
     } catch (error) {
       // Clean up on error
+      this.stopCancellationChecker(promptId);
       this.activeSessions.delete(promptId);
 
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+
+      // Check if this was a session cancellation
+      const hasActiveJobsAfterError = await this.hasActiveJobsForSession(sessionId);
+      if (!hasActiveJobsAfterError) {
+        logger.info(
+          { jobId, promptId, sessionId, error: errorMessage },
+          'Worker detected session cancellation during execution (caught in error handler)',
+        );
+        return;
+      }
 
       // Mark job as failed (handles retry logic)
       await sqliteQueueService.markJobFailed(jobId, errorMessage);
@@ -177,6 +226,131 @@ export class ClaudeCodeSQLiteWorker {
   }
 
   /**
+   * Start periodic cancellation checking for a session during SDK execution
+   */
+  private startCancellationChecker(
+    jobId: string,
+    promptId: string,
+    sessionId: string,
+    sdkService: ClaudeCodeSDKService,
+  ): void {
+    const checkInterval = 2000; // Check every 2 seconds during execution
+
+    const checker = setInterval(async () => {
+      try {
+        // Check if any jobs for this session have been cancelled
+        const hasActiveJobs = await this.hasActiveJobsForSession(sessionId);
+        if (!hasActiveJobs) {
+          logger.info(
+            { jobId, promptId, sessionId },
+            'Worker detected session cancellation during SDK execution - aborting',
+          );
+
+          // Clear the checker first to prevent duplicate calls
+          this.stopCancellationChecker(promptId);
+
+          // Abort the SDK session
+          try {
+            await sdkService.abort();
+            logger.info(
+              { jobId, promptId, sessionId },
+              'Worker successfully aborted SDK session during execution',
+            );
+          } catch (abortError) {
+            logger.error(
+              {
+                jobId,
+                promptId,
+                sessionId,
+                error: abortError instanceof Error ? abortError.message : String(abortError),
+              },
+              'Worker failed to abort SDK session during execution',
+            );
+          }
+
+          // Clean up
+          this.activeSessions.delete(promptId);
+        }
+      } catch (error) {
+        logger.error(
+          {
+            jobId,
+            promptId,
+            sessionId,
+            error: error instanceof Error ? error.message : String(error),
+          },
+          'Error checking session cancellation status during execution',
+        );
+      }
+    }, checkInterval);
+
+    this.cancellationCheckers.set(promptId, checker);
+    logger.debug(
+      { jobId, promptId, sessionId, checkInterval },
+      'Worker started session cancellation checker',
+    );
+  }
+
+  /**
+   * Check if session has active (pending/processing) jobs
+   */
+  private async hasActiveJobsForSession(sessionId: string): Promise<boolean> {
+    const activeJobCount = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(jobQueue)
+      .where(
+        and(
+          eq(jobQueue.sessionId, sessionId),
+          sql`${jobQueue.status} IN ('pending', 'processing')`,
+        ),
+      );
+
+    return (activeJobCount[0]?.count ?? 0) > 0;
+  }
+
+  /**
+   * Stop periodic cancellation checking for a job
+   */
+  private stopCancellationChecker(promptId: string): void {
+    const checker = this.cancellationCheckers.get(promptId);
+    if (checker) {
+      clearInterval(checker);
+      this.cancellationCheckers.delete(promptId);
+      logger.debug({ promptId }, 'Worker stopped cancellation checker');
+    }
+  }
+
+  /**
+   * Cancel a specific session's active job
+   */
+  async cancelSession(promptId: string): Promise<void> {
+    const sdkService = this.activeSessions.get(promptId);
+    if (sdkService) {
+      logger.info(
+        { promptId },
+        'Worker received cancellation request - aborting active SDK session',
+      );
+      try {
+        await sdkService.abort();
+        logger.info({ promptId }, 'Worker successfully aborted SDK session');
+      } catch (error) {
+        logger.error(
+          { promptId, error: error instanceof Error ? error.message : String(error) },
+          'Worker failed to abort SDK session',
+        );
+      }
+      this.activeSessions.delete(promptId);
+      this.stopCancellationChecker(promptId);
+      logger.debug({ promptId }, 'Worker removed SDK session from active sessions map');
+    } else {
+      logger.debug(
+        { promptId },
+        'Worker received cancellation request but no active SDK session found',
+      );
+    }
+  }
+
+  /**
    * Gracefully shuts down the worker
    */
   async shutdown(): Promise<void> {
@@ -188,6 +362,11 @@ export class ClaudeCodeSQLiteWorker {
     if (this.pollingTimer) {
       clearTimeout(this.pollingTimer);
       this.pollingTimer = null;
+    }
+
+    // Stop all cancellation checkers
+    for (const promptId of this.cancellationCheckers.keys()) {
+      this.stopCancellationChecker(promptId);
     }
 
     // Abort any active SDK sessions
