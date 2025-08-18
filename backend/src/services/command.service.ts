@@ -1,4 +1,4 @@
-import type { Command, ListCommandsQuery, ListCommandsResponse } from '@/schemas/command.schema';
+import type { Command, ListCommandsQuery, ListCommandsResponse } from '@pokecode/api';
 import { ValidationError } from '@/types';
 import {
   directoryExists,

@@ -194,6 +194,16 @@ export default function SettingsScreen() {
               </Pressable>
 
               <Pressable
+                onPress={() => router.push('/playground/colors')}
+                className="py-3 px-4 rounded-lg bg-muted border border-border active:opacity-80"
+              >
+                <Text className="text-foreground font-mono font-medium">Colors</Text>
+                <Text className="text-xs text-muted-foreground font-mono mt-1">
+                  Theme color palette and usage examples
+                </Text>
+              </Pressable>
+
+              <Pressable
                 onPress={() => router.push('/playground/message-view')}
                 className="py-3 px-4 rounded-lg bg-muted border border-border active:opacity-80"
               >

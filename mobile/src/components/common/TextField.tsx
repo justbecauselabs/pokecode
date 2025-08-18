@@ -18,52 +18,19 @@ export const TextField = forwardRef<TextInput, TextFieldProps>((props, ref) => {
     style,
     onFocus,
     onBlur,
-    onContentSizeChange,
+    multiline = false,
     ...textInputProps
   } = props;
-  const [isFocused, setIsFocused] = useState(false);
-  const [height, setHeight] = useState<number | undefined>(undefined);
 
-  // Base input classes - using only Tailwind
-  const baseClasses = 'text-base text-foreground font-mono leading-normal flex-1';
-
-  const variantClasses = {
-    default: 'bg-transparent',
-    bordered: `bg-background border ${isFocused ? 'border-white' : 'border-border'}`,
-  };
-
-  // Base sizing for minimum heights and padding
+  // Visual-only configuration
   const sizeConfig = {
-    small: { minHeight: 36, paddingX: 'px-3', paddingY: 'py-2', radius: 'rounded' },
-    medium: { minHeight: 44, paddingX: 'px-4', paddingY: 'py-2', radius: 'rounded-md' },
-    large: { minHeight: 48, paddingX: 'px-5', paddingY: 'py-3', radius: 'rounded-lg' },
-  };
-
+    small: { minHeight: 40 },
+    medium: { minHeight: 48 },
+    large: { minHeight: 56 },
+  } as const;
   const currentSize = sizeConfig[size];
 
-  // For multiline inputs, use dynamic height; for single-line, use fixed min-height
-  const heightClass =
-    textInputProps.multiline && height
-      ? '' // Dynamic height will be handled by inline style
-      : `min-h-[${currentSize.minHeight}px]`;
-
-  const sizeClasses = `${heightClass} ${currentSize.paddingX} ${currentSize.paddingY} ${currentSize.radius}`;
-
-  const containerClasses = cn(variantClasses[variant], sizeClasses, containerClassName);
-
-  // Dynamic height style for multiline inputs
-  const dynamicContainerStyle =
-    textInputProps.multiline && height ? { height: Math.max(height, currentSize.minHeight) } : {};
-
-  const inputClasses = cn(baseClasses, className);
-
-  // Minimal inline styles - only for truly dynamic values that can't be Tailwind
-  const dynamicStyle = {
-    textAlignVertical: textInputProps.multiline
-      ? textInputProps.textAlignVertical || 'top'
-      : 'center',
-    ...style,
-  };
+  const [isFocused, setIsFocused] = useState(false);
 
   const handleFocus = (e: Parameters<NonNullable<TextInputProps['onFocus']>>[0]) => {
     setIsFocused(true);
@@ -75,26 +42,42 @@ export const TextField = forwardRef<TextInput, TextFieldProps>((props, ref) => {
     onBlur?.(e);
   };
 
-  const handleContentSizeChange = (
-    e: Parameters<NonNullable<TextInputProps['onContentSizeChange']>>[0]
-  ) => {
-    if (textInputProps.multiline) {
-      setHeight(e.nativeEvent.contentSize.height);
-    }
-    onContentSizeChange?.(e);
+  // Base classes
+  const containerBaseClasses = 'border rounded-md';
+  const variantClasses = {
+    default: 'bg-transparent border-transparent',
+    bordered: isFocused ? 'border-white bg-background' : 'border-border bg-background',
   };
 
+  const containerClasses = cn(containerBaseClasses, variantClasses[variant], containerClassName);
+
+  const inputClasses = cn('text-base text-foreground font-mono leading-normal', className);
+
+  const containerStyle = {
+    height: currentSize.minHeight,
+    paddingHorizontal: 16,
+    paddingVertical: multiline ? 12 : (currentSize.minHeight - 24) / 2,
+  } as const;
+
+  const inputStyle = {
+    height: '100%',
+    textAlignVertical: multiline ? 'top' : 'center',
+    ...style,
+  } as const;
+
   return (
-    <View className={containerClasses} style={dynamicContainerStyle}>
+    <View className={containerClasses} style={containerStyle}>
       <TextInput
         ref={ref}
+        {...textInputProps}
+        multiline={multiline}
+        scrollEnabled={multiline}
+        style={inputStyle}
         className={inputClasses}
-        style={dynamicStyle}
         placeholderTextColor="#9da5b4"
         onFocus={handleFocus}
         onBlur={handleBlur}
-        onContentSizeChange={handleContentSizeChange}
-        {...textInputProps}
+        blurOnSubmit={!multiline}
       />
     </View>
   );

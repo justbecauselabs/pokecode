@@ -1,17 +1,17 @@
 import type React from 'react';
-import { Text, View, Pressable } from 'react-native';
+import { Text, View, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { memo } from 'react';
-import { darkTheme } from '../../constants/theme';
+import { textStyles } from '../../utils/styleUtils';
 
 interface MessageGenericToolViewProps {
   title: string;
   text: string;
   result?: {
-    tool_use_id: string;
+    toolUseId: string;
     content: string;
-    is_error?: boolean;
+    isError?: boolean;
   };
-  onResultPress?: (result: { tool_use_id: string; content: string; is_error?: boolean }) => void;
+  onResultPress?: (result: { toolUseId: string; content: string; isError?: boolean }) => void;
 }
 
 export const MessageGenericToolView: React.FC<MessageGenericToolViewProps> = memo(({ 
@@ -22,50 +22,43 @@ export const MessageGenericToolView: React.FC<MessageGenericToolViewProps> = mem
 }) => {
   return (
     <View className="p-3">
-      <View className="flex-row items-center">
-        <Text style={{
-          color: darkTheme.colors.text,
-          fontFamily: 'JetBrains Mono, Fira Code, SF Mono, Monaco, Menlo, Courier New, monospace',
-          fontSize: 14,
-          fontWeight: '600',
-          marginBottom: 4,
-        }}>
-          {title}
-        </Text>
-        
-        {result && onResultPress && (
-          <Pressable 
-            onPress={() => onResultPress(result)}
-            className="ml-2 flex-row items-center"
-          >
-            <Text style={{
-              color: darkTheme.colors.primary,
-              fontFamily: 'JetBrains Mono, Fira Code, SF Mono, Monaco, Menlo, Courier New, monospace',
-              fontSize: 12,
-              textDecorationLine: 'underline',
-            }}>
-              result
-            </Text>
-            <Text style={{
-              color: darkTheme.colors.primary,
-              fontFamily: 'JetBrains Mono, Fira Code, SF Mono, Monaco, Menlo, Courier New, monospace',
-              fontSize: 12,
-              marginLeft: 2,
-            }}>
-              ›
-            </Text>
-          </Pressable>
-        )}
+      {/* Tool name and status row */}
+      <View className="flex-row items-center mb-2">
+        {/* Tool name in small box */}
+        <View className="bg-gray-700 px-2 py-1 rounded">
+          <Text className="text-xs font-mono text-gray-300 font-semibold">
+            {title}
+          </Text>
+        </View>
+
+        {/* Loading indicator or result text */}
+        <View className="ml-3 flex-1">
+          {!result ? (
+            <View className="flex-row items-center">
+              <ActivityIndicator size="small" color="#6b7280" className="mr-2" />
+              <Text className="text-xs text-gray-500 font-mono">Running...</Text>
+            </View>
+          ) : (
+            onResultPress && (
+              <TouchableOpacity 
+                onPress={() => onResultPress(result)} 
+                activeOpacity={0.7}
+              >
+                <Text className="text-xs text-gray-500 font-mono">
+                  Click to see result
+                </Text>
+              </TouchableOpacity>
+            )
+          )}
+        </View>
       </View>
-      
-      <Text style={{
-        color: darkTheme.colors.textSecondary,
-        fontFamily: 'JetBrains Mono, Fira Code, SF Mono, Monaco, Menlo, Courier New, monospace',
-        fontSize: 14,
-        lineHeight: 20,
-      }}>
-        {text}
-      </Text>
+
+      {/* Tool text/command in code block */}
+      <View className="bg-gray-800 px-3 py-2 rounded mt-1">
+        <Text className={`${textStyles.messageContentSm} text-gray-300 font-mono`}>
+          {text}
+        </Text>
+      </View>
     </View>
   );
 });

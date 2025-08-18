@@ -43,7 +43,7 @@ const RepositoryItem = memo(({ repository, onPress, isCreating }: RepositoryItem
       {/* Loading indicator for this specific item */}
       {isCreating && (
         <View className="ml-3">
-          <ActivityIndicator size="small" color="#3B82F6" />
+          <ActivityIndicator size="small" color="#528bff" /> {/* Using design token equivalent of text-primary */}
         </View>
       )}
     </Pressable>
@@ -62,13 +62,21 @@ export const RepositoryList = memo(
       }
     };
 
-    const renderRepository = ({ item }: { item: Repository }) => (
-      <RepositoryItem
-        repository={item}
-        onPress={handleRepositorySelect}
-        isCreating={createSessionMutation.isPending}
-      />
-    );
+    const renderRepository = ({ item }: { item: Repository }) => {
+      // Validate repository object to prevent rendering errors
+      if (!item || typeof item !== 'object' || !item.folderName || !item.path) {
+        console.warn('Invalid repository item:', item);
+        return null;
+      }
+      
+      return (
+        <RepositoryItem
+          repository={item}
+          onPress={handleRepositorySelect}
+          isCreating={createSessionMutation.isPending}
+        />
+      );
+    };
 
     const renderEmptyState = () => (
       <View className="flex-1 items-center justify-center p-8">
@@ -107,7 +115,7 @@ export const RepositoryList = memo(
     if (isLoading && repositories.length === 0) {
       return (
         <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color="#3B82F6" />
+          <ActivityIndicator size="large" color="#528bff" /> {/* Using design token equivalent of text-primary */}
           <Text className="text-gray-500 dark:text-gray-400 mt-4">Loading repositories...</Text>
         </View>
       );
@@ -121,7 +129,7 @@ export const RepositoryList = memo(
       <View className="flex-1">
         <FlatList
           data={repositories}
-          keyExtractor={(item) => item.path}
+          keyExtractor={(item) => item?.path || `repo-${Math.random()}`}
           renderItem={renderRepository}
           ItemSeparatorComponent={() => <View className="h-px bg-gray-200 dark:bg-gray-700 ml-4" />}
           showsVerticalScrollIndicator={false}

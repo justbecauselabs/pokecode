@@ -1,10 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
-import { apiClient, type RepositoriesResponse, type Repository } from '@/api/client';
+import { apiClient } from '@/api/client';
+import { type RepositoryResponse } from '@pokecode/api';
 
-// Add folderName for compatibility with existing code
-export interface CompatibleRepository extends Repository {
-  folderName: string;
-  isGitRepository: boolean;
+// Add compatibility fields for existing code that expects different field names
+export interface CompatibleRepository extends RepositoryResponse {
+  name: string;
+  isGitRepo: boolean;
 }
 
 export type { CompatibleRepository as Repository };
@@ -18,12 +19,27 @@ export function useRepositories() {
     queryKey: ['repositories'],
     queryFn: async (): Promise<{ repositories: CompatibleRepository[] }> => {
       const response = await apiClient.getRepositories();
-      // Transform the response to match expected format
-      const compatibleRepos: CompatibleRepository[] = response.repositories.map(repo => ({
-        ...repo,
-        folderName: repo.name, // Map name to folderName for compatibility
-        isGitRepository: repo.isGitRepo, // Map isGitRepo to isGitRepository
-      }));
+      
+      // Validate response structure to prevent rendering errors
+      if (!response || typeof response !== 'object') {
+        console.warn('Invalid response from getRepositories:', response);
+        return { repositories: [] };
+      }
+      
+      if (!Array.isArray(response.repositories)) {
+        console.warn('response.repositories is not an array:', response.repositories);
+        return { repositories: [] };
+      }
+      
+      // Transform the response to match expected format with validation
+      const compatibleRepos: CompatibleRepository[] = response.repositories
+        .filter(repo => repo && typeof repo === 'object' && repo.folderName && repo.path)
+        .map(repo => ({
+          ...repo,
+          name: repo.folderName, // Map folderName to name for compatibility
+          isGitRepo: repo.isGitRepository, // Map isGitRepository to isGitRepo for compatibility
+        }));
+        
       return { repositories: compatibleRepos };
     },
     staleTime: 1000 * 60 * 5, // 5 minutes

@@ -1,4 +1,4 @@
-import type { Agent, ListAgentsQuery, ListAgentsResponse } from '@/schemas/agent.schema';
+import type { Agent, ListAgentsQuery, ListAgentsResponse } from '@pokecode/api';
 import { ValidationError } from '@/types';
 import {
   directoryExists,

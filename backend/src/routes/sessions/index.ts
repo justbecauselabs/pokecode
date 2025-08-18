@@ -11,7 +11,7 @@ import {
   SessionSchema,
   type UpdateSessionRequest,
   UpdateSessionRequestSchema,
-} from '@/schemas/session.schema';
+} from '@pokecode/api';
 import { sessionService } from '@/services/session.service';
 
 // Type guard for API errors

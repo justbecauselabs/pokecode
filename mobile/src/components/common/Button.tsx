@@ -5,12 +5,13 @@ import {
   TouchableOpacity,
   type TouchableOpacityProps,
 } from 'react-native';
-import { cn } from '@/utils/cn';
+import { cn, cnSafe } from '@/utils/cn';
+import { buttonVariants, buttonSizes, indicatorColors, type ButtonVariant, type ButtonSize } from '@/utils/styleUtils';
 
 interface ButtonProps extends TouchableOpacityProps {
   title: string;
-  variant?: 'primary' | 'secondary' | 'ghost' | 'destructive';
-  size?: 'small' | 'medium' | 'large';
+  variant?: ButtonVariant;
+  size?: ButtonSize;
   loading?: boolean;
   icon?: React.ReactNode;
   fullWidth?: boolean;
@@ -30,19 +31,6 @@ export const Button: React.FC<ButtonProps> = ({
 }) => {
   const baseClasses = 'flex-row items-center justify-center rounded-lg active:opacity-80';
 
-  const variantClasses = {
-    primary: 'bg-primary border border-primary',
-    secondary: 'bg-transparent border border-primary',
-    ghost: 'bg-transparent border border-transparent',
-    destructive: 'bg-destructive border border-destructive',
-  };
-
-  const sizeClasses = {
-    small: 'px-2 py-1 min-h-[32px]',
-    medium: 'px-4 py-2 min-h-[44px]',
-    large: 'px-6 py-4 min-h-[56px]',
-  };
-
   const textVariantClasses = {
     primary: 'text-primary-foreground',
     secondary: 'text-primary',
@@ -58,8 +46,8 @@ export const Button: React.FC<ButtonProps> = ({
 
   const buttonClasses = cn(
     baseClasses,
-    variantClasses[variant],
-    sizeClasses[size],
+    cnSafe(buttonVariants, variant),
+    cnSafe(buttonSizes, size),
     fullWidth && 'w-full',
     disabled && 'opacity-60',
     className
@@ -72,15 +60,16 @@ export const Button: React.FC<ButtonProps> = ({
     icon && 'ml-2'
   );
 
+  // Use design tokens for ActivityIndicator colors
   const getIndicatorColor = () => {
     switch (variant) {
       case 'secondary':
       case 'ghost':
-        return '#528bff'; // primary color
+        return indicatorColors.primary;
       case 'destructive':
-        return '#abb2bf'; // destructive-foreground
+        return indicatorColors.destructive;
       default:
-        return '#282c34'; // primary-foreground
+        return indicatorColors.primaryForeground;
     }
   };
 

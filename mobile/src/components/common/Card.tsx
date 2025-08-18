@@ -1,25 +1,28 @@
 import type React from 'react';
 import { TouchableOpacity, View } from 'react-native';
-import { cn } from '@/utils/cn';
+import { cn, cnSafe } from '@/utils/cn';
+import { cardVariants, cardPadding, type CardVariant, type CardPadding } from '@/utils/styleUtils';
 
 interface CardProps {
   children: React.ReactNode;
   className?: string;
-  padding?: 'none' | 'small' | 'medium' | 'large';
+  variant?: CardVariant;
+  padding?: CardPadding;
   onPress?: () => void;
 }
 
-export const Card: React.FC<CardProps> = ({ children, className, padding = 'medium', onPress }) => {
-  const baseClasses = 'bg-card rounded-xl shadow-lg';
-
-  const paddingClasses = {
-    none: '',
-    small: 'p-2',
-    medium: 'p-4',
-    large: 'p-6',
-  };
-
-  const cardClasses = cn(baseClasses, paddingClasses[padding], className);
+export const Card: React.FC<CardProps> = ({ 
+  children, 
+  className, 
+  variant = 'default',
+  padding = 'medium', 
+  onPress 
+}) => {
+  const cardClasses = cn(
+    cnSafe(cardVariants, variant),
+    cnSafe(cardPadding, padding),
+    className
+  );
 
   const cardContent = <View className={cardClasses}>{children}</View>;
 

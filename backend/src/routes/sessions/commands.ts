@@ -4,7 +4,7 @@ import {
   type ListCommandsQuery,
   ListCommandsQuerySchema,
   ListCommandsResponseSchema,
-} from '@/schemas/command.schema';
+} from '@pokecode/api';
 import { commandService } from '@/services/command.service';
 import { sessionService } from '@/services/session.service';
 

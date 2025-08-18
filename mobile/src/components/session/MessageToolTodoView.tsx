@@ -1,7 +1,7 @@
 import type React from 'react';
 import { Text, View } from 'react-native';
 import { memo } from 'react';
-import { darkTheme } from '../../constants/theme';
+import { textStyles } from '../../utils/styleUtils';
 
 interface TodoItem {
   content: string;
@@ -25,62 +25,39 @@ const getStatusIcon = (status: TodoItem['status']): string => {
   }
 };
 
-const getStatusColor = (status: TodoItem['status']): string => {
+const getStatusClasses = (status: TodoItem['status']): string => {
   switch (status) {
     case 'completed':
-      return darkTheme.colors.success;
+      return 'text-success';
     case 'in_progress':
-      return darkTheme.colors.primary;
+      return 'text-primary';
     case 'pending':
-      return darkTheme.colors.textTertiary;
+      return 'text-muted-foreground';
     default:
-      return darkTheme.colors.textTertiary;
+      return 'text-muted-foreground';
   }
 };
 
-const getTextStyle = (status: TodoItem['status']) => {
-  const baseStyle = {
-    fontFamily: 'JetBrains Mono, Fira Code, SF Mono, Monaco, Menlo, Courier New, monospace',
-    fontSize: 14,
-    lineHeight: 20,
-  };
-
+const getTextClasses = (status: TodoItem['status']): string => {
+  const base = textStyles.messageContentSm;
+  
   switch (status) {
     case 'completed':
-      return {
-        ...baseStyle,
-        color: darkTheme.colors.textSecondary,
-        textDecorationLine: 'line-through' as const,
-      };
+      return `${base} line-through opacity-75`;
     case 'in_progress':
-      return {
-        ...baseStyle,
-        color: darkTheme.colors.text,
-        fontWeight: '600' as const,
-      };
+      return `${base} font-semibold text-foreground`;
     case 'pending':
-      return {
-        ...baseStyle,
-        color: darkTheme.colors.textSecondary,
-      };
+      return `${base} text-muted-foreground`;
     default:
-      return {
-        ...baseStyle,
-        color: darkTheme.colors.textSecondary,
-      };
+      return `${base} text-muted-foreground`;
   }
 };
 
 export const MessageToolTodoView: React.FC<MessageToolTodoViewProps> = memo(({ todos }) => {
   if (!todos || todos.length === 0) {
     return (
-      <View className="p-3">
-        <Text style={{
-          color: darkTheme.colors.textTertiary,
-          fontFamily: 'JetBrains Mono, Fira Code, SF Mono, Monaco, Menlo, Courier New, monospace',
-          fontSize: 14,
-          fontStyle: 'italic',
-        }}>
+      <View className="bg-gray-800 p-3 rounded-lg mx-3">
+        <Text className={`${textStyles.messageContentSm} text-muted-foreground italic`}>
           No todos
         </Text>
       </View>
@@ -88,34 +65,19 @@ export const MessageToolTodoView: React.FC<MessageToolTodoViewProps> = memo(({ t
   }
 
   return (
-    <View className="p-3">
-      <Text style={{
-        color: darkTheme.colors.text,
-        fontFamily: 'JetBrains Mono, Fira Code, SF Mono, Monaco, Menlo, Courier New, monospace',
-        fontSize: 12,
-        fontWeight: '600',
-        marginBottom: 8,
-        textTransform: 'uppercase',
-        letterSpacing: 0.5,
-      }}>
+    <View className="bg-gray-800 p-3 rounded-lg mx-3">
+      <Text className={`${textStyles.header} mb-2`}>
         Tasks ({todos.filter(t => t.status === 'completed').length}/{todos.length})
       </Text>
       
       {todos.map((todo, index) => (
         <View key={index} className="flex-row items-start mb-2">
-          <Text style={{
-            color: getStatusColor(todo.status),
-            fontFamily: 'JetBrains Mono, Fira Code, SF Mono, Monaco, Menlo, Courier New, monospace',
-            fontSize: 16,
-            lineHeight: 20,
-            marginRight: 8,
-            minWidth: 16,
-          }}>
+          <Text className={`${getStatusClasses(todo.status)} font-mono text-base mr-2 min-w-[16px]`}>
             {getStatusIcon(todo.status)}
           </Text>
           
           <View className="flex-1">
-            <Text style={getTextStyle(todo.status)}>
+            <Text className={getTextClasses(todo.status)}>
               {todo.content}
             </Text>
           </View>

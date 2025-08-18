@@ -2,19 +2,19 @@ import { Feather } from '@expo/vector-icons';
 import { forwardRef, useImperativeHandle, useRef, useState } from 'react';
 import { Alert, Keyboard, Text, type TextInput, TouchableOpacity, View } from 'react-native';
 import type { SessionInfo } from '@/types/messages';
-import { Pill, TextField } from '../common';
+import { TextField } from '../common';
 
 export interface MessageInputRef {
   insertCommand: (params: { commandName: string }) => void;
-  insertAgent: (params: { agentName: string }) => void;
 }
 
 interface MessageInputProps {
   sessionId: string;
   session?: SessionInfo;
-  onSendMessage: (params: { content: string; agent?: string }) => Promise<unknown>;
+  onSendMessage: (params: { content: string }) => Promise<unknown>;
   onShowSlashCommands?: () => void;
   onShowAgents?: () => void;
+  selectedAgents: string[];
   isSending?: boolean;
   disabled?: boolean;
 }
@@ -25,12 +25,12 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>((prop
     onSendMessage,
     onShowSlashCommands,
     onShowAgents,
+    selectedAgents,
     isSending = false,
     disabled,
   } = props;
   const [message, setMessage] = useState('');
   const [selectedCommand, setSelectedCommand] = useState<string | null>(null);
-  const [selectedAgent, setSelectedAgent] = useState<string | null>(null);
   const inputRef = useRef<TextInput>(null);
 
   const insertCommand = (params: { commandName: string }) => {
@@ -42,19 +42,9 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>((prop
     }, 100);
   };
 
-  const insertAgent = (params: { agentName: string }) => {
-    setSelectedAgent(params.agentName);
-
-    // Focus the input after selecting the agent
-    setTimeout(() => {
-      inputRef.current?.focus();
-    }, 100);
-  };
-
   // Expose methods to parent component
   useImperativeHandle(ref, () => ({
     insertCommand,
-    insertAgent,
   }));
 
   const handleSend = async () => {
@@ -64,19 +54,25 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>((prop
     Keyboard.dismiss();
 
     try {
+      let finalMessage = trimmedMessage;
+
+      // Prepend selected agents if any are active
+      if (selectedAgents.length > 0) {
+        const agentText = selectedAgents.map(agent => `- @agent-${agent}`).join('\n');
+        finalMessage = `use the following sub agents\n${agentText}\n\n${trimmedMessage}`;
+      }
+
       // Prepend the selected command if one is active
-      const finalMessage = selectedCommand
-        ? `/${selectedCommand} ${trimmedMessage}`
-        : trimmedMessage;
+      if (selectedCommand) {
+        finalMessage = `/${selectedCommand} ${finalMessage}`;
+      }
 
       await onSendMessage({
         content: finalMessage,
-        agent: selectedAgent || undefined,
       });
 
       setMessage('');
       setSelectedCommand(null); // Clear the selected command after sending
-      setSelectedAgent(null); // Clear the selected agent after sending
     } catch (error) {
       console.error('Failed to send message:', error);
       Alert.alert('Error', 'Failed to send message. Please try again.');
@@ -95,7 +91,7 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>((prop
             multiline
             textAlignVertical="top"
             editable={!disabled && !isSending}
-            onSubmitEditing={handleSend}
+            returnKeyType="default"
             blurOnSubmit={false}
           />
         </View>
@@ -115,31 +111,28 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>((prop
             <Feather
               name="arrow-up"
               size={16}
-              color={disabled || !message.trim() || isSending ? '#9ca3af' : '#282c34'}
+              color={disabled || !message.trim() || isSending ? '#9ca3af' : '#282c34'} // Using design tokens for muted vs primary-foreground
             />
           )}
         </TouchableOpacity>
       </View>
 
-      {/* Agent and Slash Command Buttons Below Input */}
-      <View className="mt-3 flex-row gap-2 items-start">
-        <Pill
-          variant={selectedAgent ? 'active' : 'default'}
-          onPress={
-            selectedAgent
-              ? () => setSelectedAgent(null)
-              : () => {
-                  Keyboard.dismiss();
-                  onShowAgents?.();
-                }
-          }
+      {/* Agent and Slash Command Links Below Input */}
+      <View className="mt-3 flex-row gap-4 items-start">
+        <TouchableOpacity
+          onPress={() => {
+            Keyboard.dismiss();
+            onShowAgents?.();
+          }}
           disabled={disabled || isSending}
+          activeOpacity={0.7}
         >
-          {selectedAgent ? selectedAgent : 'agent'}
-        </Pill>
+          <Text className={`text-sm ${selectedAgents.length > 0 ? 'text-blue-600 font-medium' : 'text-blue-500'} ${disabled || isSending ? 'opacity-50' : ''}`}>
+            {selectedAgents.length > 0 ? `agents (${selectedAgents.length})` : 'agent'}
+          </Text>
+        </TouchableOpacity>
 
-        <Pill
-          variant={selectedCommand ? 'active' : 'default'}
+        <TouchableOpacity
           onPress={
             selectedCommand
               ? () => setSelectedCommand(null)
@@ -149,9 +142,12 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>((prop
                 }
           }
           disabled={disabled || isSending}
+          activeOpacity={0.7}
         >
-          {selectedCommand ? `/${selectedCommand}` : 'slash command'}
-        </Pill>
+          <Text className={`text-sm ${selectedCommand ? 'text-blue-600 font-medium' : 'text-blue-500'} ${disabled || isSending ? 'opacity-50' : ''}`}>
+            {selectedCommand ? `/${selectedCommand}` : 'slash command'}
+          </Text>
+        </TouchableOpacity>
       </View>
 
       {/* Session Stats */}

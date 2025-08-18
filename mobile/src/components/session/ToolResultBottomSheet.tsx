@@ -1,82 +1,55 @@
-import type React from 'react';
-import { memo, forwardRef } from 'react';
-import { View, Text } from 'react-native';
-import BottomSheet, { type BottomSheetModal } from '@gorhom/bottom-sheet';
-import { MarkdownRenderer } from './MarkdownRenderer';
-import { darkTheme } from '../../constants/theme';
-import type { AssistantMessageToolResult } from '../../schemas/message.schema';
+import type { BottomSheetModal as BottomSheetModalType } from "@gorhom/bottom-sheet";
+import type { AssistantMessageToolResult } from "@pokecode/api";
+import { forwardRef, useMemo } from "react";
+import { Text, View } from "react-native";
+import { textStyles } from "../../utils/styleUtils";
+import { MarkdownRenderer } from "./MarkdownRenderer";
+import { CustomBottomSheet } from "../common";
+import { BottomSheetScrollView } from "@gorhom/bottom-sheet";
 
 interface ToolResultBottomSheetProps {
-  result: AssistantMessageToolResult | null;
+	result: AssistantMessageToolResult | null;
+	onClose: () => void;
 }
 
-export const ToolResultBottomSheet = memo(forwardRef<BottomSheetModal, ToolResultBottomSheetProps>(
-  ({ result }, ref) => {
-    const snapPoints = ['50%', '90%'];
+export const ToolResultBottomSheet = forwardRef<BottomSheetModalType, ToolResultBottomSheetProps>(
+  ({ result, onClose }, ref) => {
+    const snapPoints = useMemo(() => ["50%", "90%"], []);
 
     return (
-      <BottomSheet
-        ref={ref}
-        index={-1}
-        snapPoints={snapPoints}
-        enablePanDownToClose
-        backgroundStyle={{ backgroundColor: darkTheme.colors.surface }}
-        handleIndicatorStyle={{ backgroundColor: darkTheme.colors.textSecondary }}
-      >
+      <CustomBottomSheet ref={ref} onClose={onClose} snapPoints={snapPoints}>
         <View className="flex-1 px-4 pt-2">
-          <Text style={{
-            color: darkTheme.colors.text,
-            fontFamily: 'JetBrains Mono, Fira Code, SF Mono, Monaco, Menlo, Courier New, monospace',
-            fontSize: 16,
-            fontWeight: '600',
-            marginBottom: 16,
-          }}>
+          <Text className={`${textStyles.messageContent} font-semibold mb-4`}>
             Tool Result
           </Text>
-          
+
           {result ? (
-            <View className="flex-1">
-              {result.is_error ? (
+            <BottomSheetScrollView
+              contentContainerStyle={{ paddingBottom: 20 }}
+              showsVerticalScrollIndicator={false}
+            >
+              {result.isError ? (
                 <View className="bg-red-900/20 border border-red-500/50 rounded-lg p-3 mb-4">
-                  <Text style={{
-                    color: darkTheme.colors.error,
-                    fontFamily: 'JetBrains Mono, Fira Code, SF Mono, Monaco, Menlo, Courier New, monospace',
-                    fontSize: 14,
-                    fontWeight: '600',
-                    marginBottom: 8,
-                  }}>
+                  <Text className={`${textStyles.error} font-semibold mb-2`}>
                     Error
                   </Text>
-                  <Text style={{
-                    color: darkTheme.colors.error,
-                    fontFamily: 'JetBrains Mono, Fira Code, SF Mono, Monaco, Menlo, Courier New, monospace',
-                    fontSize: 14,
-                    lineHeight: 20,
-                  }}>
-                    {result.content}
-                  </Text>
+                  <Text className={textStyles.error}>{result.content}</Text>
                 </View>
               ) : (
                 <View className="flex-1">
                   <MarkdownRenderer content={result.content} />
                 </View>
               )}
-            </View>
+            </BottomSheetScrollView>
           ) : (
-            <Text style={{
-              color: darkTheme.colors.textSecondary,
-              fontFamily: 'JetBrains Mono, Fira Code, SF Mono, Monaco, Menlo, Courier New, monospace',
-              fontSize: 14,
-              textAlign: 'center',
-              marginTop: 32,
-            }}>
+            <Text className={`${textStyles.messageContentSm} text-center mt-8`}>
               No result available
             </Text>
           )}
         </View>
-      </BottomSheet>
+      </CustomBottomSheet>
     );
   }
-));
+);
 
 ToolResultBottomSheet.displayName = 'ToolResultBottomSheet';

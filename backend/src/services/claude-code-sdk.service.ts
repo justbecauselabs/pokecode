@@ -158,8 +158,8 @@ export class ClaudeCodeSDKService {
 
       await this.messageService.saveSDKMessage(
         this.sessionId,
-        transformedMessage as any, // Type assertion after transformation
-        message.session_id, // Extract Claude SDK session ID
+        transformedMessage,
+        message.session_id,
       );
     } catch (error) {
       logger.error(

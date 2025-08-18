@@ -1,6 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { lightTheme } from '@/constants/theme';
+import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
 
 interface Props {
   children: ReactNode;
@@ -41,31 +40,44 @@ export class ErrorBoundary extends Component<Props, State> {
       }
 
       return (
-        <View style={styles.container}>
-          <ScrollView contentContainerStyle={styles.content}>
-            <Text style={styles.title}>Oops! Something went wrong</Text>
-            <Text style={styles.subtitle}>
+        <View className="flex-1 bg-background">
+          <ScrollView contentContainerClassName="flex-grow justify-center items-center p-5">
+            <Text className="text-2xl font-bold text-foreground mb-2.5 text-center">
+              Oops! Something went wrong
+            </Text>
+            <Text className="text-base text-muted-foreground mb-7.5 text-center">
               We're sorry for the inconvenience. Please try again.
             </Text>
 
             {__DEV__ && this.state.error && (
-              <View style={styles.errorDetails}>
-                <Text style={styles.errorTitle}>Error Details:</Text>
-                <Text style={styles.errorMessage}>{this.state.error.toString()}</Text>
+              <View className="w-full bg-card p-4 rounded-lg mb-5">
+                <Text className="text-base font-semibold text-destructive mb-2">Error Details:</Text>
+                <Text className="text-sm text-foreground font-mono">
+                  {this.state.error.toString()}
+                </Text>
 
                 {this.state.errorInfo && (
-                  <View style={styles.stackContainer}>
-                    <Text style={styles.stackTitle}>Component Stack:</Text>
+                  <View className="mt-4">
+                    <Text className="text-sm font-semibold text-muted-foreground mb-2">
+                      Component Stack:
+                    </Text>
                     <ScrollView horizontal>
-                      <Text style={styles.stackTrace}>{this.state.errorInfo.componentStack}</Text>
+                      <Text className="text-xs text-muted-foreground font-mono">
+                        {this.state.errorInfo.componentStack}
+                      </Text>
                     </ScrollView>
                   </View>
                 )}
               </View>
             )}
 
-            <TouchableOpacity style={styles.resetButton} onPress={this.handleReset}>
-              <Text style={styles.resetButtonText}>Try Again</Text>
+            <TouchableOpacity 
+              className="bg-primary px-6 py-3 rounded-lg" 
+              onPress={this.handleReset}
+            >
+              <Text className="text-primary-foreground text-base font-semibold">
+                Try Again
+              </Text>
             </TouchableOpacity>
           </ScrollView>
         </View>
@@ -76,71 +88,4 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: lightTheme.colors.background,
-  },
-  content: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: lightTheme.colors.text,
-    marginBottom: 10,
-    textAlign: 'center',
-  },
-  subtitle: {
-    fontSize: 16,
-    color: lightTheme.colors.textSecondary,
-    marginBottom: 30,
-    textAlign: 'center',
-  },
-  errorDetails: {
-    width: '100%',
-    backgroundColor: lightTheme.colors.surface,
-    padding: 16,
-    borderRadius: 8,
-    marginBottom: 20,
-  },
-  errorTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: lightTheme.colors.error,
-    marginBottom: 8,
-  },
-  errorMessage: {
-    fontSize: 14,
-    color: lightTheme.colors.text,
-    fontFamily: 'monospace',
-  },
-  stackContainer: {
-    marginTop: 16,
-  },
-  stackTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: lightTheme.colors.textSecondary,
-    marginBottom: 8,
-  },
-  stackTrace: {
-    fontSize: 12,
-    color: lightTheme.colors.textSecondary,
-    fontFamily: 'monospace',
-  },
-  resetButton: {
-    backgroundColor: lightTheme.colors.primary,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 8,
-  },
-  resetButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-});
+// Component now uses pure TailwindCSS classes - no StyleSheet needed!

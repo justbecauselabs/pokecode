@@ -1,10 +1,12 @@
 import type React from 'react';
 import { Text, TextInput, type TextInputProps, View } from 'react-native';
-import { cn } from '@/utils/cn';
+import { cn, cnSafe } from '@/utils/cn';
+import { inputVariants, type InputVariant } from '@/utils/styleUtils';
 
 interface InputProps extends TextInputProps {
   label?: string;
   error?: string;
+  variant?: InputVariant;
   className?: string;
   containerClassName?: string;
 }
@@ -12,6 +14,7 @@ interface InputProps extends TextInputProps {
 export const Input: React.FC<InputProps> = ({
   label,
   error,
+  variant = 'default',
   className,
   containerClassName,
   ...props
@@ -19,9 +22,7 @@ export const Input: React.FC<InputProps> = ({
   const containerClasses = cn('mb-4', containerClassName);
 
   const inputClasses = cn(
-    'border rounded-lg px-3 py-2.5 text-base bg-input text-foreground',
-    error ? 'border-destructive' : 'border-border',
-    'focus:border-ring focus:ring-2 focus:ring-ring focus:ring-opacity-20',
+    cnSafe(inputVariants, error ? 'error' : variant),
     className
   );
 
@@ -30,7 +31,7 @@ export const Input: React.FC<InputProps> = ({
       {label && <Text className="text-sm font-semibold mb-1.5 text-foreground">{label}</Text>}
       <TextInput
         className={inputClasses}
-        placeholderTextColor="#9da5b4" // muted-foreground color
+        placeholderTextColor="#9da5b4" // Using design token equivalent of text-muted-foreground
         {...props}
       />
       {error && <Text className="text-xs mt-1 text-destructive">{error}</Text>}

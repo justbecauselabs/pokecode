@@ -6,7 +6,8 @@ import { useRepositories } from '@/hooks/useRepositories';
 export default function RepositoriesScreen() {
   const { data, isLoading, error, refetch } = useRepositories();
 
-  const repositories = data?.repositories || [];
+  // Ensure repositories is always a valid array to prevent rendering errors
+  const repositories = Array.isArray(data?.repositories) ? data.repositories : [];
 
   return (
     <SafeAreaView className="flex-1 bg-background">

@@ -7,7 +7,7 @@ import type {
   CreateSessionRequest,
   ListSessionsQuery,
   UpdateSessionRequest,
-} from '@/schemas/session.schema';
+} from '@pokecode/api';
 import { repositoryService } from '@/services/repository.service';
 import { NotFoundError, ValidationError } from '@/types';
 import {

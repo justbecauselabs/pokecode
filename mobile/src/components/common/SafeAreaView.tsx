@@ -2,11 +2,9 @@ import type React from 'react';
 import {
   SafeAreaView as RNSafeAreaView,
   StatusBar,
-  StyleSheet,
   useColorScheme,
   type ViewStyle,
 } from 'react-native';
-import { darkTheme, lightTheme } from '@/constants/theme';
 import { useUIStore } from '@/stores/uiStore';
 
 interface CustomSafeAreaViewProps {
@@ -25,17 +23,19 @@ export const SafeAreaView: React.FC<CustomSafeAreaViewProps> = ({
   const colorScheme = useColorScheme();
   const { theme } = useUIStore();
   const isDark = theme === 'dark' || (theme === 'system' && colorScheme === 'dark');
-  const currentTheme = isDark ? darkTheme : lightTheme;
+  
+  // Using TailwindCSS design tokens
+  const backgroundColor = '#282c34'; // bg-background
 
   return (
     <>
       <StatusBar
         barStyle={isDark ? 'light-content' : 'dark-content'}
-        backgroundColor={currentTheme.colors.background}
+        backgroundColor={backgroundColor}
       />
       <RNSafeAreaView
-        className={className}
-        style={[styles.container, { backgroundColor: currentTheme.colors.background }, style]}
+        className={`flex-1 ${className || ''}`}
+        style={[{ backgroundColor }, style]}
         {...props}
       >
         {children}
@@ -43,9 +43,3 @@ export const SafeAreaView: React.FC<CustomSafeAreaViewProps> = ({
     </>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-});

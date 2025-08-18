@@ -3,7 +3,7 @@ import { and, asc, desc, eq, isNotNull, sql } from 'drizzle-orm';
 import { db } from '../db';
 import { sessions } from '../db/schema-sqlite';
 import { sessionMessages } from '../db/schema-sqlite/session_messages';
-import type { Message } from '../schemas/message.schema';
+import type { Message } from '@pokecode/api';
 import { extractTokenCount, parseDbMessage } from '../utils/message-parser';
 import { sqliteQueueService } from './queue-sqlite.service';
 

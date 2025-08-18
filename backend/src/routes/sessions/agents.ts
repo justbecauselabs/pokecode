@@ -4,7 +4,7 @@ import {
   type ListAgentsQuery,
   ListAgentsQuerySchema,
   ListAgentsResponseSchema,
-} from '@/schemas/agent.schema';
+} from '@pokecode/api';
 import { agentService } from '@/services/agent.service';
 import { sessionService } from '@/services/session.service';
 

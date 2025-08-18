@@ -1,5 +1,6 @@
 export { Button } from './Button';
 export { Card } from './Card';
+export { CustomBottomSheet } from './CustomBottomSheet';
 export { ErrorBoundary } from './ErrorBoundary';
 export { Input } from './Input';
 export { LoadingState } from './LoadingState';

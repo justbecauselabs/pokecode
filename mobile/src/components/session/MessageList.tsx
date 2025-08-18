@@ -1,28 +1,32 @@
+import type { AssistantMessageToolResult } from '@pokecode/api';
 import { FlashList } from '@shopify/flash-list';
 import type React from 'react';
 import { useEffect, useMemo, useRef } from 'react';
 import { Text, View } from 'react-native';
 import type { Message } from '../../types/messages';
+import { textStyles } from '../../utils/styleUtils';
 import { LoadingState } from '../common';
 import { MessageView } from './MessageView';
-import { MESSAGE_TYPE_STYLES } from './messageColors';
-import type { AssistantMessageToolResult } from '../../schemas/message.schema';
 
-// Type header component
+// Type header component using pure TailwindCSS
 const TypeHeader: React.FC<{ type: Message['type'] }> = ({ type }) => {
-  const styles = MESSAGE_TYPE_STYLES[type] || MESSAGE_TYPE_STYLES.assistant;
   const displayName = type.charAt(0).toUpperCase() + type.slice(1);
+  
+  // Define colors based on message type
+  const getHeaderColor = (type: Message['type']): string => {
+    switch (type) {
+      case 'user':
+        return '!text-blue-400'; // Nice blue for user
+      case 'assistant':
+        return '!text-green-400'; // Nice green for assistant
+      default:
+        return '!text-gray-400'; // Default for other types
+    }
+  };
 
   return (
-    <View className={`px-3 py-1 pt-3 ${styles.background}`} style={{ backgroundColor: styles.backgroundColor }}>
-      <Text style={{
-        color: styles.headerTextColor,
-        fontFamily: 'JetBrains Mono, Fira Code, SF Mono, Monaco, Menlo, Courier New, monospace',
-        fontSize: 12,
-        fontWeight: '600'
-      }}>
-        {displayName}
-      </Text>
+    <View className="px-3 py-1 pt-3 bg-background">
+      <Text className={`${textStyles.header} ${getHeaderColor(type)}`}>{displayName}</Text>
     </View>
   );
 };
@@ -33,6 +37,9 @@ interface MessageListProps {
   error: Error | null;
   onMessageLongPress?: (message: Message) => void;
   onToolResultPress?: (result: AssistantMessageToolResult) => void;
+  onTaskToolPress?: (toolId: string, agentName: string, messages: Message[]) => void;
+  agentColors?: Record<string, string>;
+  showAllMessages?: boolean; // When true, don't filter out messages with parentToolUseId
 }
 
 export const MessageList: React.FC<MessageListProps> = ({
@@ -41,6 +48,9 @@ export const MessageList: React.FC<MessageListProps> = ({
   error,
   onMessageLongPress,
   onToolResultPress,
+  onTaskToolPress,
+  agentColors,
+  showAllMessages = false,
 }) => {
   const flashListRef = useRef<FlashList<Message>>(null);
   const isInitialLoad = useRef(true);
@@ -62,29 +72,55 @@ export const MessageList: React.FC<MessageListProps> = ({
     }
   }, [messages.length]);
 
-  const { finalMessages, toolResults } = useMemo(() => {
-    // Create a dictionary of tool results keyed by tool_use_id
+  const { finalMessages, toolResults, taskMessages } = useMemo(() => {
+    // Create a dictionary of tool results keyed by toolUseId
     const toolResultsDict: Record<string, AssistantMessageToolResult> = {};
 
+    // Create a dictionary of messages organized by parent tool use id
+    const taskMessagesDict: Record<string, Message[]> = {};
+
     // Filter out tool result messages and collect them in the dictionary
-    const filteredMessages = messages.filter(message => {
-      if (message.type === 'assistant' && message.data) {
+    const filteredMessages = messages.filter((message) => {
+      // Check if message has a parent tool use id
+      if (message.parentToolUseId && !showAllMessages) {
+        if (!taskMessagesDict[message.parentToolUseId]) {
+          taskMessagesDict[message.parentToolUseId] = [];
+        }
+        taskMessagesDict[message.parentToolUseId].push(message);
+        return false; // Filter out messages with parent tool use id
+      }
+
+      if (
+        message.type === 'assistant' &&
+        message.data &&
+        typeof message.data === 'object' &&
+        'type' in message.data
+      ) {
         const assistantData = message.data;
         if (assistantData.type === 'tool_result') {
           const toolResultData = assistantData.data;
-          toolResultsDict[toolResultData.tool_use_id] = toolResultData;
+          toolResultsDict[toolResultData.toolUseId] = toolResultData;
           return false; // Filter out tool result messages
         }
       }
       return true; // Keep all other messages
     });
 
-    console.log("toolResultsDict", Object.keys(toolResultsDict).length);
-    console.log(Object.keys(toolResultsDict));
+    // Debug logging
+    console.log('MessageList processing:', {
+      totalMessages: messages.length,
+      filteredMessages: filteredMessages.length,
+      taskMessagesKeys: Object.keys(taskMessagesDict),
+      taskMessagesContent: Object.entries(taskMessagesDict).map(([key, msgs]) => ({
+        toolId: key,
+        messageCount: msgs.length,
+      })),
+    });
 
     return {
       finalMessages: filteredMessages.toReversed(),
-      toolResults: toolResultsDict
+      toolResults: toolResultsDict,
+      taskMessages: taskMessagesDict,
     };
   }, [messages]);
 
@@ -96,7 +132,15 @@ export const MessageList: React.FC<MessageListProps> = ({
     return (
       <View>
         {shouldShowHeader && <TypeHeader type={item.type} />}
-        <MessageView message={item} toolResults={toolResults} onLongPress={() => onMessageLongPress?.(item)} onToolResultPress={onToolResultPress} />
+        <MessageView
+          message={item}
+          toolResults={toolResults}
+          taskMessages={taskMessages}
+          onLongPress={() => onMessageLongPress?.(item)}
+          onToolResultPress={onToolResultPress}
+          onTaskToolPress={onTaskToolPress}
+          agentColors={agentColors}
+        />
       </View>
     );
   };
@@ -110,9 +154,7 @@ export const MessageList: React.FC<MessageListProps> = ({
   const renderError = () => (
     <View>
       <Text>Error loading messages</Text>
-      <Text>
-        {error?.message || 'Unknown error occurred'}
-      </Text>
+      <Text>{error?.message || 'Unknown error occurred'}</Text>
     </View>
   );
 

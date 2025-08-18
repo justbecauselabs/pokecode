@@ -2,6 +2,7 @@ import { AntDesign, Feather, Ionicons, MaterialIcons } from '@expo/vector-icons'
 import type React from 'react';
 import { Switch, Text, TouchableOpacity, type TouchableOpacityProps, View } from 'react-native';
 import { cn } from '@/utils/cn';
+import { indicatorColors } from '@/utils/styleUtils';
 
 type IconLibrary = 'MaterialIcons' | 'Ionicons' | 'Feather' | 'AntDesign';
 
@@ -97,7 +98,7 @@ export const Row: React.FC<RowProps> = ({
     color?: string;
     className?: string;
   }) => {
-    const { library, name, size = 20, color = '#666', className } = params;
+    const { library, name, size = 20, color = '#666666', className } = params; // Using muted-foreground equivalent
     const iconProps = { name: name as any, size, color };
 
     const iconElement = (() => {
@@ -124,7 +125,7 @@ export const Row: React.FC<RowProps> = ({
     textColor?: string;
     size?: 'small' | 'medium' | 'large';
   }) => {
-    const { initials, backgroundColor = '#528bff', textColor = 'white', size = 'medium' } = params;
+    const { initials, backgroundColor = indicatorColors.primary, textColor = 'white', size = 'medium' } = params;
 
     const sizeClasses = {
       small: 'w-6 h-6 text-xs',
@@ -150,7 +151,7 @@ export const Row: React.FC<RowProps> = ({
     textColor?: string;
     maxCount?: number;
   }) => {
-    const { count, backgroundColor = '#ff4444', textColor = 'white', maxCount = 99 } = params;
+    const { count, backgroundColor = indicatorColors.error, textColor = 'white', maxCount = 99 } = params;
     const displayCount = count > maxCount ? `${maxCount}+` : count.toString();
 
     return (
@@ -222,10 +223,10 @@ export const Row: React.FC<RowProps> = ({
     const { variant, label } = params;
 
     const statusConfig = {
-      online: { color: '#22c55e', label: label || 'Online' },
-      offline: { color: '#94a3b8', label: label || 'Offline' },
-      away: { color: '#f59e0b', label: label || 'Away' },
-      busy: { color: '#ef4444', label: label || 'Busy' },
+      online: { color: indicatorColors.success, label: label || 'Online' },
+      offline: { color: indicatorColors.offline, label: label || 'Offline' },
+      away: { color: indicatorColors.warning, label: label || 'Away' },
+      busy: { color: indicatorColors.error, label: label || 'Busy' },
     };
 
     const config = statusConfig[variant];

@@ -25,11 +25,17 @@
       },
       "correctness": {
         "noUnusedVariables": "error",
-        "useExhaustiveDependencies": "warn"
+        "useExhaustiveDependencies": "warn",
+        "noChildrenProp": "error",
+        "noStringCaseMismatch": "error"
       },
       "style": {
         "recommended": true,
-        "noCommonJs": "error"
+        "noCommonJs": "error",
+        "useTemplate": "error"
+      },
+      "a11y": {
+        "recommended": true
       },
       "nursery": {
         "recommended": true

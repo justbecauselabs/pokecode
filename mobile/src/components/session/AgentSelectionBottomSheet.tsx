@@ -1,38 +1,27 @@
-import type { BottomSheetBackdropProps } from '@gorhom/bottom-sheet';
-import { BottomSheetBackdrop, BottomSheetModal, BottomSheetScrollView } from '@gorhom/bottom-sheet';
+import type { BottomSheetModal } from '@gorhom/bottom-sheet';
+import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
+import { Feather } from '@expo/vector-icons';
 import { forwardRef, useMemo } from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
 import type { Agent } from '../../types/agents';
+import { CustomBottomSheet } from '../common';
 
 interface AgentSelectionBottomSheetProps {
   agents: Agent[];
+  selectedAgents: string[];
   isLoading?: boolean;
   error?: Error | null;
-  onSelectAgent: (params: { agentName: string }) => void;
+  onToggleAgent: (params: { agentName: string }) => void;
   onClose: () => void;
 }
 
-export const AgentSelectionBottomSheet = forwardRef<
-  BottomSheetModal,
-  AgentSelectionBottomSheetProps
->(({ agents, isLoading, error, onSelectAgent, onClose }, ref) => {
-  // Bottom sheet snap points
-  const snapPoints = useMemo(() => ['50%', '90%'], []);
+export const AgentSelectionBottomSheet = forwardRef<BottomSheetModal, AgentSelectionBottomSheetProps>(
+  ({ agents, selectedAgents, isLoading, error, onToggleAgent, onClose }, ref) => {
+    // Bottom sheet snap points
+    const snapPoints = useMemo(() => ['50%', '90%'], []);
 
-  // Render backdrop
-  const renderBackdrop = (props: BottomSheetBackdropProps) => (
-    <BottomSheetBackdrop
-      {...props}
-      disappearsOnIndex={-1}
-      appearsOnIndex={0}
-      opacity={0.5}
-      onPress={onClose}
-    />
-  );
-
-  const handleAgentSelect = (agentName: string) => {
-    onSelectAgent({ agentName });
-    onClose();
+  const handleAgentToggle = (agentName: string) => {
+    onToggleAgent({ agentName });
   };
 
   // Group agents by type for better organization
@@ -42,34 +31,50 @@ export const AgentSelectionBottomSheet = forwardRef<
     return { userAgents, projectAgents };
   }, [agents]);
 
-  const renderAgentItem = (agent: Agent) => (
-    <TouchableOpacity
-      key={agent.name}
-      className="flex-row items-center justify-between py-3 px-4 border-b border-border active:opacity-70"
-      onPress={() => handleAgentSelect(agent.name)}
-      activeOpacity={0.7}
-    >
-      <View className="flex-1">
-        <Text className="text-base font-mono text-foreground">{agent.name}</Text>
-        <Text className="text-sm text-muted-foreground mt-1 font-mono" numberOfLines={2}>
-          {agent.description || 'No description available'}
-        </Text>
-      </View>
-      <View
-        className={`px-2 py-1 rounded-md ${
-          agent.type === 'user' ? 'bg-blue-500/20' : 'bg-green-500/20'
-        }`}
+  const renderAgentItem = (agent: Agent) => {
+    const isSelected = selectedAgents.includes(agent.name);
+    
+    return (
+      <TouchableOpacity
+        key={agent.name}
+        className="flex-row items-center py-3 px-4 border-b border-border active:opacity-70"
+        onPress={() => handleAgentToggle(agent.name)}
+        activeOpacity={0.7}
       >
-        <Text
-          className={`text-xs font-mono ${
-            agent.type === 'user' ? 'text-blue-400' : 'text-green-400'
-          }`}
-        >
-          {agent.type}
-        </Text>
-      </View>
-    </TouchableOpacity>
-  );
+        <View className="flex-1 mr-3">
+          <Text className="text-base font-mono text-foreground">{agent.name}</Text>
+          <Text className="text-sm text-muted-foreground mt-1 font-mono" numberOfLines={2}>
+            {agent.description || 'No description available'}
+          </Text>
+        </View>
+        
+        <View className="flex-row items-center gap-3">
+          <View
+            className={`px-2 py-1 rounded-md ${
+              agent.type === 'user' ? 'bg-blue-500/20' : 'bg-green-500/20'
+            }`}
+          >
+            <Text
+              className={`text-xs font-mono ${
+                agent.type === 'user' ? 'text-blue-400' : 'text-green-400'
+              }`}
+            >
+              {agent.type}
+            </Text>
+          </View>
+          
+          {/* Checkmark */}
+          <View className={`w-6 h-6 rounded border-2 items-center justify-center ${
+            isSelected ? 'bg-blue-500 border-blue-500' : 'border-muted-foreground/30'
+          }`}>
+            {isSelected && (
+              <Feather name="check" size={14} color="white" />
+            )}
+          </View>
+        </View>
+      </TouchableOpacity>
+    );
+  };
 
   const renderContent = () => {
     if (isLoading) {
@@ -127,41 +132,30 @@ export const AgentSelectionBottomSheet = forwardRef<
     );
   };
 
-  return (
-    <BottomSheetModal
-      ref={ref}
-      snapPoints={snapPoints}
-      enablePanDownToClose
-      onDismiss={onClose}
-      backdropComponent={renderBackdrop}
-      backgroundStyle={{
-        backgroundColor: '#282c34', // One Dark Pro background
-      }}
-      handleIndicatorStyle={{
-        backgroundColor: '#abb2bf', // One Dark Pro foreground
-      }}
-    >
-      <View className="flex-1 px-4">
-        {/* Header */}
-        <View className="py-3 border-b border-border mb-3">
-          <Text className="text-lg font-semibold text-center text-foreground font-mono">
-            Agents
-          </Text>
-          <Text className="text-sm text-center text-muted-foreground mt-1 font-mono">
-            Select an agent to assist with your message
-          </Text>
-        </View>
+    return (
+      <CustomBottomSheet ref={ref} onClose={onClose} snapPoints={snapPoints}>
+        <View className="flex-1 px-4">
+          {/* Header */}
+          <View className="py-3 border-b border-border mb-3">
+            <Text className="text-lg font-semibold text-center text-foreground font-mono">
+              Agents
+            </Text>
+            <Text className="text-sm text-center text-muted-foreground mt-1 font-mono">
+              Select agents to assist with your message ({selectedAgents.length} selected)
+            </Text>
+          </View>
 
-        {/* Agents list */}
-        <BottomSheetScrollView
-          contentContainerStyle={{
-            paddingBottom: 20,
-          }}
-          showsVerticalScrollIndicator={false}
-        >
-          {renderContent()}
-        </BottomSheetScrollView>
-      </View>
-    </BottomSheetModal>
-  );
-});
+          {/* Agents list */}
+          <BottomSheetScrollView
+            contentContainerStyle={{
+              paddingBottom: 20,
+            }}
+            showsVerticalScrollIndicator={false}
+          >
+            {renderContent()}
+          </BottomSheetScrollView>
+        </View>
+      </CustomBottomSheet>
+    );
+  }
+);

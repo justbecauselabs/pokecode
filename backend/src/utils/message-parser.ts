@@ -6,7 +6,7 @@ import type {
   ToolUseBlockParam,
 } from '@anthropic-ai/sdk/resources/messages';
 import type { SessionMessage } from '../db/schema-sqlite/session_messages';
-import type { AssistantMessage, Message, UserMessage } from '../schemas/message.schema';
+import type { AssistantMessage, Message, UserMessage } from '@pokecode/api';
 import { logger } from './logger';
 
 /**

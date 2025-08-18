@@ -5,18 +5,14 @@ import type {
   UserMessage, 
   AssistantMessage,
   AssistantMessageMessage
-} from '../schemas/message.schema';
+} from '@pokecode/api';
 
 // Re-export from schemas for compatibility
-export type { Message } from '../schemas/message.schema';
-export type { Session as SessionInfo } from '../schemas/session.schema';
+export type { Message } from '@pokecode/api';
+export type { Session as SessionInfo } from '@pokecode/api';
 
 // Full response type
 export type { GetMessagesResponse };
-
-// Helper types for the new Claude Code SDK message structure
-export type ClaudeCodeSDKMessage = Message['data'];
-
 
 // Helper function to extract text content from various message types
 export const extractMessageText = (message: Message): string => {
@@ -40,11 +36,11 @@ export const extractMessageText = (message: Message): string => {
   }
   
   if (message.type === 'system') {
-    return '[System: message]';
+    return '[System message]';
   }
   
   if (message.type === 'result') {
-    return '[Result: completed]';
+    return '[Result completed]';
   }
   
   return '[Unknown message type]';

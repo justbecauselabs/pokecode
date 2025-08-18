@@ -1,7 +1,8 @@
-import type { BottomSheetBackdropProps } from '@gorhom/bottom-sheet';
-import { BottomSheetBackdrop, BottomSheetModal, BottomSheetScrollView } from '@gorhom/bottom-sheet';
+import type { BottomSheetModal } from '@gorhom/bottom-sheet';
+import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { forwardRef, useMemo } from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
+import { CustomBottomSheet } from '../common';
 
 interface SlashCommand {
   name: string;
@@ -19,20 +20,6 @@ interface SlashCommandBottomSheetProps {
 
 export const SlashCommandBottomSheet = forwardRef<BottomSheetModal, SlashCommandBottomSheetProps>(
   ({ commands, isLoading, error, onSelectCommand, onClose }, ref) => {
-    // Bottom sheet snap points
-    const snapPoints = useMemo(() => ['50%', '90%'], []);
-
-    // Render backdrop
-    const renderBackdrop = (props: BottomSheetBackdropProps) => (
-      <BottomSheetBackdrop
-        {...props}
-        disappearsOnIndex={-1}
-        appearsOnIndex={0}
-        opacity={0.5}
-        onPress={onClose}
-      />
-    );
-
     const handleCommandSelect = (commandName: string) => {
       onSelectCommand({ commandName });
       onClose();
@@ -133,19 +120,7 @@ export const SlashCommandBottomSheet = forwardRef<BottomSheetModal, SlashCommand
     };
 
     return (
-      <BottomSheetModal
-        ref={ref}
-        snapPoints={snapPoints}
-        enablePanDownToClose
-        onDismiss={onClose}
-        backdropComponent={renderBackdrop}
-        backgroundStyle={{
-          backgroundColor: '#282c34', // One Dark Pro background
-        }}
-        handleIndicatorStyle={{
-          backgroundColor: '#abb2bf', // One Dark Pro foreground
-        }}
-      >
+      <CustomBottomSheet ref={ref} onClose={onClose}>
         <View className="flex-1 px-4">
           {/* Header */}
           <View className="py-3 border-b border-border mb-3">
@@ -167,7 +142,9 @@ export const SlashCommandBottomSheet = forwardRef<BottomSheetModal, SlashCommand
             {renderContent()}
           </BottomSheetScrollView>
         </View>
-      </BottomSheetModal>
+      </CustomBottomSheet>
     );
   }
 );
+
+SlashCommandBottomSheet.displayName = 'SlashCommandBottomSheet';

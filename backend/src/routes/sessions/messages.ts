@@ -6,7 +6,7 @@ import {
   ErrorResponseSchema,
   GetMessagesResponseSchema,
   SessionIdParamsSchema,
-} from '@/schemas/message.schema';
+} from '@pokecode/api';
 import { messageService } from '@/services/message.service';
 import { sessionService } from '@/services/session.service';
 import { logger } from '@/utils/logger';

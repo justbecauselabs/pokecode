@@ -23,7 +23,7 @@ import {
   type Session,
   type UpdateSessionRequest,
   type SessionParams,
-} from '@/schemas/session.schema';
+} from '@pokecode/api';
 
 import {
   CreateMessageBodySchema,
@@ -34,21 +34,26 @@ import {
   type CreateMessageResponse,
   type GetMessagesResponse,
   type SessionIdParams,
-} from '@/schemas/message.schema';
+} from '@pokecode/api';
 
 import {
   ListAgentsQuerySchema,
   ListAgentsResponseSchema,
   type ListAgentsQuery,
   type ListAgentsResponse,
-} from '@/schemas/agent.schema';
+} from '@pokecode/api';
 
 import {
   ListCommandsQuerySchema,
   ListCommandsResponseSchema,
   type ListCommandsQuery,
   type ListCommandsResponse,
-} from '@/schemas/command.schema';
+} from '@pokecode/api';
+
+import {
+  ListRepositoriesResponseSchema,
+  type ListRepositoriesResponse,
+} from '@pokecode/api';
 
 // Response schemas for other endpoints
 const HealthResponseSchema = z.object({
@@ -56,16 +61,7 @@ const HealthResponseSchema = z.object({
   timestamp: z.string(),
 });
 
-const RepositorySchema = z.object({
-  name: z.string(),
-  path: z.string(),
-  isGitRepo: z.boolean(),
-  lastAccessed: z.string().optional(),
-});
-
-const RepositoriesResponseSchema = z.object({
-  repositories: z.array(RepositorySchema),
-});
+// Using imported RepositoryResponseSchema and ListRepositoriesResponseSchema from @pokecode/api
 
 const FileSchema = z.object({
   path: z.string(),
@@ -99,8 +95,7 @@ const DeleteResponseSchema = z.object({
 });
 
 type HealthResponse = z.infer<typeof HealthResponseSchema>;
-type Repository = z.infer<typeof RepositorySchema>;
-type RepositoriesResponse = z.infer<typeof RepositoriesResponseSchema>;
+// Using imported Repository and ListRepositoriesResponse types from @pokecode/api
 type File = z.infer<typeof FileSchema>;
 type FilesResponse = z.infer<typeof FilesResponseSchema>;
 type FileContent = z.infer<typeof FileContentSchema>;
@@ -128,9 +123,10 @@ function getEffectiveBaseUrl(): string {
  */
 function isDebugEnabled(): boolean {
   return false;
-  if (__DEV__) return true;
-  const customApiBaseUrl = useSettingsStore.getState().customApiBaseUrl;
-  return !!customApiBaseUrl;
+  // TODO: Enable debug logging in development
+  // if (__DEV__) return true;
+  // const customApiBaseUrl = useSettingsStore.getState().customApiBaseUrl;
+  // return !!customApiBaseUrl;
 }
 
 /**
@@ -308,10 +304,10 @@ class APIClient {
   }
 
   // Repository endpoints
-  async getRepositories(): Promise<RepositoriesResponse> {
+  async getRepositories(): Promise<ListRepositoriesResponse> {
     return this.request({
       path: '/api/claude-code/repositories/',
-      responseSchema: RepositoriesResponseSchema,
+      responseSchema: ListRepositoriesResponseSchema,
     });
   }
 
@@ -540,8 +536,6 @@ export type {
 
   // Other types
   HealthResponse,
-  Repository,
-  RepositoriesResponse,
   File,
   FilesResponse,
   FileContent,

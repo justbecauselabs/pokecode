@@ -1,5 +1,5 @@
 import { config } from '@/config';
-import type { ListRepositoriesResponse, RepositoryResponse } from '@/schemas/repository.schema';
+import type { ListRepositoriesResponse, RepositoryResponse } from '@pokecode/api';
 import { directoryExists, joinPath, listDirectory, validateGitRepository } from '@/utils/file';
 
 export class RepositoryService {

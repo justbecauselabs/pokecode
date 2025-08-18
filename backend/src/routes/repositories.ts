@@ -1,5 +1,5 @@
 import type { FastifyPluginAsync } from 'fastify';
-import { ListRepositoriesResponseSchema } from '@/schemas/repository.schema';
+import { ListRepositoriesResponseSchema } from '@pokecode/api';
 import { repositoryService } from '@/services/repository.service';
 
 const repositoryRoutes: FastifyPluginAsync = async (fastify) => {

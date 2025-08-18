@@ -185,7 +185,6 @@ export const MessageSchema = z.object({
 export const CreateMessageBodySchema = z.object({
   content: z.string().min(1),
   allowedTools: z.array(z.string()).optional(),
-  agent: z.string().describe('Agent name to use for this message').optional(),
 });
 
 // Response schemas
