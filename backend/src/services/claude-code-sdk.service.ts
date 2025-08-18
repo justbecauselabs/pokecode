@@ -31,6 +31,7 @@ export class ClaudeCodeSDKService {
   private sessionId: string;
   private isProcessing = false;
   private currentQuery: Query | null = null;
+  private abortController: AbortController | null = null;
   private pathToClaudeCodeExecutable: string;
   private messageService: MessageService;
 
@@ -56,6 +57,7 @@ export class ClaudeCodeSDKService {
 
     this.isProcessing = true;
     this.startTime = Date.now();
+    this.abortController = new AbortController();
 
     try {
       // Check for existing Claude session ID for resumption
@@ -78,13 +80,14 @@ export class ClaudeCodeSDKService {
         };
       }
 
-      // Configure SDK options with resumption support
+      // Configure SDK options with resumption support and abort controller
       // Use node explicitly and point to the actual JS file
       const sdkOptions: Options = {
         cwd: this.options.projectPath,
         permissionMode: 'bypassPermissions',
         pathToClaudeCodeExecutable: this.pathToClaudeCodeExecutable,
         executable: 'node',
+        abortController: this.abortController,
         ...(lastClaudeSessionId && { resume: lastClaudeSessionId }),
         // Add stderr debugging
         stderr: (data: string) => {
@@ -143,6 +146,7 @@ export class ClaudeCodeSDKService {
     } finally {
       this.isProcessing = false;
       this.currentQuery = null;
+      this.abortController = null;
     }
   }
 
@@ -175,44 +179,30 @@ export class ClaudeCodeSDKService {
   }
 
   /**
-   * Abort the current execution
+   * Abort the current execution using AbortController
    */
   async abort(): Promise<void> {
-    if (this.currentQuery && this.isProcessing) {
+    if (this.abortController && this.isProcessing) {
       logger.info(
         { sessionId: this.sessionId },
-        'Claude SDK service received abort request - interrupting query',
+        'Claude SDK service received abort request - aborting with AbortController',
       );
-      try {
-        if (this.currentQuery.interrupt) {
-          logger.debug({ sessionId: this.sessionId }, 'Claude SDK calling interrupt() method');
-          await this.currentQuery.interrupt();
-          logger.info({ sessionId: this.sessionId }, 'Claude SDK successfully interrupted query');
-        } else {
-          logger.warn(
-            { sessionId: this.sessionId },
-            'Claude SDK query has no interrupt method available',
-          );
-        }
-      } catch (error) {
-        logger.error(
-          {
-            sessionId: this.sessionId,
-            error: error instanceof Error ? error.message : String(error),
-          },
-          'Claude SDK failed to interrupt query',
-        );
-      }
+
+      this.abortController.abort();
       this.isProcessing = false;
-      logger.debug({ sessionId: this.sessionId }, 'Claude SDK marked processing as false');
+
+      logger.info(
+        { sessionId: this.sessionId },
+        'Claude SDK successfully aborted query using AbortController',
+      );
     } else {
       logger.debug(
         {
           sessionId: this.sessionId,
-          hasQuery: !!this.currentQuery,
+          hasAbortController: !!this.abortController,
           isProcessing: this.isProcessing,
         },
-        'Claude SDK abort called but no active query to interrupt',
+        'Claude SDK abort called but no active AbortController to abort',
       );
     }
   }
