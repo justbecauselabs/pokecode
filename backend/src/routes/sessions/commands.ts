@@ -1,10 +1,10 @@
-import type { FastifyPluginAsync } from 'fastify';
-import { z } from 'zod';
 import {
   type ListCommandsQuery,
   ListCommandsQuerySchema,
   ListCommandsResponseSchema,
 } from '@pokecode/api';
+import type { FastifyPluginAsync } from 'fastify';
+import { z } from 'zod';
 import { commandService } from '@/services/command.service';
 import { sessionService } from '@/services/session.service';
 

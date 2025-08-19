@@ -1,10 +1,10 @@
-import type { FastifyPluginAsync } from 'fastify';
-import { z } from 'zod';
 import {
   type ListAgentsQuery,
   ListAgentsQuerySchema,
   ListAgentsResponseSchema,
 } from '@pokecode/api';
+import type { FastifyPluginAsync } from 'fastify';
+import { z } from 'zod';
 import { agentService } from '@/services/agent.service';
 import { sessionService } from '@/services/session.service';
 

@@ -1,13 +1,9 @@
 import { randomUUID } from 'node:crypto';
 import fs from 'node:fs';
+import type { CreateSessionRequest, ListSessionsQuery, UpdateSessionRequest } from '@pokecode/api';
 import { desc, eq, sql } from 'drizzle-orm';
 import { db } from '@/db';
 import { sessions } from '@/db/schema-sqlite';
-import type {
-  CreateSessionRequest,
-  ListSessionsQuery,
-  UpdateSessionRequest,
-} from '@pokecode/api';
 import { repositoryService } from '@/services/repository.service';
 import { NotFoundError, ValidationError } from '@/types';
 import {

@@ -1,5 +1,3 @@
-import type { FastifyPluginAsync } from 'fastify';
-import { z } from 'zod';
 import {
   type CreateSessionRequest,
   CreateSessionRequestSchema,
@@ -12,6 +10,8 @@ import {
   type UpdateSessionRequest,
   UpdateSessionRequestSchema,
 } from '@pokecode/api';
+import type { FastifyPluginAsync } from 'fastify';
+import { z } from 'zod';
 import { sessionService } from '@/services/session.service';
 
 // Type guard for API errors
