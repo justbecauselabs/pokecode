@@ -7,6 +7,13 @@ import {
 } from '@pokecode/api';
 import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
+
+// Query parameters schema for getting messages with cursor pagination
+const GetMessagesQuerySchema = z.object({
+  after: z.string().optional(),
+  limit: z.number().int().min(1).max(100).optional(),
+});
+
 import { messageService } from '@/services/message.service';
 import { sessionService } from '@/services/session.service';
 import { logger } from '@/utils/logger';
@@ -76,14 +83,16 @@ const messageRoutes: FastifyPluginAsync = async (fastify) => {
     },
   );
 
-  // GET /sessions/:sessionId/messages - Get all messages
+  // GET /sessions/:sessionId/messages - Get messages with optional cursor pagination
   fastify.get<{
     Params: { sessionId: string };
+    Querystring: { after?: string; limit?: number };
   }>(
     '/messages',
     {
       schema: {
         params: SessionIdParamsSchema,
+        querystring: GetMessagesQuerySchema,
         response: {
           200: GetMessagesResponseSchema,
           404: ErrorResponseSchema,
@@ -92,6 +101,7 @@ const messageRoutes: FastifyPluginAsync = async (fastify) => {
     },
     async (request, reply) => {
       const { sessionId } = request.params;
+      const { after, limit } = request.query;
 
       try {
         // Verify session exists
@@ -103,19 +113,29 @@ const messageRoutes: FastifyPluginAsync = async (fastify) => {
           });
         }
 
-        // Get all messages parsed from SDK format to API format
-        const messages = await messageService.getMessages(sessionId, session.projectPath);
+        // Get messages with cursor pagination
+        const result = await messageService.getMessages({
+          sessionId,
+          projectPath: session.projectPath,
+          cursor: after,
+          limit,
+        });
+
+        const { messages, pagination } = result;
 
         logger.debug(
           {
             sessionId,
             messageCount: messages.length,
+            cursor: after,
+            limit,
+            hasNextPage: pagination?.hasNextPage,
           },
           'Retrieved messages',
         );
 
         // Include full session info in response
-        return reply.send({
+        const response = {
           messages,
           session: {
             id: session.id,
@@ -134,7 +154,10 @@ const messageRoutes: FastifyPluginAsync = async (fastify) => {
             messageCount: session.messageCount,
             tokenCount: session.tokenCount,
           },
-        });
+          pagination,
+        };
+
+        return reply.send(response);
       } catch (error) {
         logger.error(
           {

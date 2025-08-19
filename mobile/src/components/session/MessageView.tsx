@@ -1,6 +1,7 @@
 import type {
   AssistantMessage,
   AssistantMessageToolResult,
+  ErrorMessage,
   Message,
   UserMessage,
 } from '@pokecode/api';
@@ -35,6 +36,7 @@ export const MessageView: React.FC<MessageViewProps> = memo(
 
     const isUser = message.type === 'user';
     const isAssistant = message.type === 'assistant';
+    const isError = message.type === 'error';
 
     const renderUserMessage = (userMessage: UserMessage) => {
       return (
@@ -92,6 +94,16 @@ export const MessageView: React.FC<MessageViewProps> = memo(
       );
     };
 
+    const renderErrorMessage = (errorMessage: ErrorMessage) => {
+      return (
+        <View className="p-3 bg-background">
+          <Text className={textStyles.error}>
+            {errorMessage.message}
+          </Text>
+        </View>
+      );
+    };
+
     const renderGenericMessage = (content: string) => {
       return (
         <View className="p-3 bg-background">
@@ -106,8 +118,10 @@ export const MessageView: React.FC<MessageViewProps> = memo(
       <View>
         {isUser && renderUserMessage(message.data as UserMessage)}
         {isAssistant && renderAssistantMessage(message.data as AssistantMessage)}
+        {isError && renderErrorMessage(message.data as ErrorMessage)}
         {!isUser &&
           !isAssistant &&
+          !isError &&
           renderGenericMessage(
             typeof message.data === 'string' ? message.data : JSON.stringify(message.data)
           )}

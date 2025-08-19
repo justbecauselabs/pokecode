@@ -36,6 +36,12 @@ import {
   type SessionIdParams,
 } from '@pokecode/api';
 
+// Temporary type definition for query parameters
+type GetMessagesQuery = {
+  after?: string;
+  limit?: number;
+};
+
 import {
   ListAgentsQuerySchema,
   ListAgentsResponseSchema,
@@ -373,12 +379,17 @@ class APIClient {
   }
 
   // Message endpoints
-  async getMessages(params: { sessionId: string }): Promise<GetMessagesResponse> {
-    const validatedParams = SessionIdParamsSchema.parse(params);
+  async getMessages(params: { 
+    sessionId: string;
+    query?: GetMessagesQuery;
+  }): Promise<GetMessagesResponse> {
+    const validatedParams = SessionIdParamsSchema.parse({ sessionId: params.sessionId });
+    const validatedQuery = params.query; // Direct assignment since schema isn't exported yet
 
     return this.request({
       path: '/api/claude-code/sessions/{sessionId}/messages',
       pathParams: validatedParams,
+      options: { query: validatedQuery },
       responseSchema: GetMessagesResponseSchema,
     });
   }

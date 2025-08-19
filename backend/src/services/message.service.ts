@@ -1,12 +1,20 @@
 import type { SDKMessage } from '@anthropic-ai/claude-code';
 import type { Message } from '@pokecode/api';
-import { and, asc, desc, eq, isNotNull, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, gt, isNotNull, sql } from 'drizzle-orm';
+
 import { db } from '../db';
 import { sessions } from '../db/schema-sqlite';
 import { sessionMessages } from '../db/schema-sqlite/session_messages';
 import { createChildLogger } from '../utils/logger';
 import { extractTokenCount, parseDbMessage } from '../utils/message-parser';
 import { sqliteQueueService } from './queue-sqlite.service';
+
+// Temporary type definition until packages/api is rebuilt
+type Pagination = {
+  hasNextPage: boolean;
+  nextCursor: string | null;
+  totalFetched: number;
+};
 
 const logger = createChildLogger('message-service');
 
@@ -38,26 +46,78 @@ export class MessageService {
   }
 
   /**
-   * Get all messages using new Message format
+   * Get messages using cursor pagination
    */
-  async getMessages(sessionId: string, projectPath?: string): Promise<Message[]> {
-    // Get DB messages in chronological order
-    const dbMessages = await db
-      .select()
-      .from(sessionMessages)
-      .where(eq(sessionMessages.sessionId, sessionId))
-      .orderBy(asc(sessionMessages.createdAt));
+  async getMessages(options: {
+    sessionId: string;
+    projectPath?: string;
+    cursor?: string;
+    limit?: number;
+  }): Promise<{ messages: Message[]; pagination: Pagination }> {
+    const { sessionId, projectPath, cursor, limit } = options;
 
-    const results: Message[] = [];
+    // Build query with cursor pagination
+    const pageLimit = limit || 50;
 
+    let dbMessages: Array<{
+      id: string;
+      sessionId: string;
+      type: 'user' | 'assistant' | 'system' | 'result' | 'error';
+      contentData: string | null;
+      claudeCodeSessionId: string | null;
+      tokenCount: number | null;
+      createdAt: Date;
+    }>;
+    if (cursor) {
+      const cursorDate = new Date(cursor);
+      dbMessages = await db
+        .select()
+        .from(sessionMessages)
+        .where(
+          and(eq(sessionMessages.sessionId, sessionId), gt(sessionMessages.createdAt, cursorDate)),
+        )
+        .orderBy(asc(sessionMessages.createdAt))
+        .limit(pageLimit + 1);
+    } else {
+      dbMessages = await db
+        .select()
+        .from(sessionMessages)
+        .where(eq(sessionMessages.sessionId, sessionId))
+        .orderBy(asc(sessionMessages.createdAt))
+        .limit(pageLimit + 1);
+    }
+
+    // Check if there are more pages
+    const hasNextPage = dbMessages.length > pageLimit;
+    if (hasNextPage) {
+      dbMessages.pop(); // Remove the extra item
+    }
+
+    // Transform messages
+    const messages: Message[] = [];
     for (const dbMsg of dbMessages) {
       const parsedMessage = parseDbMessage(dbMsg, projectPath);
       if (parsedMessage) {
-        results.push(parsedMessage);
+        messages.push(parsedMessage);
       }
     }
 
-    return results;
+    // Calculate pagination info
+    const nextCursor =
+      hasNextPage && dbMessages.length > 0
+        ? dbMessages[dbMessages.length - 1]?.createdAt?.toISOString() || null
+        : null;
+
+    const pagination: Pagination = {
+      hasNextPage,
+      nextCursor,
+      totalFetched: messages.length,
+    };
+
+    return {
+      messages,
+      pagination,
+    };
   }
 
   /**

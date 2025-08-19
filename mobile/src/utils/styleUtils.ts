@@ -8,7 +8,8 @@ export const messageTypeStyles = {
   user: "border-l-4 border-l-message-user bg-background",
   assistant: "border-l-4 border-l-message-assistant bg-background", 
   system: "border-l-4 border-l-message-system bg-background",
-  result: "border-l-4 border-l-message-result bg-background"
+  result: "border-l-4 border-l-message-result bg-background",
+  error: "border-l-4 border-l-destructive bg-background"
 } as const;
 
 // Typography patterns - replaces all hardcoded font families and inline styles

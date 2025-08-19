@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { SessionSchema } from './session.schema';
 
-export const MessageTypeSchema = z.enum(['assistant', 'user', 'system', 'result']);
+export const MessageTypeSchema = z.enum(['assistant', 'user', 'system', 'result', 'error']);
 
 // Tool result content block schema (maps to ToolResultBlockParam from SDK)
 export const ToolResultContentBlockSchema = z.object({
@@ -13,6 +13,10 @@ export const ToolResultContentBlockSchema = z.object({
 
 export const UserMessageSchema = z.object({
   content: z.string(),
+});
+
+export const ErrorMessageSchema = z.object({
+  message: z.string(),
 });
 
 export const AssistantMessageTypeSchema = z.enum(['message', 'tool_use', 'tool_result']);
@@ -177,7 +181,7 @@ export const AssistantMessageSchema = z.discriminatedUnion('type', [
 export const MessageSchema = z.object({
   id: z.string(),
   type: MessageTypeSchema,
-  data: z.union([UserMessageSchema, AssistantMessageSchema]),
+  data: z.union([UserMessageSchema, AssistantMessageSchema, ErrorMessageSchema]),
   parentToolUseId: z.string().nullable(),
 });
 
@@ -185,6 +189,19 @@ export const MessageSchema = z.object({
 export const CreateMessageBodySchema = z.object({
   content: z.string().min(1),
   allowedTools: z.array(z.string()).optional(),
+});
+
+// Query parameters for getting messages with cursor pagination
+export const GetMessagesQuerySchema = z.object({
+  after: z.string().optional().describe('Cursor for pagination - ISO timestamp to fetch messages after'),
+  limit: z.number().int().min(1).max(100).default(50).optional().describe('Maximum number of messages to return'),
+});
+
+// Pagination metadata schema
+export const PaginationSchema = z.object({
+  hasNextPage: z.boolean().describe('Whether there are more messages available'),
+  nextCursor: z.string().nullable().describe('Cursor for the next page, null if no more pages'),
+  totalFetched: z.number().int().describe('Number of messages returned in this response'),
 });
 
 // Response schemas
@@ -195,6 +212,7 @@ export const CreateMessageResponseSchema = z.object({
 export const GetMessagesResponseSchema = z.object({
   messages: z.array(MessageSchema),
   session: SessionSchema,
+  pagination: PaginationSchema.describe('Pagination metadata for cursor pagination'),
 });
 
 // Error response schema
@@ -211,6 +229,7 @@ export const SessionIdParamsSchema = z.object({
 export type MessageType = z.infer<typeof MessageTypeSchema>;
 export type ToolResultContentBlock = z.infer<typeof ToolResultContentBlockSchema>;
 export type UserMessage = z.infer<typeof UserMessageSchema>;
+export type ErrorMessage = z.infer<typeof ErrorMessageSchema>;
 export type AssistantMessageType = z.infer<typeof AssistantMessageTypeSchema>;
 export type AssistantMessageMessage = z.infer<typeof AssistantMessageMessageSchema>;
 export type ToolResultType = z.infer<typeof ToolTypeSchema>;
@@ -229,6 +248,8 @@ export type AssistantMessage = z.infer<typeof AssistantMessageSchema>;
 export type Message = z.infer<typeof MessageSchema>;
 export type CreateMessageRequest = z.infer<typeof CreateMessageBodySchema>;
 export type CreateMessageResponse = z.infer<typeof CreateMessageResponseSchema>;
+export type GetMessagesQuery = z.infer<typeof GetMessagesQuerySchema>;
+export type Pagination = z.infer<typeof PaginationSchema>;
 export type GetMessagesResponse = z.infer<typeof GetMessagesResponseSchema>;
 export type SessionInfo = z.infer<typeof SessionSchema>;
 export type ErrorResponse = z.infer<typeof ErrorResponseSchema>;
