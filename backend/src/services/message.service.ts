@@ -1,13 +1,14 @@
 import type { SDKMessage } from '@anthropic-ai/claude-code';
 import { createId } from '@paralleldrive/cuid2';
 import type { Message } from '@pokecode/api';
-import { and, asc, desc, eq, gt, isNotNull, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, gt, isNotNull, or, sql } from 'drizzle-orm';
 
 import { db } from '../db';
 import { sessions } from '../db/schema-sqlite';
 import { sessionMessages } from '../db/schema-sqlite/session_messages';
 import { createChildLogger } from '../utils/logger';
 import { extractTokenCount, parseDbMessage } from '../utils/message-parser';
+import { emitNewMessage, emitSessionDone } from './event-bus.service';
 import { sqliteQueueService } from './queue-sqlite.service';
 
 // Temporary type definition until packages/api is rebuilt
@@ -70,18 +71,40 @@ export class MessageService {
       createdAt: Date;
     }>;
     if (cursor) {
-      dbMessages = await db
-        .select()
+      // First, get the createdAt timestamp for the cursor message ID
+      const cursorMessage = await db
+        .select({ createdAt: sessionMessages.createdAt })
         .from(sessionMessages)
-        .where(and(eq(sessionMessages.sessionId, sessionId), gt(sessionMessages.id, cursor)))
-        .orderBy(asc(sessionMessages.id))
-        .limit(pageLimit + 1);
+        .where(eq(sessionMessages.id, cursor))
+        .limit(1);
+
+      if (cursorMessage.length === 0) {
+        // Invalid cursor, return empty result
+        dbMessages = [];
+      } else {
+        const cursorTimestamp = cursorMessage[0].createdAt;
+        dbMessages = await db
+          .select()
+          .from(sessionMessages)
+          .where(
+            and(
+              eq(sessionMessages.sessionId, sessionId),
+              // Use timestamp comparison first, then fall back to ID comparison for same timestamps
+              or(
+                gt(sessionMessages.createdAt, cursorTimestamp),
+                and(eq(sessionMessages.createdAt, cursorTimestamp), gt(sessionMessages.id, cursor))
+              )
+            )
+          )
+          .orderBy(asc(sessionMessages.createdAt), asc(sessionMessages.id))
+          .limit(pageLimit + 1);
+      }
     } else {
       dbMessages = await db
         .select()
         .from(sessionMessages)
         .where(eq(sessionMessages.sessionId, sessionId))
-        .orderBy(asc(sessionMessages.id))
+        .orderBy(asc(sessionMessages.createdAt), asc(sessionMessages.id))
         .limit(pageLimit + 1);
     }
 
@@ -117,18 +140,6 @@ export class MessageService {
   }
 
   /**
-   * Update message with content data (stored as JSON string)
-   */
-  async updateMessageContentData(messageId: string, contentData: SDKMessage): Promise<void> {
-    await db
-      .update(sessionMessages)
-      .set({
-        contentData: JSON.stringify(contentData),
-      })
-      .where(eq(sessionMessages.id, messageId));
-  }
-
-  /**
    * Save SDK message directly to database and update session counters
    */
   async saveSDKMessage(
@@ -150,13 +161,17 @@ export class MessageService {
     // Use a transaction to ensure consistency
     await db.transaction(async (tx) => {
       // Save message with SDK data as JSON string, including Claude session ID and token count
-      await tx.insert(sessionMessages).values({
-        sessionId,
-        type: messageType,
-        contentData: JSON.stringify(sdkMessage), // Store raw SDK message
-        claudeCodeSessionId: claudeCodeSessionId || null, // Store Claude SDK session ID for resumption
-        tokenCount: tokenCount > 0 ? tokenCount : null, // Store token count if available
-      });
+      const [insertedMessage] = await tx
+        .insert(sessionMessages)
+        .values({
+          id: createId(),
+          sessionId,
+          type: messageType,
+          contentData: JSON.stringify(sdkMessage), // Store raw SDK message
+          claudeCodeSessionId: claudeCodeSessionId || null, // Store Claude SDK session ID for resumption
+          tokenCount: tokenCount > 0 ? tokenCount : null, // Store token count if available
+        })
+        .returning(); // Use returning() to get the inserted row
 
       // Update session counters
       await tx
@@ -166,6 +181,20 @@ export class MessageService {
           tokenCount: sql`${sessions.tokenCount} + ${tokenCount}`,
         })
         .where(eq(sessions.id, sessionId));
+
+      // Get project path for message parsing
+      const session = await tx.query.sessions.findFirst({
+        where: eq(sessions.id, sessionId),
+        columns: { projectPath: true },
+      });
+
+      // After DB commit, emit real-time event with full Message object
+      if (insertedMessage && session) {
+        const parsedMessage = parseDbMessage(insertedMessage, session.projectPath);
+        if (parsedMessage) {
+          emitNewMessage(sessionId, parsedMessage);
+        }
+      }
     });
   }
 
@@ -187,12 +216,16 @@ export class MessageService {
     // Use a transaction to ensure consistency
     await db.transaction(async (tx) => {
       // Save as user message
-      await tx.insert(sessionMessages).values({
-        sessionId,
-        type: 'user',
-        contentData: JSON.stringify(userMessage),
-        tokenCount: null, // User messages don't have token costs
-      });
+      const [insertedMessage] = await tx
+        .insert(sessionMessages)
+        .values({
+          id: createId(),
+          sessionId,
+          type: 'user',
+          contentData: JSON.stringify(userMessage),
+          tokenCount: null, // User messages don't have token costs
+        })
+        .returning();
 
       // Update session message count
       await tx
@@ -201,6 +234,20 @@ export class MessageService {
           messageCount: sql`${sessions.messageCount} + 1`,
         })
         .where(eq(sessions.id, sessionId));
+
+      // Get project path for message parsing
+      const session = await tx.query.sessions.findFirst({
+        where: eq(sessions.id, sessionId),
+        columns: { projectPath: true },
+      });
+
+      // After DB commit, emit real-time event with full Message object
+      if (insertedMessage && session) {
+        const parsedMessage = parseDbMessage(insertedMessage, session.projectPath);
+        if (parsedMessage) {
+          emitNewMessage(sessionId, parsedMessage);
+        }
+      }
     });
   }
 
@@ -217,7 +264,7 @@ export class MessageService {
           isNotNull(sessionMessages.claudeCodeSessionId),
         ),
       )
-      .orderBy(desc(sessionMessages.id))
+      .orderBy(desc(sessionMessages.createdAt))
       .limit(1);
 
     return result[0]?.claudeCodeSessionId ?? null;
@@ -242,7 +289,7 @@ export class MessageService {
       .select()
       .from(sessionMessages)
       .where(eq(sessionMessages.sessionId, sessionId))
-      .orderBy(asc(sessionMessages.id));
+      .orderBy(asc(sessionMessages.createdAt));
 
     // Parse content_data from JSON string to object
     return dbMessages.map((msg) => ({
@@ -292,6 +339,9 @@ export class MessageService {
         updatedAt: new Date(),
       })
       .where(eq(sessions.id, sessionId));
+
+    // Emit session done (cancelled)
+    emitSessionDone(sessionId);
 
     logger.info({ sessionId }, 'Successfully cancelled session');
   }
