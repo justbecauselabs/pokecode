@@ -58,7 +58,7 @@ export const MessageTaskBottomSheet = forwardRef<BottomSheetModal, MessageTaskBo
 
           {/* Messages list */}
           <BottomSheetScrollView
-            contentContainerStyle={{ paddingBottom: 20 }}
+            contentContainerClassName="pb-5"
             showsVerticalScrollIndicator={false}
           >
             {renderContent()}

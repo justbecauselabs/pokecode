@@ -103,15 +103,15 @@ export const Row: React.FC<RowProps> = ({
     const iconElement = (() => {
       switch (library) {
         case 'MaterialIcons':
-          return <MaterialIcons name={name} size={size} color={color} />;
+          return <MaterialIcons name={name as React.ComponentProps<typeof MaterialIcons>['name']} size={size} color={color} />;
         case 'Ionicons':
-          return <Ionicons name={name} size={size} color={color} />;
+          return <Ionicons name={name as React.ComponentProps<typeof Ionicons>['name']} size={size} color={color} />;
         case 'Feather':
-          return <Feather name={name} size={size} color={color} />;
+          return <Feather name={name as React.ComponentProps<typeof Feather>['name']} size={size} color={color} />;
         case 'AntDesign':
-          return <AntDesign name={name} size={size} color={color} />;
+          return <AntDesign name={name as React.ComponentProps<typeof AntDesign>['name']} size={size} color={color} />;
         default:
-          return <MaterialIcons name={name} size={size} color={color} />;
+          return <MaterialIcons name={name as React.ComponentProps<typeof MaterialIcons>['name']} size={size} color={color} />;
       }
     })();
 

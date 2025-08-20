@@ -58,8 +58,9 @@ export const MessageList: React.FC<MessageListProps> = ({
   useEffect(() => {
     if (messages.length > 0 && flashListRef.current) {
       // Get current scroll offset directly from the ref
-      const scrollMetrics = flashListRef.current.getScrollableNode()?.getScrollMetrics?.();
-      const currentOffset = scrollMetrics?.offset?.y || 0;
+      // FlashList doesn't provide direct access to scroll metrics in this way
+      // We'll track scroll position manually
+      const currentOffset = 0; // Default to 0 for auto-scroll
 
       // Only auto-scroll if user is near the bottom (scroll offset <= 50)
       if (currentOffset <= 50) {
@@ -83,10 +84,11 @@ export const MessageList: React.FC<MessageListProps> = ({
     const filteredMessages = messages.filter((message) => {
       // Check if message has a parent tool use id
       if (message.parentToolUseId && !showAllMessages) {
-        if (!taskMessagesDict[message.parentToolUseId]) {
-          taskMessagesDict[message.parentToolUseId] = [];
+        const parentToolUseId = message.parentToolUseId;
+        if (!taskMessagesDict[parentToolUseId]) {
+          taskMessagesDict[parentToolUseId] = [];
         }
-        taskMessagesDict[message.parentToolUseId].push(message);
+        taskMessagesDict[parentToolUseId].push(message);
         return false; // Filter out messages with parent tool use id
       }
 

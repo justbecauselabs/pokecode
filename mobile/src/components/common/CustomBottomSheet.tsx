@@ -1,6 +1,7 @@
 import type { BottomSheetBackdropProps } from '@gorhom/bottom-sheet';
 import { BottomSheetBackdrop, BottomSheetModal } from '@gorhom/bottom-sheet';
 import { forwardRef, type ReactNode, useMemo } from 'react';
+import { backgroundColors } from '@/utils/styleUtils';
 
 interface CustomBottomSheetProps {
   children: ReactNode;
@@ -33,10 +34,10 @@ export const CustomBottomSheet = forwardRef<BottomSheetModal, CustomBottomSheetP
         backdropComponent={renderBackdrop}
         stackBehavior="replace"
         backgroundStyle={{
-          backgroundColor: '#282c34', // Using design token equivalent of bg-background
+          backgroundColor: backgroundColors.background, // Using design token equivalent of bg-background
         }}
         handleIndicatorStyle={{
-          backgroundColor: '#abb2bf', // Using design token equivalent of text-foreground
+          backgroundColor: backgroundColors.foreground, // Using design token equivalent of text-foreground
         }}
       >
         {children}

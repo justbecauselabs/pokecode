@@ -167,7 +167,7 @@ export const MessageToolView: React.FC<MessageToolViewProps> = memo(
         default:
           return (
             <View className="p-3">
-              <Text>Unknown tool type: {toolUse.type}</Text>
+              <Text>Unknown tool type: {(toolUse as { type: string }).type}</Text>
             </View>
           );
       }

@@ -100,7 +100,8 @@ export function useSessionMessages(sessionId: string) {
 
             // Add new message if present
             if (updateData.message) {
-              setMessages((prev) => [...prev, updateData.message]);
+              const newMessage = updateData.message;
+              setMessages((prev) => [...prev, newMessage]);
             }
 
             // Update working state

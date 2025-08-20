@@ -2,11 +2,61 @@ import type React from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
 import Markdown from 'react-native-markdown-display';
 
-// Citation type is now extracted from the actual message content
-type Citation = {
-  type: string;
+// Citation type matching backend types
+type CharLocationCitation = {
+  type: 'char_location';
   cited_text: string;
+  start_char_index: number;
+  end_char_index: number;
+  document_index: number;
+  document_title?: string;
+  file_id?: string;
 };
+
+type PageLocationCitation = {
+  type: 'page_location';
+  cited_text: string;
+  start_page: number;
+  end_page: number;
+  document_index: number;
+  document_title?: string;
+  file_id?: string;
+};
+
+type ContentBlockLocationCitation = {
+  type: 'content_block_location';
+  cited_text: string;
+  start_block_index: number;
+  end_block_index: number;
+  document_index: number;
+  document_title?: string;
+  file_id?: string;
+};
+
+type SearchResultLocationCitation = {
+  type: 'search_result_location';
+  cited_text: string;
+  source: string;
+  start_block_index: number;
+  end_block_index: number;
+  search_result_index: number;
+  title?: string;
+};
+
+type WebSearchResultLocationCitation = {
+  type: 'web_search_result_location';
+  cited_text: string;
+  url: string;
+  encrypted_index: string;
+  title?: string;
+};
+
+type Citation =
+  | CharLocationCitation
+  | PageLocationCitation
+  | ContentBlockLocationCitation
+  | SearchResultLocationCitation
+  | WebSearchResultLocationCitation;
 
 interface MarkdownRendererProps {
   content: string;
@@ -146,17 +196,17 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, cit
               <Text className="text-code-sm font-mono text-muted-foreground">
                 {citation.type.replace(/_/g, ' ')}
               </Text>
-              {citation.url && (
+              {'url' in citation && citation.url && (
                 <Text className="text-code-sm font-mono text-muted-foreground">
                   • {citation.url}
                 </Text>
               )}
-              {citation.document_title && (
+              {'document_title' in citation && citation.document_title && (
                 <Text className="text-code-sm font-mono text-muted-foreground">
                   • {citation.document_title}
                 </Text>
               )}
-              {citation.title && (
+              {'title' in citation && citation.title && (
                 <Text className="text-code-sm font-mono text-muted-foreground">
                   • {citation.title}
                 </Text>

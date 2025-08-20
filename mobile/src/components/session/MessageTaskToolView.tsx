@@ -37,7 +37,7 @@ export const MessageTaskToolView: React.FC<MessageTaskToolViewProps> = memo(
         </View>
 
         {/* Caret icon to indicate tappable */}
-        <Feather name="chevron-right" size={16} color="#9ca3af" style={{ marginLeft: 8 }} />
+        <Feather name="chevron-right" size={16} color="#9ca3af" className="ml-2" />
       </Pressable>
     );
   }

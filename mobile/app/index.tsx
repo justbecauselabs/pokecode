@@ -1,11 +1,9 @@
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useMemo } from 'react';
 import {
-  ActionSheetIOS,
   ActivityIndicator,
   Alert,
   FlatList,
-  Platform,
   Pressable,
   Text,
   View,
@@ -67,31 +65,14 @@ export default function HomeScreen() {
   };
 
   const handleLongPress = (session: Session) => {
-    if (Platform.OS === 'ios') {
-      ActionSheetIOS.showActionSheetWithOptions(
-        {
-          options: ['Cancel', 'Delete Session'],
-          destructiveButtonIndex: 1,
-          cancelButtonIndex: 0,
-          title: 'Session Actions',
-          message: session.projectPath,
-        },
-        (buttonIndex) => {
-          if (buttonIndex === 1) {
-            handleDeleteSession(session.id);
-          }
-        }
-      );
-    } else {
-      Alert.alert('Session Actions', session.projectPath, [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete Session',
-          style: 'destructive',
-          onPress: () => handleDeleteSession(session.id),
-        },
-      ]);
-    }
+    Alert.alert('Session Actions', session.projectPath, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete Session',
+        style: 'destructive',
+        onPress: () => handleDeleteSession(session.id),
+      },
+    ]);
   };
 
   const handleDeleteSession = async (sessionId: string) => {
@@ -214,7 +195,7 @@ export default function HomeScreen() {
                 </View>
               )}
               showsVerticalScrollIndicator={false}
-              contentContainerStyle={{ paddingBottom: 20 }}
+              contentContainerClassName="pb-5"
             />
           </>
         )}

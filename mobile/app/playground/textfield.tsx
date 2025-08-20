@@ -28,9 +28,9 @@ export default function TextFieldPlayground() {
             onChangeText={setText}
             placeholder="Type something here..."
             multiline
-            className="p-4 border border-white rounded-lg text-foreground"
+            className="p-4 border border-white rounded-lg text-foreground min-h-[40px]"
             placeholderTextColor="#666"
-            style={{ maxHeight: maxHeight, minHeight: 40 }}
+            style={{ maxHeight: maxHeight }}
           />
         </View>
       </View>

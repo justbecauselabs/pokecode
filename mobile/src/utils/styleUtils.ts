@@ -96,6 +96,14 @@ export const indicatorColors = {
   primaryForeground: '#282c34', // text-primary-foreground
 } as const;
 
+// Background colors - replaces all hardcoded background colors
+export const backgroundColors = {
+  background: '#282c34', // bg-background
+  foreground: '#abb2bf', // bg-foreground/text-foreground equivalent
+  card: '#21252b', // bg-card
+  muted: '#9ca3af', // bg-muted/text-muted-foreground
+} as const;
+
 // Common layout patterns
 export const layoutStyles = {
   flexCenter: 'flex items-center justify-center',

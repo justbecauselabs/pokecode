@@ -149,9 +149,7 @@ export const AgentSelectionBottomSheet = forwardRef<
 
         {/* Agents list */}
         <BottomSheetScrollView
-          contentContainerStyle={{
-            paddingBottom: 20,
-          }}
+          contentContainerClassName="pb-5"
           showsVerticalScrollIndicator={false}
         >
           {renderContent()}

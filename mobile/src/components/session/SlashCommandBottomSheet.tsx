@@ -134,9 +134,7 @@ export const SlashCommandBottomSheet = forwardRef<BottomSheetModal, SlashCommand
 
           {/* Commands list */}
           <BottomSheetScrollView
-            contentContainerStyle={{
-              paddingBottom: 20,
-            }}
+            contentContainerClassName="pb-5"
             showsVerticalScrollIndicator={false}
           >
             {renderContent()}

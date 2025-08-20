@@ -149,8 +149,8 @@ export default function SessionDetailScreen() {
   };
 
   // Task tool handlers
-  const handleTaskToolPress = (_toolId: string, agentName: string, messages: Message[]) => {
-    setTaskBottomSheetData({ agentName, messages });
+  const handleTaskToolPress = (_toolId: string, agentName: string, taskMessages: Message[]) => {
+    setTaskBottomSheetData({ agentName, messages: taskMessages });
     Keyboard.dismiss();
     taskBottomSheetRef.current?.present();
   };
@@ -211,7 +211,7 @@ export default function SessionDetailScreen() {
               <MessageInput
                 ref={messageInputRef}
                 sessionId={sessionId}
-                session={messageSession} // Now includes full session data from messages endpoint
+                session={messageSession ?? undefined} // Now includes full session data from messages endpoint
                 onSendMessage={sendMessage}
                 onCancelSession={cancelSession}
                 onShowSlashCommands={handleShowSlashCommands}

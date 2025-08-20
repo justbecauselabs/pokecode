@@ -23,7 +23,7 @@ export const ToolResultBottomSheet = forwardRef<BottomSheetModalType, ToolResult
 
           {result ? (
             <BottomSheetScrollView
-              contentContainerStyle={{ paddingBottom: 20 }}
+              contentContainerClassName="pb-5"
               showsVerticalScrollIndicator={false}
             >
               {result.isError ? (

@@ -3,7 +3,7 @@
  */
 
 import { memo } from 'react';
-import { ActionSheetIOS, Alert, Platform, Pressable, Text, View } from 'react-native';
+import { Alert, Pressable, Text, View } from 'react-native';
 import type { Session } from '@/api/client';
 import { formatRelativeTime } from '@/utils/format';
 
@@ -51,32 +51,14 @@ export const SessionCard = memo(({ session, onPress, onDelete }: SessionCardProp
       return;
     }
 
-    if (Platform.OS === 'ios') {
-      ActionSheetIOS.showActionSheetWithOptions(
-        {
-          options: ['Cancel', 'Delete Session'],
-          destructiveButtonIndex: 1,
-          cancelButtonIndex: 0,
-          title: 'Session Actions',
-          message: session.projectPath,
-        },
-        (buttonIndex) => {
-          if (buttonIndex === 1) {
-            handleDelete();
-          }
-        }
-      );
-    } else {
-      // For Android, show Alert dialog
-      Alert.alert('Session Actions', session.projectPath, [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete Session',
-          style: 'destructive',
-          onPress: handleDelete,
-        },
-      ]);
-    }
+    Alert.alert('Session Actions', session.projectPath, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete Session',
+        style: 'destructive',
+        onPress: handleDelete,
+      },
+    ]);
   };
 
   const handleDelete = () => {
