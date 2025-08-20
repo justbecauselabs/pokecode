@@ -3,8 +3,8 @@
  */
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { apiClient } from '@/api/client';
 import type { Session } from '@/api/client';
+import { apiClient } from '@/api/client';
 
 export const SESSIONS_QUERY_KEY = ['sessions'] as const;
 

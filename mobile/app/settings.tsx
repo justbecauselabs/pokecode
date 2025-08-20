@@ -182,7 +182,6 @@ export default function SettingsScreen() {
                 </Text>
               </Pressable>
 
-
               <Pressable
                 onPress={() => router.push('/playground/rows')}
                 className="py-3 px-4 rounded-lg bg-muted border border-border active:opacity-80"
@@ -210,6 +209,16 @@ export default function SettingsScreen() {
                 <Text className="text-foreground font-mono font-medium">Message View</Text>
                 <Text className="text-xs text-muted-foreground font-mono mt-1">
                   API message components for user and assistant conversations
+                </Text>
+              </Pressable>
+
+              <Pressable
+                onPress={() => router.push('/playground/textfield')}
+                className="py-3 px-4 rounded-lg bg-muted border border-border active:opacity-80"
+              >
+                <Text className="text-foreground font-mono font-medium">TextField</Text>
+                <Text className="text-xs text-muted-foreground font-mono mt-1">
+                  Interactive text input with multiline, autogrow, and size options
                 </Text>
               </Pressable>
             </View>

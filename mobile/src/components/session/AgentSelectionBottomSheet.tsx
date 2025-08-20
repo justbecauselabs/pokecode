@@ -1,6 +1,6 @@
+import { Feather } from '@expo/vector-icons';
 import type { BottomSheetModal } from '@gorhom/bottom-sheet';
 import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
-import { Feather } from '@expo/vector-icons';
 import { forwardRef, useMemo } from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
 import type { Agent } from '../../types/agents';
@@ -15,10 +15,12 @@ interface AgentSelectionBottomSheetProps {
   onClose: () => void;
 }
 
-export const AgentSelectionBottomSheet = forwardRef<BottomSheetModal, AgentSelectionBottomSheetProps>(
-  ({ agents, selectedAgents, isLoading, error, onToggleAgent, onClose }, ref) => {
-    // Bottom sheet snap points
-    const snapPoints = useMemo(() => ['50%', '90%'], []);
+export const AgentSelectionBottomSheet = forwardRef<
+  BottomSheetModal,
+  AgentSelectionBottomSheetProps
+>(({ agents, selectedAgents, isLoading, error, onToggleAgent, onClose }, ref) => {
+  // Bottom sheet snap points
+  const snapPoints = useMemo(() => ['50%', '90%'], []);
 
   const handleAgentToggle = (agentName: string) => {
     onToggleAgent({ agentName });
@@ -33,7 +35,7 @@ export const AgentSelectionBottomSheet = forwardRef<BottomSheetModal, AgentSelec
 
   const renderAgentItem = (agent: Agent) => {
     const isSelected = selectedAgents.includes(agent.name);
-    
+
     return (
       <TouchableOpacity
         key={agent.name}
@@ -47,7 +49,7 @@ export const AgentSelectionBottomSheet = forwardRef<BottomSheetModal, AgentSelec
             {agent.description || 'No description available'}
           </Text>
         </View>
-        
+
         <View className="flex-row items-center gap-3">
           <View
             className={`px-2 py-1 rounded-md ${
@@ -62,14 +64,14 @@ export const AgentSelectionBottomSheet = forwardRef<BottomSheetModal, AgentSelec
               {agent.type}
             </Text>
           </View>
-          
+
           {/* Checkmark */}
-          <View className={`w-6 h-6 rounded border-2 items-center justify-center ${
-            isSelected ? 'bg-blue-500 border-blue-500' : 'border-muted-foreground/30'
-          }`}>
-            {isSelected && (
-              <Feather name="check" size={14} color="white" />
-            )}
+          <View
+            className={`w-6 h-6 rounded border-2 items-center justify-center ${
+              isSelected ? 'bg-blue-500 border-blue-500' : 'border-muted-foreground/30'
+            }`}
+          >
+            {isSelected && <Feather name="check" size={14} color="white" />}
           </View>
         </View>
       </TouchableOpacity>
@@ -132,30 +134,29 @@ export const AgentSelectionBottomSheet = forwardRef<BottomSheetModal, AgentSelec
     );
   };
 
-    return (
-      <CustomBottomSheet ref={ref} onClose={onClose} snapPoints={snapPoints}>
-        <View className="flex-1 px-4">
-          {/* Header */}
-          <View className="py-3 border-b border-border mb-3">
-            <Text className="text-lg font-semibold text-center text-foreground font-mono">
-              Agents
-            </Text>
-            <Text className="text-sm text-center text-muted-foreground mt-1 font-mono">
-              Select agents to assist with your message ({selectedAgents.length} selected)
-            </Text>
-          </View>
-
-          {/* Agents list */}
-          <BottomSheetScrollView
-            contentContainerStyle={{
-              paddingBottom: 20,
-            }}
-            showsVerticalScrollIndicator={false}
-          >
-            {renderContent()}
-          </BottomSheetScrollView>
+  return (
+    <CustomBottomSheet ref={ref} onClose={onClose} snapPoints={snapPoints}>
+      <View className="flex-1 px-4">
+        {/* Header */}
+        <View className="py-3 border-b border-border mb-3">
+          <Text className="text-lg font-semibold text-center text-foreground font-mono">
+            Agents
+          </Text>
+          <Text className="text-sm text-center text-muted-foreground mt-1 font-mono">
+            Select agents to assist with your message ({selectedAgents.length} selected)
+          </Text>
         </View>
-      </CustomBottomSheet>
-    );
-  }
-);
+
+        {/* Agents list */}
+        <BottomSheetScrollView
+          contentContainerStyle={{
+            paddingBottom: 20,
+          }}
+          showsVerticalScrollIndicator={false}
+        >
+          {renderContent()}
+        </BottomSheetScrollView>
+      </View>
+    </CustomBottomSheet>
+  );
+});

@@ -1,4 +1,5 @@
 import type { SDKMessage } from '@anthropic-ai/claude-code';
+import { createId } from '@paralleldrive/cuid2';
 import type { Message } from '@pokecode/api';
 import { and, asc, desc, eq, gt, isNotNull, sql } from 'drizzle-orm';
 
@@ -24,7 +25,7 @@ export class MessageService {
    */
   async queuePrompt(sessionId: string, content: string): Promise<void> {
     // Generate a job ID for the prompt
-    const promptId = globalThis.crypto.randomUUID();
+    const promptId = createId();
 
     // Queue job for Claude processing
     await sqliteQueueService.addPromptJob(
@@ -69,21 +70,18 @@ export class MessageService {
       createdAt: Date;
     }>;
     if (cursor) {
-      const cursorDate = new Date(cursor);
       dbMessages = await db
         .select()
         .from(sessionMessages)
-        .where(
-          and(eq(sessionMessages.sessionId, sessionId), gt(sessionMessages.createdAt, cursorDate)),
-        )
-        .orderBy(asc(sessionMessages.createdAt))
+        .where(and(eq(sessionMessages.sessionId, sessionId), gt(sessionMessages.id, cursor)))
+        .orderBy(asc(sessionMessages.id))
         .limit(pageLimit + 1);
     } else {
       dbMessages = await db
         .select()
         .from(sessionMessages)
         .where(eq(sessionMessages.sessionId, sessionId))
-        .orderBy(asc(sessionMessages.createdAt))
+        .orderBy(asc(sessionMessages.id))
         .limit(pageLimit + 1);
     }
 
@@ -104,9 +102,7 @@ export class MessageService {
 
     // Calculate pagination info
     const nextCursor =
-      hasNextPage && dbMessages.length > 0
-        ? dbMessages[dbMessages.length - 1]?.createdAt?.toISOString() || null
-        : null;
+      hasNextPage && dbMessages.length > 0 ? dbMessages[dbMessages.length - 1]?.id || null : null;
 
     const pagination: Pagination = {
       hasNextPage,
@@ -185,7 +181,7 @@ export class MessageService {
         content: content,
       },
       parent_tool_use_id: null,
-      session_id: globalThis.crypto.randomUUID(),
+      session_id: createId(),
     };
 
     // Use a transaction to ensure consistency
@@ -221,7 +217,7 @@ export class MessageService {
           isNotNull(sessionMessages.claudeCodeSessionId),
         ),
       )
-      .orderBy(desc(sessionMessages.createdAt))
+      .orderBy(desc(sessionMessages.id))
       .limit(1);
 
     return result[0]?.claudeCodeSessionId ?? null;
@@ -246,7 +242,7 @@ export class MessageService {
       .select()
       .from(sessionMessages)
       .where(eq(sessionMessages.sessionId, sessionId))
-      .orderBy(asc(sessionMessages.createdAt));
+      .orderBy(asc(sessionMessages.id));
 
     // Parse content_data from JSON string to object
     return dbMessages.map((msg) => ({

@@ -51,7 +51,9 @@ export class ErrorBoundary extends Component<Props, State> {
 
             {__DEV__ && this.state.error && (
               <View className="w-full bg-card p-4 rounded-lg mb-5">
-                <Text className="text-base font-semibold text-destructive mb-2">Error Details:</Text>
+                <Text className="text-base font-semibold text-destructive mb-2">
+                  Error Details:
+                </Text>
                 <Text className="text-sm text-foreground font-mono">
                   {this.state.error.toString()}
                 </Text>
@@ -71,13 +73,11 @@ export class ErrorBoundary extends Component<Props, State> {
               </View>
             )}
 
-            <TouchableOpacity 
-              className="bg-primary px-6 py-3 rounded-lg" 
+            <TouchableOpacity
+              className="bg-primary px-6 py-3 rounded-lg"
               onPress={this.handleReset}
             >
-              <Text className="text-primary-foreground text-base font-semibold">
-                Try Again
-              </Text>
+              <Text className="text-primary-foreground text-base font-semibold">Try Again</Text>
             </TouchableOpacity>
           </ScrollView>
         </View>

@@ -1,6 +1,6 @@
 import type { BottomSheetBackdropProps } from '@gorhom/bottom-sheet';
 import { BottomSheetBackdrop, BottomSheetModal } from '@gorhom/bottom-sheet';
-import { forwardRef, useMemo, type ReactNode } from 'react';
+import { forwardRef, type ReactNode, useMemo } from 'react';
 
 interface CustomBottomSheetProps {
   children: ReactNode;
@@ -10,8 +10,6 @@ interface CustomBottomSheetProps {
 
 export const CustomBottomSheet = forwardRef<BottomSheetModal, CustomBottomSheetProps>(
   ({ children, onClose, snapPoints: customSnapPoints }, ref) => {
-    console.log('🔧 CustomBottomSheet rendered with ref:', !!ref);
-    
     // Bottom sheet snap points
     const snapPoints = useMemo(() => customSnapPoints || ['50%', '90%'], [customSnapPoints]);
 

@@ -8,9 +8,9 @@ import type {
 import type React from 'react';
 import { memo } from 'react';
 import { Text, View } from 'react-native';
+import { textStyles } from '../../utils/styleUtils';
 import { MarkdownRenderer } from './MarkdownRenderer';
 import { MessageToolView } from './MessageToolView';
-import { textStyles } from '../../utils/styleUtils';
 
 interface MessageViewProps {
   message: Message;
@@ -23,13 +23,19 @@ interface MessageViewProps {
 }
 
 export const MessageView: React.FC<MessageViewProps> = memo(
-  ({ message, toolResults, taskMessages, onLongPress, onToolResultPress, onTaskToolPress, agentColors }) => {
+  ({
+    message,
+    toolResults,
+    taskMessages,
+    onLongPress: _onLongPress,
+    onToolResultPress,
+    onTaskToolPress,
+    agentColors,
+  }) => {
     if (!message || !message.data) {
       return (
         <View className="mb-2">
-          <Text className={textStyles.error}>
-            [Error: Invalid message data]
-          </Text>
+          <Text className={textStyles.error}>[Error: Invalid message data]</Text>
         </View>
       );
     }
@@ -41,9 +47,7 @@ export const MessageView: React.FC<MessageViewProps> = memo(
     const renderUserMessage = (userMessage: UserMessage) => {
       return (
         <View className="p-3 bg-background">
-          <Text className={textStyles.messageContentSm}>
-            {userMessage.content}
-          </Text>
+          <Text className={textStyles.messageContentSm}>{userMessage.content}</Text>
         </View>
       );
     };
@@ -87,9 +91,7 @@ export const MessageView: React.FC<MessageViewProps> = memo(
 
       return (
         <View className="p-3 bg-background">
-          <Text className={textStyles.messageContent}>
-            [Unknown assistant message type]
-          </Text>
+          <Text className={textStyles.messageContent}>[Unknown assistant message type]</Text>
         </View>
       );
     };
@@ -97,9 +99,7 @@ export const MessageView: React.FC<MessageViewProps> = memo(
     const renderErrorMessage = (errorMessage: ErrorMessage) => {
       return (
         <View className="p-3 bg-background">
-          <Text className={textStyles.error}>
-            {errorMessage.message}
-          </Text>
+          <Text className={textStyles.error}>{errorMessage.message}</Text>
         </View>
       );
     };
@@ -107,9 +107,7 @@ export const MessageView: React.FC<MessageViewProps> = memo(
     const renderGenericMessage = (content: string) => {
       return (
         <View className="p-3 bg-background">
-          <Text className={textStyles.messageContent}>
-            {content}
-          </Text>
+          <Text className={textStyles.messageContent}>{content}</Text>
         </View>
       );
     };

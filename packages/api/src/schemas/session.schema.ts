@@ -1,5 +1,8 @@
 import { z } from 'zod';
 
+// ID validation schema - accept any string format
+const idSchema = z.string();
+
 // Create session schemas
 export const CreateSessionRequestSchema = z.object({
   projectPath: z
@@ -25,12 +28,12 @@ export const CreateSessionRequestSchema = z.object({
 });
 
 export const SessionSchema = z.object({
-  id: z.string().uuid(),
+  id: idSchema,
   projectPath: z.string(),
   name: z.string(),
   claudeDirectoryPath: z.string().nullable(),
   context: z.string().nullable(),
-  status: z.union([z.literal('active'), z.literal('idle'), z.literal('expired')]),
+  state: z.union([z.literal('active'), z.literal('inactive')]),
   metadata: z.any().nullable(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
@@ -46,9 +49,9 @@ export const SessionSchema = z.object({
 
 // List sessions schemas
 export const ListSessionsQuerySchema = z.object({
-  status: z.union([z.literal('active'), z.literal('idle'), z.literal('expired')]).optional(),
-  limit: z.number().int().min(1).max(100).default(20).optional(),
-  offset: z.number().int().min(0).default(0).optional(),
+  state: z.union([z.literal('active'), z.literal('inactive')]).optional(),
+  limit: z.coerce.number().int().min(1).max(100).default(20).optional(),
+  offset: z.coerce.number().int().min(0).default(0).optional(),
 });
 
 export const ListSessionsResponseSchema = z.object({
@@ -66,7 +69,7 @@ export const UpdateSessionRequestSchema = z.object({
 
 // Session params schema
 export const SessionParamsSchema = z.object({
-  sessionId: z.string().uuid(),
+  sessionId: idSchema,
 });
 
 // Type exports

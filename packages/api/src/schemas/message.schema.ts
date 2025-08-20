@@ -1,6 +1,9 @@
 import { z } from 'zod';
 import { SessionSchema } from './session.schema';
 
+// ID validation schema - accept any string format
+const idSchema = z.string();
+
 export const MessageTypeSchema = z.enum(['assistant', 'user', 'system', 'result', 'error']);
 
 // Tool result content block schema (maps to ToolResultBlockParam from SDK)
@@ -193,14 +196,14 @@ export const CreateMessageBodySchema = z.object({
 
 // Query parameters for getting messages with cursor pagination
 export const GetMessagesQuerySchema = z.object({
-  after: z.string().optional().describe('Cursor for pagination - ISO timestamp to fetch messages after'),
-  limit: z.number().int().min(1).max(100).default(50).optional().describe('Maximum number of messages to return'),
+  after: z.string().optional().describe('Cursor for pagination - message ID to fetch messages after'),
+  limit: z.coerce.number().int().min(1).max(1000).optional().describe('Maximum number of messages to return'),
 });
 
 // Pagination metadata schema
 export const PaginationSchema = z.object({
   hasNextPage: z.boolean().describe('Whether there are more messages available'),
-  nextCursor: z.string().nullable().describe('Cursor for the next page, null if no more pages'),
+  nextCursor: z.string().nullable().describe('Message ID cursor for the next page, null if no more pages'),
   totalFetched: z.number().int().describe('Number of messages returned in this response'),
 });
 
@@ -223,7 +226,7 @@ export const ErrorResponseSchema = z.object({
 
 // Params schema
 export const SessionIdParamsSchema = z.object({
-  sessionId: z.string().uuid(),
+  sessionId: idSchema,
 });
 
 export type MessageType = z.infer<typeof MessageTypeSchema>;

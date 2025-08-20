@@ -11,7 +11,7 @@ import { MessageView } from './MessageView';
 // Type header component using pure TailwindCSS
 const TypeHeader: React.FC<{ type: Message['type'] }> = ({ type }) => {
   const displayName = type.charAt(0).toUpperCase() + type.slice(1);
-  
+
   // Define colors based on message type
   const getHeaderColor = (type: Message['type']): string => {
     switch (type) {
@@ -122,7 +122,7 @@ export const MessageList: React.FC<MessageListProps> = ({
       toolResults: toolResultsDict,
       taskMessages: taskMessagesDict,
     };
-  }, [messages]);
+  }, [messages, showAllMessages]);
 
   const renderMessage = ({ item, index }: { item: Message; index: number }) => {
     // Since the list is inverted, we need to check the next item (which is actually the previous message)

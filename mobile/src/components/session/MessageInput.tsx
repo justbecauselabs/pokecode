@@ -64,7 +64,7 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>((prop
 
       // Prepend selected agents if any are active
       if (selectedAgents.length > 0) {
-        const agentText = selectedAgents.map(agent => `- @agent-${agent}`).join('\n');
+        const agentText = selectedAgents.map((agent) => `- @agent-${agent}`).join('\n');
         finalMessage = `use the following sub agents\n${agentText}\n\n${trimmedMessage}`;
       }
 
@@ -106,6 +106,7 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>((prop
             onChangeText={setMessage}
             placeholder="Enter your message..."
             multiline
+            autoGrow
             textAlignVertical="top"
             editable={!disabled && !isSending}
             returnKeyType="default"
@@ -163,7 +164,9 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>((prop
           disabled={disabled || isSending}
           activeOpacity={0.7}
         >
-          <Text className={`text-sm ${selectedAgents.length > 0 ? 'text-blue-600 font-medium' : 'text-blue-500'} ${disabled || isSending ? 'opacity-50' : ''}`}>
+          <Text
+            className={`text-sm ${selectedAgents.length > 0 ? 'text-blue-600 font-medium' : 'text-blue-500'} ${disabled || isSending ? 'opacity-50' : ''}`}
+          >
             {selectedAgents.length > 0 ? `agents (${selectedAgents.length})` : 'agent'}
           </Text>
         </TouchableOpacity>
@@ -180,7 +183,9 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>((prop
           disabled={disabled || isSending}
           activeOpacity={0.7}
         >
-          <Text className={`text-sm ${selectedCommand ? 'text-blue-600 font-medium' : 'text-blue-500'} ${disabled || isSending ? 'opacity-50' : ''}`}>
+          <Text
+            className={`text-sm ${selectedCommand ? 'text-blue-600 font-medium' : 'text-blue-500'} ${disabled || isSending ? 'opacity-50' : ''}`}
+          >
             {selectedCommand ? `/${selectedCommand}` : 'slash command'}
           </Text>
         </TouchableOpacity>

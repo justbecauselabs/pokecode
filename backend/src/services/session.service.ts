@@ -1,5 +1,5 @@
-import { randomUUID } from 'node:crypto';
 import fs from 'node:fs';
+import { createId } from '@paralleldrive/cuid2';
 import type { CreateSessionRequest, ListSessionsQuery, UpdateSessionRequest } from '@pokecode/api';
 import { desc, eq, sql } from 'drizzle-orm';
 import { db } from '@/db';
@@ -54,7 +54,7 @@ export class SessionService {
     }
 
     // Generate session ID upfront to create session-specific Claude directory path
-    const sessionId = randomUUID();
+    const sessionId = createId();
     const projectKey = projectPath.replace(/\//g, '-').replace(/_/g, '-');
     const claudeDirectoryPath = joinPath(
       getHomeDirectory(),
@@ -130,11 +130,11 @@ export class SessionService {
 
     logger.info({ results }, 'Sessions listed');
 
-    // Format sessions and apply status filter if needed
+    // Format sessions and apply state filter if needed
     let formattedSessions = results.map((session) => this.formatSession(session));
 
-    if (options.status) {
-      formattedSessions = formattedSessions.filter((session) => session.status === options.status);
+    if (options.state) {
+      formattedSessions = formattedSessions.filter((session) => session.state === options.state);
     }
 
     return {
@@ -191,21 +191,23 @@ export class SessionService {
       throw new NotFoundError('Session');
     }
 
-    // Delete session (cascades to prompts and file access)
-    await db.delete(sessions).where(eq(sessions.id, sessionId));
+    // Mark session as inactive instead of hard deletion
+    await db
+      .update(sessions)
+      .set({ state: 'inactive', updatedAt: new Date() })
+      .where(eq(sessions.id, sessionId));
 
     return { success: true };
   }
 
   async getActiveSessionCount(): Promise<number> {
-    // Get all sessions and compute active ones based on updated_at
-    const allSessions = await db.query.sessions.findMany();
+    // Count sessions with state = 'active'
+    const result = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(sessions)
+      .where(eq(sessions.state, 'active'));
 
-    const activeSessions = allSessions.filter(
-      (session) => this.computeSessionStatus(session.updatedAt) === 'active',
-    );
-
-    return activeSessions.length;
+    return result[0]?.count ?? 0;
   }
 
   private formatSession(session: typeof sessions.$inferSelect) {
@@ -215,7 +217,7 @@ export class SessionService {
       name: session.name,
       claudeDirectoryPath: session.claudeDirectoryPath,
       context: session.context,
-      status: this.computeSessionStatus(session.updatedAt),
+      state: session.state,
       metadata: session.metadata,
       createdAt: session.createdAt.toISOString(),
       updatedAt: session.updatedAt.toISOString(),
@@ -228,20 +230,6 @@ export class SessionService {
       messageCount: session.messageCount,
       tokenCount: session.tokenCount,
     };
-  }
-
-  private computeSessionStatus(updatedAt: Date): 'active' | 'idle' | 'expired' {
-    const now = new Date();
-    const timeDiff = now.getTime() - updatedAt.getTime();
-    const hoursAgo = timeDiff / (1000 * 60 * 60);
-
-    if (hoursAgo < 6) {
-      return 'active';
-    } else if (hoursAgo < 12) {
-      return 'idle';
-    } else {
-      return 'expired';
-    }
   }
 
   private extractNameFromPath(projectPath: string): string {

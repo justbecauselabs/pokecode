@@ -2,6 +2,7 @@ import {
   type ListCommandsQuery,
   ListCommandsQuerySchema,
   ListCommandsResponseSchema,
+  SessionIdParamsSchema,
 } from '@pokecode/api';
 import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
@@ -32,7 +33,7 @@ const commandRoutes: FastifyPluginAsync = async (fastify) => {
         description:
           'Discover slash commands from both user Claude home directory and project directory',
         tags: ['Commands'],
-        params: z.object({ sessionId: z.string().uuid() }),
+        params: SessionIdParamsSchema,
         querystring: ListCommandsQuerySchema,
         response: {
           200: ListCommandsResponseSchema,

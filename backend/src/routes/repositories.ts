@@ -27,10 +27,13 @@ const repositoryRoutes: FastifyPluginAsync = async (fastify) => {
         return reply.send(repositories);
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
-        fastify.log.error('Failed to list repositories:', {
-          error: errorMessage,
-          stack: error instanceof Error ? error.stack : undefined,
-        });
+        fastify.log.error(
+          {
+            error: errorMessage,
+            stack: error instanceof Error ? error.stack : undefined,
+          },
+          'Failed to list repositories',
+        );
         return reply.code(500).send({
           error: `Failed to list repositories: ${errorMessage}`,
           code: 'REPOSITORY_LIST_ERROR',

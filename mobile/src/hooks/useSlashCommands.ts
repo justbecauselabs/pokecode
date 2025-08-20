@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
-import { apiClient } from '@/api/client';
 import type { ListCommandsResponse } from '@/api/client';
+import { apiClient } from '@/api/client';
 
 interface UseSlashCommandsParams {
   sessionId: string;
@@ -32,9 +32,7 @@ export function useSlashCommands(params: UseSlashCommandsParams) {
 /**
  * Extract command names from the API response
  */
-export function extractCommandNames(
-  commandsData: ListCommandsResponse | undefined
-): string[] {
+export function extractCommandNames(commandsData: ListCommandsResponse | undefined): string[] {
   if (!commandsData?.commands) return [];
   return commandsData.commands.map((cmd) => cmd.name);
 }

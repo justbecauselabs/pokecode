@@ -23,7 +23,7 @@ export const SafeAreaView: React.FC<CustomSafeAreaViewProps> = ({
   const colorScheme = useColorScheme();
   const { theme } = useUIStore();
   const isDark = theme === 'dark' || (theme === 'system' && colorScheme === 'dark');
-  
+
   // Using TailwindCSS design tokens
   const backgroundColor = '#282c34'; // bg-background
 

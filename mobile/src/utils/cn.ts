@@ -6,20 +6,24 @@ import { type ClassValue, clsx } from 'clsx';
  */
 export function cn(...inputs: ClassValue[]): string {
   const result = clsx(inputs);
-  
+
   // Development-time validation to catch common mistakes
   if (__DEV__ && result) {
     // Warn about potential hardcoded colors (should use TailwindCSS tokens)
     if (result.includes('#')) {
-      console.warn(`⚠️  Potential hardcoded color in className: "${result}". Consider using TailwindCSS color tokens instead.`);
+      console.warn(
+        `⚠️  Potential hardcoded color in className: "${result}". Consider using TailwindCSS color tokens instead.`
+      );
     }
-    
+
     // Warn about potential inline styling patterns
     if (result.includes('style') || result.includes('Style')) {
-      console.warn(`⚠️  Potential style prop usage in className: "${result}". Use pure TailwindCSS classes instead.`);
+      console.warn(
+        `⚠️  Potential style prop usage in className: "${result}". Use pure TailwindCSS classes instead.`
+      );
     }
   }
-  
+
   return result;
 }
 

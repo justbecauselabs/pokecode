@@ -17,27 +17,23 @@ interface SessionCardProps {
  * Displays a session card with project path, context, status, and last accessed time
  */
 export const SessionCard = memo(({ session, onPress, onDelete }: SessionCardProps) => {
-  const getStatusColor = (status: Session['status']) => {
-    switch (status) {
+  const getStateColor = (state: Session['state']) => {
+    switch (state) {
       case 'active':
         return 'bg-success';
-      case 'idle':
-        return 'bg-warning';
-      case 'expired':
-        return 'bg-destructive';
+      case 'inactive':
+        return 'bg-muted';
       default:
         return 'bg-muted';
     }
   };
 
-  const getStatusLabel = (status: Session['status']) => {
-    switch (status) {
+  const getStateLabel = (state: Session['state']) => {
+    switch (state) {
       case 'active':
         return 'Active';
-      case 'idle':
-        return 'Idle';
-      case 'expired':
-        return 'Expired';
+      case 'inactive':
+        return 'Inactive';
       default:
         return 'Unknown';
     }
@@ -119,9 +115,9 @@ export const SessionCard = memo(({ session, onPress, onDelete }: SessionCardProp
             )}
           </View>
 
-          <View className={`px-2 py-1 rounded-full ${getStatusColor(session.status)}`}>
+          <View className={`px-2 py-1 rounded-full ${getStateColor(session.state)}`}>
             <Text className="text-xs font-medium text-foreground font-mono">
-              {getStatusLabel(session.status)}
+              {getStateLabel(session.state)}
             </Text>
           </View>
         </View>

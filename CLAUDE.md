@@ -32,5 +32,10 @@ Default to using Bun instead of Node.js.
 ### Best Practices
 
 - Always use the most strict tsconfig settings
-- NEVER use any or unknown
+- **NEVER use `any`, `unknown`, or `as any` - EVER. This is forbidden.**
+- **NEVER use type assertions with `as` - types should be inferred or properly typed**
+- **If you find yourself needing `as any` or type assertions, the types are wrong and need to be fixed properly**
 - Use params: { name: type } for functions, ie `function add(params: { a: number, b: number }): number` over `function add(a: number, b: number): number` as it improves readability
+- Prefer type narrowing with type guards over type assertions
+- Use proper Zod schemas and inferred types instead of casting
+- If TypeScript is complaining, fix the types - don't silence it with assertions

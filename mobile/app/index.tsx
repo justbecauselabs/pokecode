@@ -20,27 +20,23 @@ export default function HomeScreen() {
   const deleteSessionMutation = useDeleteSession();
   const router = useRouter();
 
-  const getStatusColor = (status: Session['status']) => {
-    switch (status) {
+  const getStateColor = (state: Session['state']) => {
+    switch (state) {
       case 'active':
         return 'text-success';
-      case 'idle':
-        return 'text-warning';
-      case 'expired':
-        return 'text-destructive';
+      case 'inactive':
+        return 'text-muted-foreground';
       default:
         return 'text-muted-foreground';
     }
   };
 
-  const getStatusLabel = (status: Session['status']) => {
-    switch (status) {
+  const getStateLabel = (state: Session['state']) => {
+    switch (state) {
       case 'active':
         return 'Active';
-      case 'idle':
-        return 'Idle';
-      case 'expired':
-        return 'Expired';
+      case 'inactive':
+        return 'Inactive';
       default:
         return 'Unknown';
     }
@@ -60,7 +56,7 @@ export default function HomeScreen() {
 
   // Filter to only show active sessions
   const activeSessions = useMemo(() => {
-    return sessions.filter((session) => session.status === 'active');
+    return sessions.filter((session) => session.state === 'active');
   }, [sessions]);
 
   const handleSessionSelect = (sessionId: string) => {
@@ -206,9 +202,9 @@ export default function HomeScreen() {
                         </View>
                       </View>
                       <Text
-                        className={`text-sm font-medium font-mono ${getStatusColor(item.status)}`}
+                        className={`text-sm font-medium font-mono ${getStateColor(item.state)}`}
                       >
-                        {getStatusLabel(item.status)}
+                        {getStateLabel(item.state)}
                       </Text>
                     </View>
                   </Pressable>

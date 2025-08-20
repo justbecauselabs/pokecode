@@ -15,14 +15,32 @@ interface WorkerWithCleanup extends ClaudeCodeSQLiteWorker {
 export { ClaudeCodeSQLiteWorker };
 
 /**
- * Verifies database connection before starting worker
+ * Verifies database connection and table existence before starting worker
  */
 async function verifyDatabaseConnection(): Promise<void> {
   try {
+    // Test basic connection
     db.run(sql`SELECT 1`);
     logger.info('Database connection verified');
+
+    // Verify required tables exist
+    const requiredTables = ['job_queue', 'claude_code_sessions', 'session_messages'];
+    const existingTables = db.all(
+      sql`SELECT name FROM sqlite_master WHERE type='table' AND name IN (${sql.join(requiredTables, sql`, `)})`,
+    ) as { name: string }[];
+
+    const existingTableNames = existingTables.map((t) => t.name);
+    const missingTables = requiredTables.filter((table) => !existingTableNames.includes(table));
+
+    if (missingTables.length > 0) {
+      throw new Error(
+        `Required database tables are missing: ${missingTables.join(', ')}. Run 'bun run db:push' to create them.`,
+      );
+    }
+
+    logger.info({ tables: existingTableNames }, 'Required database tables verified');
   } catch (error) {
-    logger.error({ error }, 'Database connection failed');
+    logger.error({ error }, 'Database verification failed');
     throw error;
   }
 }

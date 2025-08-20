@@ -33,6 +33,10 @@ export const sessions = sqliteTable(
     // Token and message tracking
     messageCount: integer('message_count').default(0).notNull(),
     tokenCount: integer('token_count').default(0).notNull(),
+    // Session state
+    state: text('state', { enum: ['active', 'inactive'] })
+      .default('active')
+      .notNull(),
   },
   (table) => ({
     lastAccessedIdx: index('idx_sessions_last_accessed').on(table.lastAccessedAt),

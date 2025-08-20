@@ -2,17 +2,12 @@ import {
   CreateMessageBodySchema,
   type CreateMessageRequest,
   ErrorResponseSchema,
+  GetMessagesQuerySchema,
   GetMessagesResponseSchema,
   SessionIdParamsSchema,
 } from '@pokecode/api';
 import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
-
-// Query parameters schema for getting messages with cursor pagination
-const GetMessagesQuerySchema = z.object({
-  after: z.string().optional(),
-  limit: z.number().int().min(1).max(100).optional(),
-});
 
 import { messageService } from '@/services/message.service';
 import { sessionService } from '@/services/session.service';
@@ -143,7 +138,7 @@ const messageRoutes: FastifyPluginAsync = async (fastify) => {
             name: session.name,
             claudeDirectoryPath: session.claudeDirectoryPath,
             context: session.context,
-            status: session.status,
+            state: session.state,
             metadata: session.metadata,
             createdAt: session.createdAt,
             updatedAt: session.updatedAt,

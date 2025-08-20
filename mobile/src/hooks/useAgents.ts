@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
-import { apiClient } from '../api/client';
 import type { ListAgentsQuery, ListAgentsResponse } from '../api/client';
+import { apiClient } from '../api/client';
 
 /**
  * Hook to fetch available agents for a session

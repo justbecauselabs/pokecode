@@ -40,7 +40,7 @@ const healthRoute: FastifyPluginAsync = async (fastify) => {
         ]);
         checks.database = dbHealthy ? 'healthy' : 'unhealthy';
       } catch (error) {
-        fastify.log.error('Database health check failed:', error);
+        fastify.log.error({ error }, 'Database health check failed');
         checks.database = 'unhealthy';
       }
 
@@ -53,7 +53,7 @@ const healthRoute: FastifyPluginAsync = async (fastify) => {
 
         checks.queue = metrics !== null ? 'healthy' : 'unhealthy';
       } catch (error) {
-        fastify.log.error('Queue health check failed:', error);
+        fastify.log.error({ error }, 'Queue health check failed');
         checks.queue = 'unhealthy';
       }
 
@@ -70,10 +70,13 @@ const healthRoute: FastifyPluginAsync = async (fastify) => {
 
       // Log health check result if unhealthy
       if (!allHealthy) {
-        fastify.log.warn('Health check failed', {
-          services: checks,
-          duration: checkDuration,
-        });
+        fastify.log.warn(
+          {
+            services: checks,
+            duration: checkDuration,
+          },
+          'Health check failed',
+        );
       }
 
       return reply.code(allHealthy ? 200 : 503).send(response);

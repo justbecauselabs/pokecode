@@ -2,6 +2,7 @@ import {
   type ListAgentsQuery,
   ListAgentsQuerySchema,
   ListAgentsResponseSchema,
+  SessionIdParamsSchema,
 } from '@pokecode/api';
 import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
@@ -31,7 +32,7 @@ const agentRoutes: FastifyPluginAsync = async (fastify) => {
         summary: 'List available agents',
         description: 'Discover agents from both user Claude home directory and project directory',
         tags: ['Agents'],
-        params: z.object({ sessionId: z.string().uuid() }),
+        params: SessionIdParamsSchema,
         querystring: ListAgentsQuerySchema,
         response: {
           200: ListAgentsResponseSchema,

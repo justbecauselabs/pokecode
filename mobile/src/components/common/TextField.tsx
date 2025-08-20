@@ -1,5 +1,5 @@
 import { forwardRef, useState } from 'react';
-import { TextInput, type TextInputProps, View, type StyleProp, type TextStyle } from 'react-native';
+import { type StyleProp, TextInput, type TextInputProps, type TextStyle, View } from 'react-native';
 import { cn } from '@/utils/cn';
 
 interface TextFieldProps extends TextInputProps {
@@ -62,15 +62,13 @@ export const TextField = forwardRef<TextInput, TextFieldProps>((props, ref) => {
   const containerClasses = cn(containerBaseClasses, variantClasses[variant], containerClassName);
 
   const inputClasses = cn('text-base text-foreground font-mono leading-normal', className);
-  
-  // Multiline auto-grow state
+
+  // Multiline auto-grow configuration
   const minContentHeight = Math.max(lineHeight, minLines * lineHeight);
   const maxContentHeight = Math.max(minContentHeight, maxLines * lineHeight);
-  const [contentHeight, setContentHeight] = useState<number>(minContentHeight);
-  const scrollEnabled = multiline && autoGrow && contentHeight >= maxContentHeight;
 
   // Container handles spacing and border. For multiline+autogrow, let height be intrinsic.
-  const containerStyle = (
+  const containerStyle =
     multiline && autoGrow
       ? {
           paddingHorizontal: 16,
@@ -80,15 +78,22 @@ export const TextField = forwardRef<TextInput, TextFieldProps>((props, ref) => {
           height: currentSize.minHeight,
           paddingHorizontal: 16,
           paddingVertical: multiline ? 12 : (currentSize.minHeight - 24) / 2,
-        }
-  );
+        };
 
   // TextInput: zero padding for multiline to avoid double padding/caret jumps
-  const inputStyle: StyleProp<TextStyle> = (
+  const inputStyle: StyleProp<TextStyle> =
     multiline && autoGrow
-      ? [{ height: contentHeight, padding: 0, lineHeight, textAlignVertical: 'top' }, style]
-      : [{ textAlignVertical: multiline ? 'top' : 'center' }, style]
-  );
+      ? [
+          {
+            minHeight: minContentHeight,
+            maxHeight: maxContentHeight,
+            padding: 0,
+            lineHeight,
+            textAlignVertical: 'top',
+          },
+          style,
+        ]
+      : [{ textAlignVertical: multiline ? 'top' : 'center' }, style];
 
   return (
     <View className={containerClasses} style={containerStyle}>
@@ -96,16 +101,9 @@ export const TextField = forwardRef<TextInput, TextFieldProps>((props, ref) => {
         ref={ref}
         {...textInputProps}
         multiline={multiline}
-        onContentSizeChange={
-          multiline && autoGrow
-            ? (e) => {
-                const h = Math.round(e.nativeEvent.contentSize.height);
-                const next = Math.max(minContentHeight, Math.min(h, maxContentHeight));
-                if (next !== contentHeight) setContentHeight(next);
-              }
-            : undefined
-        }
-        scrollEnabled={scrollEnabled}
+        onContentSizeChange={textInputProps.onContentSizeChange}
+        onChange={textInputProps.onChange}
+        scrollEnabled={multiline}
         style={inputStyle}
         className={inputClasses}
         placeholderTextColor="#9da5b4"

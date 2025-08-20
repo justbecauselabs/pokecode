@@ -43,7 +43,8 @@ const RepositoryItem = memo(({ repository, onPress, isCreating }: RepositoryItem
       {/* Loading indicator for this specific item */}
       {isCreating && (
         <View className="ml-3">
-          <ActivityIndicator size="small" color="#528bff" /> {/* Using design token equivalent of text-primary */}
+          <ActivityIndicator size="small" color="#528bff" />
+          {/* Using design token equivalent of text-primary */}
         </View>
       )}
     </Pressable>
@@ -68,7 +69,7 @@ export const RepositoryList = memo(
         console.warn('Invalid repository item:', item);
         return null;
       }
-      
+
       return (
         <RepositoryItem
           repository={item}
@@ -115,7 +116,8 @@ export const RepositoryList = memo(
     if (isLoading && repositories.length === 0) {
       return (
         <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color="#528bff" /> {/* Using design token equivalent of text-primary */}
+          <ActivityIndicator size="large" color="#528bff" />
+          {/* Using design token equivalent of text-primary */}
           <Text className="text-gray-500 dark:text-gray-400 mt-4">Loading repositories...</Text>
         </View>
       );

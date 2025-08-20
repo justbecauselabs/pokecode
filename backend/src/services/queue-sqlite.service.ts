@@ -1,5 +1,5 @@
 import { createId } from '@paralleldrive/cuid2';
-import { and, asc, eq, lte, sql } from 'drizzle-orm';
+import { and, asc, eq, isNull, lte, or, sql } from 'drizzle-orm';
 import { db } from '@/db';
 import { jobQueue, sessions } from '@/db/schema-sqlite';
 import type { CompleteEvent, ErrorEvent, PromptJobData } from '@/types';
@@ -174,7 +174,7 @@ export class SQLiteQueueService {
       where: and(
         eq(jobQueue.status, 'pending'),
         // Either no retry time set, or retry time has passed
-        sql`(${jobQueue.nextRetryAt} IS NULL OR ${jobQueue.nextRetryAt} <= ${now.getTime()})`,
+        or(isNull(jobQueue.nextRetryAt), lte(jobQueue.nextRetryAt, now)),
       ),
       orderBy: [asc(jobQueue.createdAt)],
     });

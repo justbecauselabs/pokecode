@@ -9,15 +9,15 @@ declare module 'react-native' {
   interface ViewProps {
     children?: Exclude<ReactNode, string | number | boolean> | undefined;
   }
-  
+
   interface PressableProps {
     children?: Exclude<ReactNode, string | number | boolean> | undefined;
   }
-  
+
   interface ScrollViewProps {
     children?: Exclude<ReactNode, string | number | boolean> | undefined;
   }
-  
+
   interface SafeAreaViewProps {
     children?: Exclude<ReactNode, string | number | boolean> | undefined;
   }
@@ -38,15 +38,9 @@ export type SafeChildren = SafeReactNode | SafeReactNode[];
 /**
  * Type guard to check if content needs Text wrapper
  */
-export function isTextContent(content: unknown): content is TextContent {
-  return typeof content === 'string' || 
-         typeof content === 'number' || 
-         typeof content === 'boolean';
-}
+export declare function isTextContent(content: unknown): content is TextContent;
 
 /**
  * Type-safe wrapper that forces Text component usage for strings
  */
-export type RequireTextWrapper<T> = T extends string | number | boolean 
-  ? never 
-  : T;
+export type RequireTextWrapper<T> = T extends string | number | boolean ? never : T;

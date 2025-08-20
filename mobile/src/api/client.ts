@@ -5,36 +5,32 @@
  * request and response validation, eliminating the need for code generation.
  */
 
+// Import schemas
+import {
+  CreateMessageBodySchema,
+  type CreateMessageRequest,
+  type CreateMessageResponse,
+  CreateMessageResponseSchema,
+  type CreateSessionRequest,
+  CreateSessionRequestSchema,
+  type GetMessagesResponse,
+  GetMessagesResponseSchema,
+  type ListSessionsQuery,
+  ListSessionsQuerySchema,
+  type ListSessionsResponse,
+  ListSessionsResponseSchema,
+  type Session,
+  type SessionIdParams,
+  SessionIdParamsSchema,
+  type SessionParams,
+  SessionParamsSchema,
+  SessionSchema,
+  type UpdateSessionRequest,
+  UpdateSessionRequestSchema,
+} from '@pokecode/api';
 import { z } from 'zod';
 import { API_BASE_URL } from '@/constants/api';
 import { useSettingsStore } from '@/stores/settingsStore';
-
-// Import schemas
-import {
-  CreateSessionRequestSchema,
-  ListSessionsQuerySchema,
-  ListSessionsResponseSchema,
-  SessionSchema,
-  UpdateSessionRequestSchema,
-  SessionParamsSchema,
-  type CreateSessionRequest,
-  type ListSessionsQuery,
-  type ListSessionsResponse,
-  type Session,
-  type UpdateSessionRequest,
-  type SessionParams,
-} from '@pokecode/api';
-
-import {
-  CreateMessageBodySchema,
-  CreateMessageResponseSchema,
-  GetMessagesResponseSchema,
-  SessionIdParamsSchema,
-  type CreateMessageRequest,
-  type CreateMessageResponse,
-  type GetMessagesResponse,
-  type SessionIdParams,
-} from '@pokecode/api';
 
 // Temporary type definition for query parameters
 type GetMessagesQuery = {
@@ -43,22 +39,16 @@ type GetMessagesQuery = {
 };
 
 import {
-  ListAgentsQuerySchema,
-  ListAgentsResponseSchema,
   type ListAgentsQuery,
+  ListAgentsQuerySchema,
   type ListAgentsResponse,
-} from '@pokecode/api';
-
-import {
-  ListCommandsQuerySchema,
-  ListCommandsResponseSchema,
+  ListAgentsResponseSchema,
   type ListCommandsQuery,
+  ListCommandsQuerySchema,
   type ListCommandsResponse,
-} from '@pokecode/api';
-
-import {
-  ListRepositoriesResponseSchema,
+  ListCommandsResponseSchema,
   type ListRepositoriesResponse,
+  ListRepositoriesResponseSchema,
 } from '@pokecode/api';
 
 // Response schemas for other endpoints
@@ -185,6 +175,8 @@ class APIClient {
       const searchParams = new URLSearchParams();
       for (const [key, value] of Object.entries(params.query)) {
         if (value !== undefined && value !== null) {
+          // Keep numbers as numbers for JSON serialization in POST body,
+          // but URLSearchParams always converts to strings for GET requests
           searchParams.append(key, String(value));
         }
       }
@@ -293,7 +285,9 @@ class APIClient {
       errorLog(`API Parse/Validation Error:`, parseError);
       if (parseError instanceof z.ZodError) {
         errorLog(`API Validation Issues:`, parseError.issues);
-        throw new Error(`Response validation failed: ${parseError.issues.map(i => i.message).join(', ')}`);
+        throw new Error(
+          `Response validation failed: ${parseError.issues.map((i) => i.message).join(', ')}`
+        );
       }
       throw new Error(
         `Invalid response: ${parseError instanceof Error ? parseError.message : String(parseError)}`
@@ -351,10 +345,7 @@ class APIClient {
     });
   }
 
-  async updateSession(params: {
-    sessionId: string;
-    data: UpdateSessionRequest;
-  }): Promise<Session> {
+  async updateSession(params: { sessionId: string; data: UpdateSessionRequest }): Promise<Session> {
     // Validate path params and body
     const validatedParams = SessionParamsSchema.parse({ sessionId: params.sessionId });
     const validatedData = UpdateSessionRequestSchema.parse(params.data);
@@ -379,7 +370,7 @@ class APIClient {
   }
 
   // Message endpoints
-  async getMessages(params: { 
+  async getMessages(params: {
     sessionId: string;
     query?: GetMessagesQuery;
   }): Promise<GetMessagesResponse> {
@@ -458,7 +449,7 @@ class APIClient {
       pathParams: { ...validatedParams, '*': params.filePath },
       options: {
         method: 'POST',
-        body: { content: params.content, encoding: params.encoding }
+        body: { content: params.content, encoding: params.encoding },
       },
       responseSchema: FileOperationResponseSchema,
     });
@@ -477,7 +468,7 @@ class APIClient {
       pathParams: { ...validatedParams, '*': params.filePath },
       options: {
         method: 'PUT',
-        body: { content: params.content, encoding: params.encoding }
+        body: { content: params.content, encoding: params.encoding },
       },
       responseSchema: FileOperationResponseSchema,
     });
@@ -541,21 +532,17 @@ export type {
   Session,
   UpdateSessionRequest,
   SessionParams,
-
   // Message types
   CreateMessageRequest,
   CreateMessageResponse,
   GetMessagesResponse,
   SessionIdParams,
-
   // Agent types
   ListAgentsQuery,
   ListAgentsResponse,
-
   // Command types
   ListCommandsQuery,
   ListCommandsResponse,
-
   // Other types
   HealthResponse,
   File,

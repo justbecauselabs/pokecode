@@ -1,7 +1,7 @@
 import type React from 'react';
 import { Text, TextInput, type TextInputProps, View } from 'react-native';
 import { cn, cnSafe } from '@/utils/cn';
-import { inputVariants, type InputVariant } from '@/utils/styleUtils';
+import { type InputVariant, inputVariants } from '@/utils/styleUtils';
 
 interface InputProps extends TextInputProps {
   label?: string;
@@ -21,10 +21,7 @@ export const Input: React.FC<InputProps> = ({
 }) => {
   const containerClasses = cn('mb-4', containerClassName);
 
-  const inputClasses = cn(
-    cnSafe(inputVariants, error ? 'error' : variant),
-    className
-  );
+  const inputClasses = cn(cnSafe(inputVariants, error ? 'error' : variant), className);
 
   return (
     <View className={containerClasses}>

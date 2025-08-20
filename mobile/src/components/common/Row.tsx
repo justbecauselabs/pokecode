@@ -99,20 +99,19 @@ export const Row: React.FC<RowProps> = ({
     className?: string;
   }) => {
     const { library, name, size = 20, color = '#666666', className } = params; // Using muted-foreground equivalent
-    const iconProps = { name: name as any, size, color };
 
     const iconElement = (() => {
       switch (library) {
         case 'MaterialIcons':
-          return <MaterialIcons {...iconProps} />;
+          return <MaterialIcons name={name} size={size} color={color} />;
         case 'Ionicons':
-          return <Ionicons {...iconProps} />;
+          return <Ionicons name={name} size={size} color={color} />;
         case 'Feather':
-          return <Feather {...iconProps} />;
+          return <Feather name={name} size={size} color={color} />;
         case 'AntDesign':
-          return <AntDesign {...iconProps} />;
+          return <AntDesign name={name} size={size} color={color} />;
         default:
-          return <MaterialIcons {...iconProps} />;
+          return <MaterialIcons name={name} size={size} color={color} />;
       }
     })();
 
@@ -125,7 +124,12 @@ export const Row: React.FC<RowProps> = ({
     textColor?: string;
     size?: 'small' | 'medium' | 'large';
   }) => {
-    const { initials, backgroundColor = indicatorColors.primary, textColor = 'white', size = 'medium' } = params;
+    const {
+      initials,
+      backgroundColor = indicatorColors.primary,
+      textColor = 'white',
+      size = 'medium',
+    } = params;
 
     const sizeClasses = {
       small: 'w-6 h-6 text-xs',
@@ -151,7 +155,12 @@ export const Row: React.FC<RowProps> = ({
     textColor?: string;
     maxCount?: number;
   }) => {
-    const { count, backgroundColor = indicatorColors.error, textColor = 'white', maxCount = 99 } = params;
+    const {
+      count,
+      backgroundColor = indicatorColors.error,
+      textColor = 'white',
+      maxCount = 99,
+    } = params;
     const displayCount = count > maxCount ? `${maxCount}+` : count.toString();
 
     return (

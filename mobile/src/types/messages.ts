@@ -1,16 +1,16 @@
 // Type aliases for message-related types
-import type { GetMessagesResponse } from '../api/client';
-import type { 
-  Message, 
-  UserMessage, 
+
+import type {
   AssistantMessage,
   AssistantMessageMessage,
-  ErrorMessage
+  ErrorMessage,
+  Message,
+  UserMessage,
 } from '@pokecode/api';
+import type { GetMessagesResponse } from '../api/client';
 
 // Re-export from schemas for compatibility
-export type { Message } from '@pokecode/api';
-export type { Session as SessionInfo } from '@pokecode/api';
+export type { Message, Session as SessionInfo } from '@pokecode/api';
 
 // Full response type
 export type { GetMessagesResponse };
@@ -21,12 +21,12 @@ export const extractMessageText = (message: Message): string => {
     console.warn('extractMessageText: message.data is undefined', message);
     return '[Invalid message data]';
   }
-  
+
   if (message.type === 'user') {
     const userMsg = message.data as UserMessage;
     return userMsg.content;
   }
-  
+
   if (message.type === 'assistant') {
     const assistantMsg = message.data as AssistantMessage;
     if (assistantMsg.type === 'message') {
@@ -35,25 +35,27 @@ export const extractMessageText = (message: Message): string => {
     }
     return '';
   }
-  
+
   if (message.type === 'system') {
     return '[System message]';
   }
-  
+
   if (message.type === 'result') {
     return '[Result completed]';
   }
-  
+
   if (message.type === 'error') {
     const errorMsg = message.data as ErrorMessage;
     return errorMsg.message;
   }
-  
+
   return '[Unknown message type]';
 };
 
 // Helper function to get message role for styling
-export const getMessageRole = (message: Message): 'user' | 'assistant' | 'system' | 'result' | 'error' => {
+export const getMessageRole = (
+  message: Message
+): 'user' | 'assistant' | 'system' | 'result' | 'error' => {
   if (!message?.type) {
     console.warn('getMessageRole: message.type is undefined', message);
     return 'user'; // Default fallback
