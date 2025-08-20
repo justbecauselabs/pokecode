@@ -29,7 +29,6 @@ export class SessionService {
       throw new ValidationError('Cannot provide both projectPath and folderName');
     }
 
-
     let projectPath: string;
 
     if (data.folderName) {
@@ -147,7 +146,6 @@ export class SessionService {
   }
 
   async updateSession(sessionId: string, data: UpdateSessionRequest) {
-
     // Verify session exists
     const session = await db.query.sessions.findFirst({
       where: eq(sessions.id, sessionId),

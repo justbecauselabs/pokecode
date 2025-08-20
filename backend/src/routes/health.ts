@@ -1,5 +1,6 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
+import { config } from '@/config';
 import { checkDatabaseHealth } from '@/db';
 import { sqliteQueueService } from '@/services/queue-sqlite.service';
 
@@ -64,7 +65,7 @@ const healthRoute: FastifyPluginAsync = async (fastify) => {
         status: allHealthy ? ('healthy' as const) : ('unhealthy' as const),
         timestamp: new Date().toISOString(),
         services: checks,
-        version: process.env.npm_package_version || '1.0.0',
+        version: config.npm_package_version || '1.0.0',
         uptime: process.uptime(),
       };
 

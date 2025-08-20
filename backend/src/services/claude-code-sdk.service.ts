@@ -1,4 +1,5 @@
 import { type Options, type Query, query, type SDKMessage } from '@anthropic-ai/claude-code';
+import { config } from '@/config';
 import { directoryExists } from '@/utils/file';
 import { createChildLogger } from '@/utils/logger';
 import type { MessageService } from './message.service';
@@ -40,10 +41,10 @@ export class ClaudeCodeSDKService {
     this.sessionId = options.sessionId;
     this.messageService = options.messageService;
 
-    if (!process.env.CLAUDE_CODE_PATH) {
+    if (!config.CLAUDE_CODE_PATH) {
       throw new Error('CLAUDE_CODE_PATH is required');
     }
-    this.pathToClaudeCodeExecutable = process.env.CLAUDE_CODE_PATH;
+    this.pathToClaudeCodeExecutable = config.CLAUDE_CODE_PATH;
   }
 
   /**

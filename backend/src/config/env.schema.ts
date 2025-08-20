@@ -6,12 +6,11 @@ export const envSchema = z.object({
   PORT: z.string().pipe(z.coerce.number()).default(3001),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
 
+  // Test Environment Detection
+  BUN_TEST: z.string().optional(),
+
   // SQLite Database Configuration
   SQLITE_DB_PATH: z.string().optional(), // Defaults to './data/pokecode.db'
-
-  // Claude Configuration - OPTIONAL
-  // If set, uses API key billing. If not set, uses local Claude Max account
-  ANTHROPIC_API_KEY: z.string().optional(),
 
   // Claude Code CLI Path - REQUIRED for worker functionality
   CLAUDE_CODE_PATH: z.string().min(1),
@@ -25,6 +24,9 @@ export const envSchema = z.object({
 
   // CORS
   CORS_ORIGIN: z.string().default('*'),
+
+  // Package version (set by runtime)
+  npm_package_version: z.string().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;

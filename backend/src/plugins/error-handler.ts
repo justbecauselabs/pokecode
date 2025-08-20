@@ -1,5 +1,6 @@
 import type { FastifyError, FastifyPluginAsync } from 'fastify';
 import fp from 'fastify-plugin';
+import { config } from '@/config';
 import { ApiError } from '@/types';
 
 interface FastifyValidationError extends Error {
@@ -118,7 +119,7 @@ const errorHandlerPlugin: FastifyPluginAsync = async (fastify) => {
         statusCode: 500,
         details: error.message,
         debug:
-          process.env.NODE_ENV === 'development'
+          config.NODE_ENV === 'development'
             ? {
                 allErrorKeys: Object.keys(error),
                 errorConstructor: error.constructor.name,

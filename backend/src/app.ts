@@ -1,6 +1,7 @@
 import helmet from '@fastify/helmet';
 import Fastify, { type FastifyPluginAsync } from 'fastify';
 import { FastifySSEPlugin } from 'fastify-sse-v2';
+import { config } from '@/config';
 // Rate limiting removed - was Redis-based
 // Import plugins
 import corsPlugin from './plugins/cors';
@@ -71,7 +72,7 @@ export const app: FastifyPluginAsync = async (fastify, _opts) => {
   });
 
   // Log registered routes in development
-  if (process.env.NODE_ENV === 'development') {
+  if (config.NODE_ENV === 'development') {
     fastify.ready(() => {
       fastify.log.info('\nRegistered routes:');
       fastify.log.info(fastify.printRoutes({ commonPrefix: false }));

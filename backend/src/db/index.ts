@@ -1,6 +1,7 @@
 import { Database } from 'bun:sqlite';
 import path from 'node:path';
 import { drizzle } from 'drizzle-orm/bun-sqlite';
+import { config } from '@/config';
 import { isTest } from '@/utils/env';
 import { createChildLogger } from '@/utils/logger';
 import * as schema from './schema-sqlite';
@@ -13,7 +14,7 @@ function getDatabasePath(): string {
     return path.join(process.cwd(), 'tests', 'data', 'pokecode.db');
   }
 
-  return process.env.SQLITE_DB_PATH || path.join(process.cwd(), 'data', 'pokecode.db');
+  return config.SQLITE_DB_PATH || path.join(process.cwd(), 'data', 'pokecode.db');
 }
 
 const dbPath = getDatabasePath();

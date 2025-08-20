@@ -454,6 +454,7 @@ export interface PromptJobData {
   allowedTools?: string[] | undefined;
   projectPath: string;
   messageId?: string | undefined; // ID of the user message record in database
+  model?: string; // Claude model to use
 }
 
 // Error Types
