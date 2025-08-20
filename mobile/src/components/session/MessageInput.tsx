@@ -55,7 +55,9 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>((prop
 
   const handleSend = async () => {
     const trimmedMessage = message.trim();
-    if (!trimmedMessage || isSending || disabled) return;
+    if (!trimmedMessage || isSending || disabled) {
+      return;
+    }
 
     Keyboard.dismiss();
 
@@ -86,7 +88,9 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>((prop
   };
 
   const handleCancel = async () => {
-    if (!onCancelSession || isCancelling) return;
+    if (!onCancelSession || isCancelling) {
+      return;
+    }
 
     try {
       await onCancelSession();

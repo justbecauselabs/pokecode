@@ -41,6 +41,31 @@ export function extractTokenCount(sdkMessage: SDKMessage): number {
 }
 
 /**
+ * Parse system message (like cancellation messages) from SDK format
+ */
+function parseSystemMessage(
+  dbMessage: SessionMessage,
+  sdkMessage: { type: 'system'; message: { role: string; content: string } },
+): Message | null {
+  // Handle system messages with assistant role (like cancellation messages)
+  if (sdkMessage.message?.content && typeof sdkMessage.message.content === 'string') {
+    return {
+      id: dbMessage.id,
+      type: 'assistant',
+      data: {
+        type: 'message',
+        data: {
+          content: sdkMessage.message.content,
+        },
+      },
+      parentToolUseId: null,
+    };
+  }
+
+  return null;
+}
+
+/**
  * Parse user message from SDK format
  */
 function parseUserMessage(
@@ -712,6 +737,11 @@ export function parseDbMessage(dbMessage: SessionMessage, projectPath?: string):
         sdkMessage as SDKMessage & { type: 'assistant' },
         projectPath,
       );
+    }
+
+    // Check if it's a system message (like cancellation messages)
+    if (dbMessage.type === 'assistant' && sdkMessage.type === 'system') {
+      return parseSystemMessage(dbMessage, sdkMessage);
     }
 
     return null;

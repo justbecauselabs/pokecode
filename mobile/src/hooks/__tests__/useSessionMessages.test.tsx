@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { renderHook, waitFor } from '@testing-library/react-native';
 import type React from 'react';
-import { apiClient } from '../../api/rn-client';
+import { apiClient } from '../../api/client';
 import { useSessionMessages } from '../useSessionMessages';
 
 // Mock the API client

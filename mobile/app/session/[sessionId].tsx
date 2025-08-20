@@ -135,7 +135,6 @@ export default function SessionDetailScreen() {
     setIsDebugVisible(true);
   };
 
-
   // Close debug sheet
   const handleCloseDebug = () => {
     setIsDebugVisible(false);

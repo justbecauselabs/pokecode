@@ -33,6 +33,8 @@ export function useSlashCommands(params: UseSlashCommandsParams) {
  * Extract command names from the API response
  */
 export function extractCommandNames(commandsData: ListCommandsResponse | undefined): string[] {
-  if (!commandsData?.commands) return [];
+  if (!commandsData?.commands) {
+    return [];
+  }
   return commandsData.commands.map((cmd) => cmd.name);
 }

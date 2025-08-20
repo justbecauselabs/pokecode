@@ -124,7 +124,9 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, cit
 
   // Render citations using pure TailwindCSS classes
   const renderCitations = () => {
-    if (!citations?.length) return null;
+    if (!citations?.length) {
+      return null;
+    }
 
     return (
       <View className="mt-3 space-y-2">

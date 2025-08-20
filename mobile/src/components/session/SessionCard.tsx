@@ -40,12 +40,16 @@ export const SessionCard = memo(({ session, onPress, onDelete }: SessionCardProp
   };
 
   const truncatePath = (path: string, maxLength: number = 40) => {
-    if (path.length <= maxLength) return path;
+    if (path.length <= maxLength) {
+      return path;
+    }
     return `...${path.slice(-(maxLength - 3))}`;
   };
 
   const handleLongPress = () => {
-    if (!onDelete) return;
+    if (!onDelete) {
+      return;
+    }
 
     if (Platform.OS === 'ios') {
       ActionSheetIOS.showActionSheetWithOptions(
@@ -76,7 +80,9 @@ export const SessionCard = memo(({ session, onPress, onDelete }: SessionCardProp
   };
 
   const handleDelete = () => {
-    if (!onDelete) return;
+    if (!onDelete) {
+      return;
+    }
 
     Alert.alert(
       'Delete Session',

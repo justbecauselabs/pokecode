@@ -152,7 +152,7 @@ class APIClient {
     };
   }
 
-  private getCurrentBaseUrl(): string {
+  public getCurrentBaseUrl(): string {
     return getEffectiveBaseUrl();
   }
 

@@ -3,6 +3,7 @@ import { db } from '@/db';
 import { sessions } from '@/db/schema-sqlite';
 import { jobQueue } from '@/db/schema-sqlite/job_queue';
 import { ClaudeCodeSDKService } from '@/services/claude-code-sdk.service';
+import { emitSessionDone } from '@/services/event-bus.service';
 import { messageService } from '@/services/message.service';
 import { sqliteQueueService } from '@/services/queue-sqlite.service';
 import { createChildLogger } from '@/utils/logger';
@@ -149,6 +150,8 @@ export class ClaudeCodeSQLiteWorker {
           { jobId, promptId, sessionId },
           'Worker detected session cancellation after SDK execution completed',
         );
+        // Save cancellation message to inform user
+        await this.saveCancellationMessage(sessionId, 'Operation was cancelled by user');
         return;
       }
 
@@ -166,6 +169,9 @@ export class ClaudeCodeSQLiteWorker {
             updatedAt: new Date(),
           })
           .where(eq(sessions.id, sessionId));
+
+        // Emit session done (Claude SDK finished)
+        emitSessionDone(sessionId);
 
         // Publish completion event
         await sqliteQueueService.publishEvent(sessionId, promptId, {
@@ -195,6 +201,8 @@ export class ClaudeCodeSQLiteWorker {
           { jobId, promptId, sessionId, error: errorMessage },
           'Worker detected session cancellation during execution (caught in error handler)',
         );
+        // Save cancellation message to inform user
+        await this.saveCancellationMessage(sessionId, 'Operation was cancelled by user');
         return;
       }
 
@@ -211,6 +219,9 @@ export class ClaudeCodeSQLiteWorker {
           updatedAt: new Date(),
         })
         .where(eq(sessions.id, sessionId));
+
+      // Emit session done (with error)
+      emitSessionDone(sessionId);
 
       // Publish error event
       await sqliteQueueService.publishEvent(sessionId, promptId, {
@@ -289,6 +300,40 @@ export class ClaudeCodeSQLiteWorker {
       { jobId, promptId, sessionId, checkInterval },
       'Worker started session cancellation checker',
     );
+  }
+
+  /**
+   * Save a cancellation message to inform the user about session cancellation
+   */
+  private async saveCancellationMessage(sessionId: string, message: string): Promise<void> {
+    try {
+      // Create a cancellation message in the same format as SDK messages
+      const cancellationMessage = {
+        type: 'system' as const,
+        message: {
+          role: 'assistant' as const,
+          content: `❌ **Operation Cancelled**\n\n${message}`,
+        },
+        parent_tool_use_id: null,
+        session_id: 'cancelled',
+      };
+
+      // Save the message to database
+      await messageService.saveSDKMessage(sessionId, cancellationMessage);
+      
+      logger.info(
+        { sessionId, message },
+        'Worker saved cancellation message for user visibility',
+      );
+    } catch (error) {
+      logger.error(
+        {
+          sessionId,
+          error: error instanceof Error ? error.message : String(error),
+        },
+        'Failed to save cancellation message',
+      );
+    }
   }
 
   /**

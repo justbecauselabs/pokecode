@@ -1,3 +1,4 @@
+import type { SSEEvent } from '@pokecode/api';
 import {
   CreateMessageBodySchema,
   type CreateMessageRequest,
@@ -5,15 +6,155 @@ import {
   GetMessagesQuerySchema,
   GetMessagesResponseSchema,
   SessionIdParamsSchema,
+  SSEEventSchema,
 } from '@pokecode/api';
 import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
-
+import { messageEvents } from '@/services/event-bus.service';
 import { messageService } from '@/services/message.service';
 import { sessionService } from '@/services/session.service';
 import { logger } from '@/utils/logger';
 
+// Simple event queue for SSE events
+class EventQueue {
+  private queue: Array<SSEEvent> = [];
+  private resolvers: Array<(value: SSEEvent | null) => void> = [];
+  private aborted = false;
+
+  push(event: SSEEvent) {
+    if (this.aborted) return;
+
+    const resolver = this.resolvers.shift();
+    if (resolver) {
+      resolver(event);
+    } else {
+      this.queue.push(event);
+    }
+  }
+
+  async next(): Promise<SSEEvent | null> {
+    if (this.aborted) return null;
+
+    const item = this.queue.shift();
+    if (item) return item;
+
+    return new Promise((resolve) => {
+      if (this.aborted) {
+        resolve(null);
+        return;
+      }
+      this.resolvers.push(resolve);
+    });
+  }
+
+  abort() {
+    this.aborted = true;
+    // Resolve all pending promises with null
+    this.resolvers.forEach((resolve) => {
+      resolve(null);
+    });
+    this.resolvers.length = 0;
+    this.queue.length = 0;
+  }
+}
+
 const messageRoutes: FastifyPluginAsync = async (fastify) => {
+  // GET /sessions/:sessionId/messages/stream - SSE endpoint for real-time messages
+  fastify.get<{
+    Params: { sessionId: string };
+  }>(
+    '/messages/stream',
+    {
+      schema: {
+        params: SessionIdParamsSchema,
+      },
+    },
+    async (request, reply) => {
+      const { sessionId } = request.params;
+
+      try {
+        // Verify session exists
+        const session = await sessionService.getSession(sessionId);
+        if (!session) {
+          return reply.code(404).send({
+            error: 'Session not found',
+            code: 'NOT_FOUND',
+          });
+        }
+
+        // Set up SSE stream
+        reply.sse(
+          (async function* () {
+            const eventQueue = new EventQueue();
+
+            // Set up event listener for SSE events
+            const onSSEEvent = (data: { sessionId: string; event: SSEEvent }) => {
+              if (data.sessionId === sessionId) {
+                eventQueue.push(data.event);
+              }
+            };
+
+            // Register listener
+            messageEvents.on('sse-event', onSSEEvent);
+
+            // Clean up on client disconnect
+            const cleanup = () => {
+              logger.info({ sessionId }, 'SSE connection closed');
+              messageEvents.off('sse-event', onSSEEvent);
+              eventQueue.abort();
+            };
+
+            request.socket.on('close', cleanup);
+            request.socket.on('error', cleanup);
+
+            try {
+              // Send heartbeat every 30 seconds to keep connection alive
+              const heartbeatInterval = setInterval(() => {
+                const heartbeatEvent: SSEEvent = {
+                  type: 'heartbeat',
+                  data: {},
+                };
+                eventQueue.push(heartbeatEvent);
+              }, 30000);
+
+              // Process events from the queue
+              while (true) {
+                const event = await eventQueue.next();
+                if (!event) break; // Aborted
+
+                // Validate the event before sending
+                try {
+                  const validatedEvent = SSEEventSchema.parse(event);
+                  yield {
+                    data: JSON.stringify(validatedEvent),
+                  };
+                } catch (validationError) {
+                  logger.error(
+                    { sessionId, event, validationError },
+                    'Failed to validate SSE event',
+                  );
+                }
+              }
+
+              clearInterval(heartbeatInterval);
+            } finally {
+              cleanup();
+            }
+          })(),
+        );
+      } catch (error) {
+        logger.error(
+          {
+            sessionId,
+            error: error instanceof Error ? error.message : String(error),
+          },
+          'Failed to establish SSE connection',
+        );
+        throw error;
+      }
+    },
+  );
+
   // POST /sessions/:sessionId/messages - Create new message
   fastify.post<{
     Params: { sessionId: string };

@@ -1,5 +1,6 @@
 import helmet from '@fastify/helmet';
 import Fastify, { type FastifyPluginAsync } from 'fastify';
+import { FastifySSEPlugin } from 'fastify-sse-v2';
 // Rate limiting removed - was Redis-based
 // Import plugins
 import corsPlugin from './plugins/cors';
@@ -9,8 +10,19 @@ import requestLoggerPlugin from './plugins/request-logger';
 import healthRoutes from './routes/health';
 import repositoryRoutes from './routes/repositories';
 import sessionRoutes from './routes/sessions';
+// Import worker
+import { ClaudeCodeSQLiteWorker } from './workers/claude-code-sqlite.worker';
+
+// Global worker instance to share across the app
+let globalWorker: ClaudeCodeSQLiteWorker | null = null;
 
 export const app: FastifyPluginAsync = async (fastify, _opts) => {
+  // Register SSE plugin
+  await fastify.register(FastifySSEPlugin, {
+    retryDelay: 3000,
+    highWaterMark: 16384,
+  });
+
   // Register security headers
   await fastify.register(helmet, {
     contentSecurityPolicy: false,
@@ -27,6 +39,26 @@ export const app: FastifyPluginAsync = async (fastify, _opts) => {
   await fastify.register(healthRoutes, { prefix: '/health' });
   await fastify.register(repositoryRoutes, { prefix: '/api/claude-code/repositories' });
   await fastify.register(sessionRoutes, { prefix: '/api/claude-code/sessions' });
+
+  // Start the worker when the app is ready
+  fastify.addHook('onReady', async () => {
+    if (!globalWorker) {
+      fastify.log.info('Starting embedded Claude Code worker...');
+      globalWorker = new ClaudeCodeSQLiteWorker();
+      await globalWorker.start();
+      fastify.log.info('Claude Code worker started successfully');
+    }
+  });
+
+  // Stop the worker when the app is closing
+  fastify.addHook('onClose', async () => {
+    if (globalWorker) {
+      fastify.log.info('Stopping embedded Claude Code worker...');
+      await globalWorker.shutdown();
+      globalWorker = null;
+      fastify.log.info('Claude Code worker stopped');
+    }
+  });
 
   // Root route
   fastify.get('/', async (_request, _reply) => {
@@ -46,6 +78,9 @@ export const app: FastifyPluginAsync = async (fastify, _opts) => {
     });
   }
 };
+
+// Export worker instance for access in routes
+export { globalWorker };
 
 export async function build(opts = {}) {
   const fastify = Fastify(opts);

@@ -176,7 +176,9 @@ export const Row: React.FC<RowProps> = ({
   };
 
   const renderLeading = () => {
-    if (!leading) return null;
+    if (!leading) {
+      return null;
+    }
 
     return (
       <View className="mr-3">
@@ -249,7 +251,9 @@ export const Row: React.FC<RowProps> = ({
   };
 
   const renderTrailing = () => {
-    if (!trailing) return null;
+    if (!trailing) {
+      return null;
+    }
 
     return (
       <View className="ml-3">
@@ -286,7 +290,9 @@ export const Row: React.FC<RowProps> = ({
   };
 
   const renderCaret = () => {
-    if (!showCaret) return null;
+    if (!showCaret) {
+      return null;
+    }
 
     return (
       <View className="ml-2">
