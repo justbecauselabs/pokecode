@@ -16,6 +16,7 @@ export class SQLiteQueueService {
     prompt: string,
     allowedTools?: string[],
     messageId?: string,
+    model?: string,
   ) {
     // Get project path from session
     const session = await db.query.sessions.findFirst({
@@ -39,6 +40,7 @@ export class SQLiteQueueService {
         projectPath: session.projectPath,
         ...(allowedTools !== undefined && { allowedTools }),
         ...(messageId !== undefined && { messageId }),
+        ...(model !== undefined && { model }),
       },
       attempts: 0,
       maxAttempts: 1, // Disable retries - fail immediately

@@ -24,7 +24,7 @@ export class MessageService {
   /**
    * Queue a prompt for processing (no message creation, SDK handles that)
    */
-  async queuePrompt(sessionId: string, content: string): Promise<void> {
+  async queuePrompt(sessionId: string, content: string, model?: string): Promise<void> {
     // Generate a job ID for the prompt
     const promptId = createId();
 
@@ -35,6 +35,7 @@ export class MessageService {
       content,
       undefined, // allowedTools
       promptId, // messageId
+      model, // model
     );
 
     // Update session to indicate work is in progress
@@ -97,7 +98,10 @@ export class MessageService {
                 // Use timestamp comparison first, then fall back to ID comparison for same timestamps
                 or(
                   gt(sessionMessages.createdAt, cursorTimestamp),
-                  and(eq(sessionMessages.createdAt, cursorTimestamp), gt(sessionMessages.id, cursor)),
+                  and(
+                    eq(sessionMessages.createdAt, cursorTimestamp),
+                    gt(sessionMessages.id, cursor),
+                  ),
                 ),
               ),
             )

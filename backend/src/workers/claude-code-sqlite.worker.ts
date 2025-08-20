@@ -112,11 +112,15 @@ export class ClaudeCodeSQLiteWorker {
         })
         .where(eq(sessions.id, sessionId));
 
+      // Use model from job data, fallback to default
+      const model = data.model || 'sonnet';
+
       // Create Claude Code SDK service instance
       const sdkService = new ClaudeCodeSDKService({
         sessionId,
         projectPath: data.projectPath,
         messageService, // Inject message service for direct saving
+        model: model,
       });
 
       // Store the service for potential cleanup and abortion
@@ -307,6 +311,9 @@ export class ClaudeCodeSQLiteWorker {
    */
   private async saveCancellationMessage(sessionId: string, message: string): Promise<void> {
     try {
+      // Use default model for cancellation messages
+      const model = 'sonnet';
+
       // Create a cancellation message in the same format as SDK messages
       const cancellationMessage = {
         type: 'assistant' as const,
@@ -321,7 +328,7 @@ export class ClaudeCodeSQLiteWorker {
           ],
           id: `cancelled_${Date.now()}`,
           type: 'message' as const,
-          model: 'claude-sonnet-4',
+          model: model,
           stop_reason: null,
           stop_sequence: null,
           usage: {

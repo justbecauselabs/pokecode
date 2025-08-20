@@ -1,13 +1,6 @@
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useMemo } from 'react';
-import {
-  ActivityIndicator,
-  Alert,
-  FlatList,
-  Pressable,
-  Text,
-  View,
-} from 'react-native';
+import { ActivityIndicator, Alert, FlatList, Pressable, Text, View } from 'react-native';
 import type { Session } from '@/api/client';
 import { LoadingState, SafeAreaView } from '@/components/common';
 import { useDeleteSession, useSessions } from '@/hooks/useSessions';

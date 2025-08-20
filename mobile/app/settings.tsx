@@ -4,16 +4,19 @@ import { Alert, Pressable, ScrollView, Text, TextInput, View } from 'react-nativ
 import { SafeAreaView } from '@/components/common';
 import { useSettingsStore } from '@/stores/settingsStore';
 import type { SettingsFormData } from '@/types/settings';
+import { getModelDisplayName } from '@pokecode/api';
 
 /**
  * Settings screen for configuring app preferences
  */
 export default function SettingsScreen() {
   const router = useRouter();
-  const { customApiBaseUrl, setCustomApiBaseUrl, resetSettings } = useSettingsStore();
+  const { customApiBaseUrl, defaultModel, setCustomApiBaseUrl, setDefaultModel, resetSettings } =
+    useSettingsStore();
 
   const [formData, setFormData] = useState<SettingsFormData>({
     customApiBaseUrl: customApiBaseUrl || '',
+    defaultModel: defaultModel || 'sonnet',
   });
 
   const handleSave = () => {
@@ -27,6 +30,7 @@ export default function SettingsScreen() {
 
     // Save to store
     setCustomApiBaseUrl(trimmedUrl || undefined);
+    setDefaultModel(formData.defaultModel);
 
     Alert.alert('Settings Saved', 'Your settings have been updated successfully.', [
       { text: 'OK', onPress: () => router.back() },
@@ -44,7 +48,7 @@ export default function SettingsScreen() {
           style: 'destructive',
           onPress: () => {
             resetSettings();
-            setFormData({ customApiBaseUrl: '' });
+            setFormData({ customApiBaseUrl: '', defaultModel: 'sonnet' });
             Alert.alert('Settings Reset', 'All settings have been reset to default values.');
           },
         },
@@ -61,7 +65,9 @@ export default function SettingsScreen() {
     }
   };
 
-  const hasChanges = formData.customApiBaseUrl !== (customApiBaseUrl || '');
+  const hasChanges =
+    formData.customApiBaseUrl !== (customApiBaseUrl || '') ||
+    formData.defaultModel !== (defaultModel || 'sonnet');
 
   return (
     <SafeAreaView className="flex-1 bg-background">
@@ -113,6 +119,22 @@ export default function SettingsScreen() {
               <Text className="text-sm text-foreground font-mono">
                 {customApiBaseUrl || 'Default (built-in)'}
               </Text>
+            </View>
+
+            {/* Default Model Selection */}
+            <View className="mb-6">
+              <Text className="text-sm font-medium text-card-foreground mb-2 font-mono">
+                Default Claude Model
+              </Text>
+              <Text className="text-xs text-muted-foreground mb-3 font-mono">
+                Default model for messages. You can override per message.
+              </Text>
+              <View className="bg-background border border-border rounded-lg px-3 py-3 flex-row items-center justify-between">
+                <Text className="text-foreground font-mono flex-1">
+                  {getModelDisplayName(formData.defaultModel)}
+                </Text>
+                <Text className="text-muted-foreground font-mono text-sm">Current</Text>
+              </View>
             </View>
 
             {/* Action Buttons */}

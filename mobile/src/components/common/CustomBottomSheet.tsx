@@ -5,14 +5,22 @@ import { backgroundColors } from '@/utils/styleUtils';
 
 interface CustomBottomSheetProps {
   children: ReactNode;
-  onClose: () => void;
+  onClose?: () => void;
+  onDismiss?: () => void;
   snapPoints?: string[];
+  enablePanDownToClose?: boolean;
 }
 
 export const CustomBottomSheet = forwardRef<BottomSheetModal, CustomBottomSheetProps>(
-  ({ children, onClose, snapPoints: customSnapPoints }, ref) => {
+  (
+    { children, onClose, onDismiss, snapPoints: customSnapPoints, enablePanDownToClose = true },
+    ref
+  ) => {
     // Bottom sheet snap points
     const snapPoints = useMemo(() => customSnapPoints || ['50%', '90%'], [customSnapPoints]);
+
+    // Use onDismiss if provided, otherwise use onClose
+    const dismissHandler = onDismiss || onClose;
 
     // Render backdrop
     const renderBackdrop = (props: BottomSheetBackdropProps) => (
@@ -21,7 +29,7 @@ export const CustomBottomSheet = forwardRef<BottomSheetModal, CustomBottomSheetP
         disappearsOnIndex={-1}
         appearsOnIndex={0}
         opacity={0.5}
-        onPress={onClose}
+        onPress={dismissHandler}
       />
     );
 
@@ -29,8 +37,8 @@ export const CustomBottomSheet = forwardRef<BottomSheetModal, CustomBottomSheetP
       <BottomSheetModal
         ref={ref}
         snapPoints={snapPoints}
-        enablePanDownToClose
-        onDismiss={onClose}
+        enablePanDownToClose={enablePanDownToClose}
+        onDismiss={dismissHandler}
         backdropComponent={renderBackdrop}
         stackBehavior="replace"
         backgroundStyle={{

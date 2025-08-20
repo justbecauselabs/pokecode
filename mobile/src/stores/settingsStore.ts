@@ -6,11 +6,13 @@ import type { AppSettings } from '../types/settings';
 interface SettingsStore extends AppSettings {
   // Actions
   setCustomApiBaseUrl: (url: string | undefined) => void;
+  setDefaultModel: (model: string | undefined) => void;
   resetSettings: () => void;
 }
 
 const defaultSettings: AppSettings = {
   customApiBaseUrl: undefined,
+  defaultModel: 'sonnet',
 };
 
 export const useSettingsStore = create<SettingsStore>()(
@@ -20,6 +22,9 @@ export const useSettingsStore = create<SettingsStore>()(
 
       setCustomApiBaseUrl: (customApiBaseUrl: string | undefined) =>
         set({ customApiBaseUrl: customApiBaseUrl || undefined }),
+
+      setDefaultModel: (defaultModel: string | undefined) =>
+        set({ defaultModel: defaultModel || 'sonnet' }),
 
       resetSettings: () => set(defaultSettings),
     }),
@@ -37,4 +42,13 @@ export const useSettingsStore = create<SettingsStore>()(
 export function useApiBaseUrl(): string | undefined {
   const { customApiBaseUrl } = useSettingsStore();
   return customApiBaseUrl;
+}
+
+/**
+ * Hook to get the default model for new sessions
+ * Returns the user's preferred default model
+ */
+export function useDefaultModel(): string {
+  const { defaultModel } = useSettingsStore();
+  return defaultModel || 'sonnet';
 }

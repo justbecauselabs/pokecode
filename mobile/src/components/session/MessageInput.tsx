@@ -2,6 +2,7 @@ import { Feather } from '@expo/vector-icons';
 import { forwardRef, useImperativeHandle, useRef, useState } from 'react';
 import { Alert, Keyboard, Text, type TextInput, TouchableOpacity, View } from 'react-native';
 import type { SessionInfo } from '@/types/messages';
+import { getModelDisplayName, type ClaudeModel } from '@pokecode/api';
 import { TextField } from '../common';
 
 export interface MessageInputRef {
@@ -15,7 +16,9 @@ interface MessageInputProps {
   onCancelSession?: () => Promise<unknown>;
   onShowSlashCommands?: () => void;
   onShowAgents?: () => void;
+  onShowModels?: () => void;
   selectedAgents: string[];
+  selectedModel?: ClaudeModel;
   isSending?: boolean;
   isWorking?: boolean;
   isCancelling?: boolean;
@@ -29,7 +32,9 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>((prop
     onCancelSession,
     onShowSlashCommands,
     onShowAgents,
+    onShowModels,
     selectedAgents,
+    selectedModel,
     isSending = false,
     isWorking = false,
     isCancelling = false,
@@ -158,7 +163,7 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>((prop
         )}
       </View>
 
-      {/* Agent and Slash Command Links Below Input */}
+      {/* Agent, Model, and Slash Command Links Below Input */}
       <View className="mt-3 flex-row gap-4 items-start">
         <TouchableOpacity
           onPress={() => {
@@ -172,6 +177,21 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>((prop
             className={`text-sm ${selectedAgents.length > 0 ? 'text-blue-600 font-medium' : 'text-blue-500'} ${disabled || isSending ? 'opacity-50' : ''}`}
           >
             {selectedAgents.length > 0 ? `agents (${selectedAgents.length})` : 'agent'}
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          onPress={() => {
+            Keyboard.dismiss();
+            onShowModels?.();
+          }}
+          disabled={disabled || isSending}
+          activeOpacity={0.7}
+        >
+          <Text
+            className={`text-sm text-blue-500 ${disabled || isSending ? 'opacity-50' : ''}`}
+          >
+            {selectedModel ? getModelDisplayName(selectedModel) : 'model'}
           </Text>
         </TouchableOpacity>
 

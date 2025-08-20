@@ -9,6 +9,7 @@ export interface ClaudeCodeOptions {
   sessionId: string;
   projectPath: string;
   messageService: MessageService;
+  model?: string;
 }
 
 export type ClaudeCodeResult =
@@ -89,6 +90,7 @@ export class ClaudeCodeSDKService {
         executable: 'node',
         abortController: this.abortController,
         ...(lastClaudeSessionId && { resume: lastClaudeSessionId }),
+        ...(this.options.model && { model: this.options.model }),
         // Add stderr debugging
         stderr: (data: string) => {
           logger.error({ sessionId: this.sessionId, stderr: data }, 'Claude Code SDK stderr');

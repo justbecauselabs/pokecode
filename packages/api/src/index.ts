@@ -16,6 +16,9 @@ export * from './schemas/session.schema';
 // SSE schemas
 export * from './schemas/sse.schema';
 
+// Model definitions
+export * from './models/claude.models';
+
 // Re-export for convenience
 export * as AgentSchemas from './schemas/agent.schema';
 export * as CommandSchemas from './schemas/command.schema';

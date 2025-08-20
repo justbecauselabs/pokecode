@@ -11,12 +11,15 @@ import { MessageDebugBottomSheet } from '../../src/components/session/MessageDeb
 import { MessageInput, type MessageInputRef } from '../../src/components/session/MessageInput';
 import { MessageList } from '../../src/components/session/MessageList';
 import { MessageTaskBottomSheet } from '../../src/components/session/MessageTaskBottomSheet';
+import { ModelSelectionBottomSheet } from '../../src/components/session/ModelSelectionBottomSheet';
 import { SlashCommandBottomSheet } from '../../src/components/session/SlashCommandBottomSheet';
 import { ToolResultBottomSheet } from '../../src/components/session/ToolResultBottomSheet';
 import { useAgents } from '../../src/hooks/useAgents';
 import { useSessionMessages } from '../../src/hooks/useSessionMessages';
 import { useSlashCommands } from '../../src/hooks/useSlashCommands';
+import { useDefaultModel } from '../../src/stores/settingsStore';
 import type { Message } from '../../src/types/messages';
+import { CLAUDE_MODELS, type ClaudeModel } from '@pokecode/api';
 
 export default function SessionDetailScreen() {
   const { sessionId } = useLocalSearchParams<{ sessionId: string }>();
@@ -71,6 +74,7 @@ export default function SessionDetailScreen() {
   // Bottom sheet refs and state
   const slashCommandBottomSheetRef = useRef<BottomSheetModal>(null);
   const agentSelectionBottomSheetRef = useRef<BottomSheetModal>(null);
+  const modelSelectionBottomSheetRef = useRef<BottomSheetModal>(null);
   const toolResultBottomSheetRef = useRef<BottomSheetModal>(null);
   const taskBottomSheetRef = useRef<BottomSheetModal>(null);
   const messageInputRef = useRef<MessageInputRef>(null);
@@ -93,6 +97,10 @@ export default function SessionDetailScreen() {
 
   // Selected agents state
   const [selectedAgents, setSelectedAgents] = useState<string[]>([]);
+
+  // Model selection state
+  const defaultModel = useDefaultModel();
+  const [selectedModel, setSelectedModel] = useState<ClaudeModel>(defaultModel as ClaudeModel);
 
   // Slash command handlers
   const handleShowSlashCommands = () => {
@@ -126,6 +134,21 @@ export default function SessionDetailScreen() {
         return [...prev, params.agentName];
       }
     });
+  };
+
+  // Model selection handlers
+  const handleShowModels = () => {
+    Keyboard.dismiss();
+    modelSelectionBottomSheetRef.current?.present();
+  };
+
+  const handleCloseModelSelectionBottomSheet = () => {
+    modelSelectionBottomSheetRef.current?.dismiss();
+  };
+
+  const handleSelectModel = (params: { modelId: string }) => {
+    setSelectedModel(params.modelId as ClaudeModel);
+    modelSelectionBottomSheetRef.current?.dismiss();
   };
 
   // Message debug handlers
@@ -216,7 +239,9 @@ export default function SessionDetailScreen() {
                 onCancelSession={cancelSession}
                 onShowSlashCommands={handleShowSlashCommands}
                 onShowAgents={handleShowAgents}
+                onShowModels={handleShowModels}
                 selectedAgents={selectedAgents}
+                selectedModel={selectedModel}
                 isSending={isSending}
                 isWorking={isWorking}
                 isCancelling={isCancelling}
@@ -245,6 +270,15 @@ export default function SessionDetailScreen() {
           error={agentsError}
           onToggleAgent={handleToggleAgent}
           onClose={handleCloseAgentSelectionBottomSheet}
+        />
+
+        {/* Model Selection Bottom Sheet */}
+        <ModelSelectionBottomSheet
+          ref={modelSelectionBottomSheetRef}
+          models={[...CLAUDE_MODELS]}
+          selectedModel={selectedModel}
+          onSelectModel={handleSelectModel}
+          onClose={handleCloseModelSelectionBottomSheet}
         />
 
         {/* Message Debug Bottom Sheet */}

@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { SessionSchema } from './session.schema';
+import { CLAUDE_MODELS } from '../models/claude.models';
 
 // ID validation schema - accept any string format
 const idSchema = z.string();
@@ -192,6 +193,7 @@ export const MessageSchema = z.object({
 export const CreateMessageBodySchema = z.object({
   content: z.string().min(1),
   allowedTools: z.array(z.string()).optional(),
+  model: z.enum(CLAUDE_MODELS).optional(),
 });
 
 // Query parameters for getting messages with cursor pagination

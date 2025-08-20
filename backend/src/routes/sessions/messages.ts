@@ -173,7 +173,7 @@ const messageRoutes: FastifyPluginAsync = async (fastify) => {
     },
     async (request, reply) => {
       const { sessionId } = request.params;
-      const { content } = request.body;
+      const { content, model } = request.body;
 
       try {
         // Verify session exists
@@ -189,8 +189,7 @@ const messageRoutes: FastifyPluginAsync = async (fastify) => {
         await messageService.saveUserMessage(sessionId, content);
 
         // Queue prompt for processing (SDK will create assistant messages)
-        // Pass agent context if provided
-        await messageService.queuePrompt(sessionId, content);
+        await messageService.queuePrompt(sessionId, content, model);
 
         // Track metrics
         if (fastify.metrics) {
