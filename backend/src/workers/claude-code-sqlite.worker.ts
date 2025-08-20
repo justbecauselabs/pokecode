@@ -309,22 +309,39 @@ export class ClaudeCodeSQLiteWorker {
     try {
       // Create a cancellation message in the same format as SDK messages
       const cancellationMessage = {
-        type: 'system' as const,
+        type: 'assistant' as const,
         message: {
           role: 'assistant' as const,
-          content: `❌ **Operation Cancelled**\n\n${message}`,
+          content: [
+            {
+              type: 'text' as const,
+              text: `❌ **Operation Cancelled**\n\n${message}`,
+              citations: null,
+            },
+          ],
+          id: `cancelled_${Date.now()}`,
+          type: 'message' as const,
+          model: 'claude-sonnet-4',
+          stop_reason: null,
+          stop_sequence: null,
+          usage: {
+            cache_creation: null,
+            cache_creation_input_tokens: null,
+            cache_read_input_tokens: null,
+            input_tokens: 0,
+            output_tokens: 0,
+            server_tool_use: null,
+            service_tier: null,
+          },
         },
         parent_tool_use_id: null,
-        session_id: 'cancelled',
+        session_id: sessionId,
       };
 
       // Save the message to database
       await messageService.saveSDKMessage(sessionId, cancellationMessage);
-      
-      logger.info(
-        { sessionId, message },
-        'Worker saved cancellation message for user visibility',
-      );
+
+      logger.info({ sessionId, message }, 'Worker saved cancellation message for user visibility');
     } catch (error) {
       logger.error(
         {

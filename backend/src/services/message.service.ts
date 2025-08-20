@@ -82,22 +82,28 @@ export class MessageService {
         // Invalid cursor, return empty result
         dbMessages = [];
       } else {
-        const cursorTimestamp = cursorMessage[0].createdAt;
-        dbMessages = await db
-          .select()
-          .from(sessionMessages)
-          .where(
-            and(
-              eq(sessionMessages.sessionId, sessionId),
-              // Use timestamp comparison first, then fall back to ID comparison for same timestamps
-              or(
-                gt(sessionMessages.createdAt, cursorTimestamp),
-                and(eq(sessionMessages.createdAt, cursorTimestamp), gt(sessionMessages.id, cursor))
-              )
+        const firstMessage = cursorMessage[0];
+        if (!firstMessage) {
+          // Invalid cursor, return empty result
+          dbMessages = [];
+        } else {
+          const cursorTimestamp = firstMessage.createdAt;
+          dbMessages = await db
+            .select()
+            .from(sessionMessages)
+            .where(
+              and(
+                eq(sessionMessages.sessionId, sessionId),
+                // Use timestamp comparison first, then fall back to ID comparison for same timestamps
+                or(
+                  gt(sessionMessages.createdAt, cursorTimestamp),
+                  and(eq(sessionMessages.createdAt, cursorTimestamp), gt(sessionMessages.id, cursor)),
+                ),
+              ),
             )
-          )
-          .orderBy(asc(sessionMessages.createdAt), asc(sessionMessages.id))
-          .limit(pageLimit + 1);
+            .orderBy(asc(sessionMessages.createdAt), asc(sessionMessages.id))
+            .limit(pageLimit + 1);
+        }
       }
     } else {
       dbMessages = await db
