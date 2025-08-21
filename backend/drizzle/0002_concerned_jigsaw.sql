@@ -1,1 +1,0 @@
-DROP TABLE `claude_code_file_access`;
