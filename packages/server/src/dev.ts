@@ -4,24 +4,24 @@
  * Development server entry point
  */
 
-// Set required environment variables for development  
+// Set required environment variables for development
 process.env.NODE_ENV = 'development';
 
-import { createServer } from './src/index.js';
+import { createServer } from './index';
 
 const config = {
   port: 3004,
   host: '0.0.0.0',
   dataDir: './dev-data',
-  logLevel: 'debug',
+  logLevel: 'debug' as const,
   cors: true,
   helmet: false, // Disable for easier development
-  NODE_ENV: 'development'
+  NODE_ENV: 'development',
 };
 
-console.log('🚀 Starting PokéCode development server...');
-console.log('📁 Data directory:', config.dataDir);
-console.log('🌐 Server will be available at: http://localhost:3004');
+console.info('🚀 Starting PokéCode development server...');
+console.info('📁 Data directory:', config.dataDir);
+console.info('🌐 Server will be available at: http://localhost:3004');
 
 const server = await createServer(config);
 
@@ -29,10 +29,10 @@ const server = await createServer(config);
 const signals = ['SIGTERM', 'SIGINT'] as const;
 signals.forEach((signal) => {
   process.on(signal, async () => {
-    console.log(`\n📡 Received ${signal}, shutting down gracefully...`);
+    console.info(`\n📡 Received ${signal}, shutting down gracefully...`);
     try {
       await server.close();
-      console.log('✅ Server closed successfully');
+      console.info('✅ Server closed successfully');
       process.exit(0);
     } catch (error) {
       console.error('❌ Error during shutdown:', error);
@@ -43,13 +43,13 @@ signals.forEach((signal) => {
 
 try {
   await server.listen({ port: config.port, host: config.host });
-  console.log('\n✅ Development server started successfully!');
-  console.log('📋 Available endpoints:');
-  console.log('   • http://localhost:3004/ (API info)');
-  console.log('   • http://localhost:3004/health (Health check)');
-  console.log('   • http://localhost:3004/api/claude-code/sessions (Sessions API)');
-  console.log('   • http://localhost:3004/api/claude-code/repositories (Repositories API)');
-  console.log('\n💡 Press Ctrl+C to stop the server');
+  console.info('\n✅ Development server started successfully!');
+  console.info('📋 Available endpoints:');
+  console.info('   • http://localhost:3004/ (API info)');
+  console.info('   • http://localhost:3004/health (Health check)');
+  console.info('   • http://localhost:3004/api/claude-code/sessions (Sessions API)');
+  console.info('   • http://localhost:3004/api/claude-code/repositories (Repositories API)');
+  console.info('\n💡 Press Ctrl+C to stop the server');
 } catch (error) {
   console.error('❌ Failed to start development server:', error);
   process.exit(1);

@@ -8,9 +8,9 @@ import {
   SessionIdParamsSchema,
   SSEEventSchema,
 } from '@pokecode/api';
+import { logger, messageEvents, messageService, sessionService } from '@pokecode/core';
 import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
-import { messageEvents, messageService, sessionService, logger } from '@pokecode/core';
 
 // Simple event queue for SSE events
 class EventQueue {
@@ -188,10 +188,8 @@ const messageRoutes: FastifyPluginAsync = async (fastify) => {
         // Queue prompt for processing (SDK will create assistant messages)
         await messageService.queuePrompt(sessionId, content, model);
 
-        // Track metrics
-        if (fastify.metrics) {
-          fastify.metrics.promptsTotal.inc({ status: 'queued' });
-        }
+        // Track metrics - TODO: implement proper metrics
+        // Metrics tracking disabled for now
 
         logger.debug(
           {
@@ -249,8 +247,8 @@ const messageRoutes: FastifyPluginAsync = async (fastify) => {
         const result = await messageService.getMessages({
           sessionId,
           projectPath: session.projectPath,
-          cursor: after || undefined,
-          limit,
+          ...(after && { cursor: after }),
+          ...(limit && { limit }),
         });
 
         const { messages, pagination } = result;

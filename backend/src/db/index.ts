@@ -1,6 +1,6 @@
 import { Database } from 'bun:sqlite';
-import path from 'node:path';
 import { homedir } from 'node:os';
+import path from 'node:path';
 import { drizzle } from 'drizzle-orm/bun-sqlite';
 import { config } from '@/config';
 import { isTest } from '@/utils/env';

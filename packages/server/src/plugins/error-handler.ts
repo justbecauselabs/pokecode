@@ -1,6 +1,6 @@
+import { ApiError, config } from '@pokecode/core';
 import type { FastifyError, FastifyPluginAsync } from 'fastify';
 import fp from 'fastify-plugin';
-import { config, ApiError } from '@pokecode/core';
 
 interface FastifyValidationError extends Error {
   validation: unknown[];

@@ -10,9 +10,9 @@ import {
   type UpdateSessionRequest,
   UpdateSessionRequestSchema,
 } from '@pokecode/api';
+import { sessionService } from '@pokecode/core';
 import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
-import { sessionService } from '@pokecode/core';
 
 // Type guard for API errors
 function isApiError(error: unknown): error is { name: string; message: string; code?: string } {
@@ -184,13 +184,13 @@ const sessionRoutes: FastifyPluginAsync = async (fastify) => {
   );
 
   // Register message routes (was prompts)
-  fastify.register(import('./messages.js'), { prefix: '/:sessionId' });
+  fastify.register(import('./messages'), { prefix: '/:sessionId' });
 
   // Register command routes
-  fastify.register(import('./commands.js'), { prefix: '/:sessionId/commands' });
+  fastify.register(import('./commands'), { prefix: '/:sessionId/commands' });
 
   // Register agent routes
-  fastify.register(import('./agents.js'), { prefix: '/:sessionId/agents' });
+  fastify.register(import('./agents'), { prefix: '/:sessionId/agents' });
 };
 
 export default sessionRoutes;

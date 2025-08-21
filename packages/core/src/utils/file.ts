@@ -1,7 +1,7 @@
 import { homedir } from 'node:os';
 import path from 'node:path';
 import { parse as parseYaml } from 'yaml';
-import { NotFoundError, ValidationError } from '../types/index.js';
+import { NotFoundError, ValidationError } from '../types';
 
 // Export Node.js path and os utilities for consistency
 export const getHomeDirectory = homedir;
@@ -53,7 +53,12 @@ export async function listDirectory(
       }),
     );
 
-    const results = [];
+    const results: Array<{
+      name: string;
+      path: string;
+      isDirectory: boolean;
+      isFile: boolean;
+    }> = [];
     for (const item of items) {
       const fullPath = path.join(dirPath, item);
       const pathInfo = await pathExists(fullPath);

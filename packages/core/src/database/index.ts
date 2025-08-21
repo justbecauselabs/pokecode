@@ -1,10 +1,10 @@
 import { Database } from 'bun:sqlite';
-import path from 'node:path';
+import { mkdirSync } from 'node:fs';
 import { homedir } from 'node:os';
-import { drizzle } from 'drizzle-orm/bun-sqlite';
-import * as schema from './schema-sqlite';
-import { jobQueue, sessionMessages, sessions } from './schema-sqlite';
+import path from 'node:path';
+import { type BunSQLiteDatabase, drizzle } from 'drizzle-orm/bun-sqlite';
 import { DatabaseMigrator } from './migrator';
+import * as schema from './schema-sqlite';
 
 export interface DatabaseConfig {
   dbPath?: string;
@@ -15,16 +15,16 @@ export interface DatabaseConfig {
 
 export class DatabaseManager {
   private sqlite: Database;
-  private db: ReturnType<typeof drizzle>;
+  private db: BunSQLiteDatabase<typeof schema>;
 
   constructor(config: DatabaseConfig = {}) {
     const dbPath = this.getDatabasePath(config);
-    
+
     // Ensure data directory exists synchronously for now
     try {
-      const { mkdirSync } = require('node:fs');
       mkdirSync(path.dirname(dbPath), { recursive: true });
-    } catch (error) {
+
+    } catch (_error) {
       // Directory might already exist
     }
 
@@ -53,7 +53,7 @@ export class DatabaseManager {
       // Enable WAL mode for better concurrency
       this.sqlite.exec('PRAGMA journal_mode = WAL;');
     }
-    
+
     this.sqlite.exec('PRAGMA synchronous = NORMAL;'); // Faster writes with good durability
     this.sqlite.exec(`PRAGMA cache_size = ${config.cacheSize || 1000000};`); // 1GB cache default
     this.sqlite.exec('PRAGMA foreign_keys = ON;'); // Enable foreign key constraints
@@ -80,7 +80,6 @@ export class DatabaseManager {
 
   async ensureTablesExist(): Promise<void> {
     try {
-      console.log('Running database migrations...');
       const migrator = new DatabaseMigrator(this.sqlite);
       await migrator.migrate();
     } catch (error) {
@@ -92,7 +91,6 @@ export class DatabaseManager {
   close(): void {
     try {
       this.sqlite.close();
-      console.log('Database connection closed');
     } catch (error) {
       console.error('Error closing database:', error);
     }
@@ -133,11 +131,11 @@ try {
 
 // Export schema for external use
 export { schema };
-export * from './schema-sqlite';
+export { migrations } from './migrations';
 
 // Export migration utilities
 export { DatabaseMigrator } from './migrator';
-export { migrations } from './migrations';
+export * from './schema-sqlite';
 
 // Export the health check function for backward compatibility
 export async function checkDatabaseHealth(): Promise<boolean> {

@@ -1,6 +1,6 @@
 import type { ListRepositoriesResponse, RepositoryResponse } from '@pokecode/api';
-import { directoryExists, joinPath, listDirectory, validateGitRepository } from '../utils/file.js';
-import { getRepositoryPaths } from '../utils/env.js';
+import { getRepositoryPaths } from '../utils/env';
+import { directoryExists, validateGitRepository } from '../utils/file';
 
 export class RepositoryService {
   /**
@@ -24,7 +24,7 @@ export class RepositoryService {
         if (exists) {
           // Extract folder name from path
           const folderName = repoPath.split('/').pop() || repoPath;
-          
+
           repositories.push({
             folderName,
             path: repoPath,
@@ -56,9 +56,9 @@ export class RepositoryService {
     }
 
     const repositoryPaths = await getRepositoryPaths();
-    
+
     // Find the repository path that ends with this folder name
-    const matchingPath = repositoryPaths.find(path => {
+    const matchingPath = repositoryPaths.find((path) => {
       const pathFolderName = path.split('/').pop();
       return pathFolderName === folderName;
     });

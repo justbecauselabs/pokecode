@@ -1,5 +1,5 @@
-import { validateEnv } from './env.schema';
 import { inferClaudeCodePath } from '@/utils/env';
+import { validateEnv } from './env.schema';
 
 // Base config without inference
 const baseConfig = validateEnv();
@@ -10,7 +10,7 @@ let _initialized = false;
 
 async function initializeConfig() {
   if (_initialized) return _config;
-  
+
   // Infer CLAUDE_CODE_PATH if not provided
   if (!baseConfig.CLAUDE_CODE_PATH) {
     try {
@@ -18,10 +18,12 @@ async function initializeConfig() {
       _config = { ...baseConfig, CLAUDE_CODE_PATH: inferredPath };
     } catch (error) {
       console.error('Failed to infer CLAUDE_CODE_PATH:', error);
-      throw new Error('CLAUDE_CODE_PATH must be provided or claude command must be available in PATH');
+      throw new Error(
+        'CLAUDE_CODE_PATH must be provided or claude command must be available in PATH',
+      );
     }
   }
-  
+
   _initialized = true;
   return _config;
 }

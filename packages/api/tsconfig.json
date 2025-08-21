@@ -35,6 +35,7 @@
     "allowUnusedLabels": false,
     "allowUnreachableCode": false,
     "skipLibCheck": true,
+    "verbatimModuleSyntax": true,
     "composite": true
   },
   "include": [

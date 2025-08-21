@@ -34,7 +34,7 @@ export class SessionService {
     if (data.folderName) {
       // Use repository service to resolve folder name to absolute path
       try {
-        projectPath = repositoryService.resolveFolderPath(data.folderName);
+        projectPath = await repositoryService.resolveFolderPath(data.folderName);
 
         // Validate that the repository exists
         const validation = await repositoryService.validateRepository(data.folderName);

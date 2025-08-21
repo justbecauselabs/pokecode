@@ -26,3 +26,13 @@ coverage/
 # Temporary files
 tmp/
 temp/
+ 
+# Build metadata
+**/tsconfig.tsbuildinfo
+
+# Local databases and dev data
+packages/**/data/
+packages/**/dev-data/
+**/*.db
+**/*.db-wal
+**/*.db-shm

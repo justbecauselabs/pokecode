@@ -1,7 +1,7 @@
 import { type Options, type Query, query, type SDKMessage } from '@anthropic-ai/claude-code';
-import { getConfig } from '../config/index.js';
-import { directoryExists } from '../utils/file.js';
-import { createChildLogger } from '../utils/logger.js';
+import { getConfig } from '../config';
+import { directoryExists } from '../utils/file';
+import { createChildLogger } from '../utils/logger';
 import type { MessageService } from './message.service';
 
 const logger = createChildLogger('claude-code-sdk');
@@ -46,7 +46,7 @@ export class ClaudeCodeSDKService {
 
   private async initialize() {
     if (this.pathToClaudeCodeExecutable) return;
-    
+
     const config = await getConfig();
     if (!config.CLAUDE_CODE_PATH) {
       throw new Error('CLAUDE_CODE_PATH is required');

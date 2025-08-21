@@ -4,9 +4,9 @@ import {
   ListAgentsResponseSchema,
   SessionIdParamsSchema,
 } from '@pokecode/api';
+import { agentService, sessionService } from '@pokecode/core';
 import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
-import { agentService, sessionService } from '@pokecode/core';
 
 // Type guard for API errors
 function isApiError(error: unknown): error is { name: string; message: string; code?: string } {

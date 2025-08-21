@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 
-import { startServer, makeConfigFromEnv } from './server.js';
+import { makeConfigFromEnv, startServer } from './server';
 
 // Handle internal server mode
 if (process.argv.includes('--internal-run-server')) {
@@ -10,15 +10,15 @@ if (process.argv.includes('--internal-run-server')) {
 } else {
   // Normal CLI mode
   const { program } = await import('commander');
-  const { serve } = await import('./commands/serve.js');
-  const { status } = await import('./commands/status.js');
-  const { stop } = await import('./commands/stop.js');
-  const { logs } = await import('./commands/logs.js');
-  const { config } = await import('./commands/config.js');
+  const { serve } = await import('./commands/serve');
+  const { status } = await import('./commands/status');
+  const { stop } = await import('./commands/stop');
+  const { logs } = await import('./commands/logs');
+  const { config } = await import('./commands/config');
 
   const pkg = {
     version: process.env.npm_package_version || '0.1.0',
-    name: 'pokecode'
+    name: 'pokecode',
   };
 
   program
@@ -66,15 +66,6 @@ if (process.argv.includes('--internal-run-server')) {
     .option('--edit', 'Edit configuration file')
     .action(config);
 
-  // Error handling
-  program.exitOverride();
-
-  try {
-    program.parse();
-  } catch (error) {
-    if (error instanceof Error) {
-      console.error('CLI Error:', error.message);
-      process.exit(1);
-    }
-  }
+  // Parse normally so --help and errors are handled by commander
+  program.parse();
 }

@@ -1,9 +1,9 @@
 import { createId } from '@paralleldrive/cuid2';
 import { and, asc, eq, isNull, lte, or, sql } from 'drizzle-orm';
-import { db } from '../database/index.js';
-import { jobQueue, sessions } from '../database/schema-sqlite/index.js';
-import type { CompleteEvent, ErrorEvent, PromptJobData } from '../types/index.js';
-import { createChildLogger } from '../utils/logger.js';
+import { db } from '../database';
+import { jobQueue, sessions } from '../database/schema-sqlite';
+import type { CompleteEvent, ErrorEvent, PromptJobData } from '../types';
+import { createChildLogger } from '../utils/logger';
 
 const logger = createChildLogger('sqlite-queue');
 
@@ -161,11 +161,19 @@ export class SQLiteQueueService {
         total: (pending[0]?.count ?? 0) + (processing[0]?.count ?? 0),
       };
     } catch (error) {
-      logger.error({ error: error instanceof Error ? { 
-        message: error.message, 
-        stack: error.stack,
-        name: error.name 
-      } : error }, 'Failed to get queue metrics');
+      logger.error(
+        {
+          error:
+            error instanceof Error
+              ? {
+                  message: error.message,
+                  stack: error.stack,
+                  name: error.name,
+                }
+              : error,
+        },
+        'Failed to get queue metrics',
+      );
       throw error;
     }
   }

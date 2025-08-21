@@ -6,8 +6,8 @@ import type {
   ToolUseBlockParam,
 } from '@anthropic-ai/sdk/resources/messages';
 import type { AssistantMessage, Message, UserMessage } from '@pokecode/api';
-import type { SessionMessage } from '../database/schema-sqlite/session_messages.js';
-import { logger } from './logger.js';
+import type { SessionMessage } from '../database/schema-sqlite/session_messages';
+import { logger } from './logger';
 
 /**
  * Extract token count from an SDK message

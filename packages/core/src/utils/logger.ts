@@ -1,12 +1,12 @@
 import { createWriteStream } from 'node:fs';
-import pino from 'pino';
+import pino, { type StreamEntry } from 'pino';
 import pinoPretty from 'pino-pretty';
-import { config } from '../config/index.js';
+import { config } from '../config';
 
 const isDevelopment = config.NODE_ENV === 'development';
 
 // Create streams array for multistream
-const streams = [];
+const streams: StreamEntry[] = [];
 
 // Add console stream with pretty printing in development
 if (isDevelopment) {

@@ -46,7 +46,7 @@ export class ClaudeCodeSDKService {
 
   private async initialize() {
     if (this.pathToClaudeCodeExecutable) return;
-    
+
     const config = await getConfig();
     if (!config.CLAUDE_CODE_PATH) {
       throw new Error('CLAUDE_CODE_PATH is required');

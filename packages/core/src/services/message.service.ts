@@ -3,13 +3,13 @@ import { createId } from '@paralleldrive/cuid2';
 import type { Message } from '@pokecode/api';
 import { and, asc, desc, eq, gt, isNotNull, or, sql } from 'drizzle-orm';
 
-import { db } from '../database/index.js';
-import { sessions } from '../database/schema-sqlite/index.js';
-import { sessionMessages } from '../database/schema-sqlite/session_messages.js';
-import { createChildLogger } from '../utils/logger.js';
-import { extractTokenCount, parseDbMessage } from '../utils/message-parser.js';
-import { emitNewMessage, emitSessionDone } from './event-bus.service.js';
-import { sqliteQueueService } from './queue-sqlite.service.js';
+import { db } from '../database';
+import { sessions } from '../database/schema-sqlite';
+import { sessionMessages } from '../database/schema-sqlite/session_messages';
+import { createChildLogger } from '../utils/logger';
+import { extractTokenCount, parseDbMessage } from '../utils/message-parser';
+import { emitNewMessage, emitSessionDone } from './event-bus.service';
+import { sqliteQueueService } from './queue-sqlite.service';
 
 // Temporary type definition until packages/api is rebuilt
 type Pagination = {

@@ -1,5 +1,5 @@
 import type { Command, ListCommandsQuery, ListCommandsResponse } from '@pokecode/api';
-import { ValidationError } from '../types/index.js';
+import { ValidationError } from '../types';
 import {
   directoryExists,
   findMarkdownFiles,
@@ -8,8 +8,8 @@ import {
   isAbsolute,
   joinPath,
   readFileContent,
-} from '../utils/file.js';
-import { logger } from '../utils/logger.js';
+} from '../utils/file';
+import { logger } from '../utils/logger';
 
 /**
  * Service for discovering and managing slash commands from Claude home and project directories

@@ -2,10 +2,9 @@ import fs from 'node:fs';
 import { createId } from '@paralleldrive/cuid2';
 import type { CreateSessionRequest, ListSessionsQuery, UpdateSessionRequest } from '@pokecode/api';
 import { desc, eq, sql } from 'drizzle-orm';
-import { db } from '../database/index.js';
-import { sessions } from '../database/schema-sqlite/index.js';
-import { repositoryService } from './repository.service.js';
-import { NotFoundError, ValidationError } from '../types/index.js';
+import { db } from '../database';
+import { sessions } from '../database/schema-sqlite';
+import { NotFoundError, ValidationError } from '../types';
 import {
   getBasename,
   getHomeDirectory,
@@ -14,8 +13,9 @@ import {
   isAbsolute,
   joinPath,
   normalizePath,
-} from '../utils/file.js';
-import { logger } from '../utils/logger.js';
+} from '../utils/file';
+import { logger } from '../utils/logger';
+import { repositoryService } from './repository.service';
 
 export class SessionService {
   async createSession(data: CreateSessionRequest) {
@@ -34,7 +34,7 @@ export class SessionService {
     if (data.folderName) {
       // Use repository service to resolve folder name to absolute path
       try {
-        projectPath = repositoryService.resolveFolderPath(data.folderName);
+        projectPath = await repositoryService.resolveFolderPath(data.folderName);
 
         // Validate that the repository exists
         const validation = await repositoryService.validateRepository(data.folderName);

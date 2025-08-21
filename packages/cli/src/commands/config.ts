@@ -2,11 +2,11 @@
  * Config command implementation
  */
 
-import { readFile, writeFile } from 'node:fs/promises';
 import { spawn } from 'node:child_process';
+import { readFile, writeFile } from 'node:fs/promises';
 import { platform } from 'node:os';
 import chalk from 'chalk';
-import { DaemonManager } from '../utils/daemon.js';
+import { DaemonManager } from '../utils/daemon';
 
 export interface ConfigOptions {
   init?: boolean;
@@ -28,7 +28,7 @@ const defaultConfig: PokeCodeConfig = {
   host: '0.0.0.0',
   logLevel: 'info',
   cors: true,
-  helmet: true
+  helmet: true,
 };
 
 export const config = async (options: ConfigOptions): Promise<void> => {
@@ -55,11 +55,11 @@ const initConfig = async (configFile: string): Promise<void> => {
     // Set default data directory
     const configWithDefaults = {
       ...defaultConfig,
-      dataDir: daemonManager.getConfigFile().replace('/config.json', '') + '/data'
+      dataDir: `${daemonManager.getConfigFile().replace('/config.json', '')}/data`,
     };
 
     await writeFile(configFile, JSON.stringify(configWithDefaults, null, 2), 'utf-8');
-    
+
     console.log(chalk.green('✅ Configuration file initialized'));
     console.log(`📁 Config file: ${chalk.cyan(configFile)}`);
     console.log('\nDefault configuration:');
@@ -75,11 +75,11 @@ const initConfig = async (configFile: string): Promise<void> => {
 const showConfig = async (configFile: string): Promise<void> => {
   try {
     const config = await loadConfig(configFile);
-    
+
     console.log(chalk.blue('📋 Current PokéCode configuration:\n'));
     console.log(`📁 Config file: ${chalk.cyan(configFile)}`);
     console.log('');
-    
+
     if (Object.keys(config).length === 0) {
       console.log(chalk.yellow('No configuration file found.'));
       console.log(`To create one, run: ${chalk.cyan('pokecode config --init')}`);
@@ -91,7 +91,7 @@ const showConfig = async (configFile: string): Promise<void> => {
       const formattedKey = key.padEnd(12);
       console.log(`${chalk.gray(formattedKey)}: ${chalk.white(JSON.stringify(value))}`);
     });
-    
+
     console.log(`\nTo edit the configuration: ${chalk.cyan('pokecode config --edit')}`);
   } catch (error) {
     console.error(chalk.red('❌ Failed to show configuration:'));
@@ -115,12 +115,12 @@ const editConfig = async (configFile: string): Promise<void> => {
 
     // Determine editor
     const editor = process.env.EDITOR || process.env.VISUAL || getDefaultEditor();
-    
+
     console.log(chalk.blue(`📝 Opening configuration file in ${editor}...`));
     console.log(`📁 File: ${chalk.cyan(configFile)}`);
-    
+
     const child = spawn(editor, [configFile], {
-      stdio: 'inherit'
+      stdio: 'inherit',
     });
 
     child.on('close', (code) => {
@@ -137,7 +137,6 @@ const editConfig = async (configFile: string): Promise<void> => {
       console.error(chalk.red(error.message));
       console.log(`\nManually edit the file: ${chalk.cyan(configFile)}`);
     });
-
   } catch (error) {
     console.error(chalk.red('❌ Failed to edit configuration:'));
     console.error(chalk.red(error instanceof Error ? error.message : String(error)));
@@ -156,7 +155,7 @@ const loadConfig = async (configFile: string): Promise<PokeCodeConfig> => {
 
 const getDefaultEditor = (): string => {
   const isWindows = platform() === 'win32';
-  
+
   if (isWindows) {
     return 'notepad';
   } else {

@@ -2,14 +2,11 @@
  * Main CLI entry point
  */
 
-export { serve } from './commands/serve.js';
-export { status } from './commands/status.js';
-export { stop } from './commands/stop.js';
-export { logs } from './commands/logs.js';
-export { config } from './commands/config.js';
-
-export { DaemonManager } from './utils/daemon.js';
-export { detectRuntime, spawnDetached } from './utils/runtime.js';
-export { which } from './utils/which.js';
-
 export { createServer } from '@pokecode/server';
+export { config } from './commands/config';
+export { logs } from './commands/logs';
+export { serve } from './commands/serve';
+export { status } from './commands/status';
+export { stop } from './commands/stop';
+export { DaemonManager } from './utils/daemon';
+export { spawnDetached } from './utils/runtime';

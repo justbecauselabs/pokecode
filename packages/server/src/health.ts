@@ -1,6 +1,6 @@
+import { checkDatabaseHealth, sqliteQueueService } from '@pokecode/core';
 import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
-import { checkDatabaseHealth, sqliteQueueService } from '@pokecode/core';
 
 const HealthResponseSchema = z.object({
   status: z.enum(['healthy', 'unhealthy']),
@@ -59,11 +59,19 @@ const healthRoute: FastifyPluginAsync = async (fastify) => {
           checks.queue = 'unhealthy';
         }
       } catch (error) {
-        fastify.log.error({ error: error instanceof Error ? { 
-          message: error.message, 
-          stack: error.stack,
-          name: error.name 
-        } : error }, 'Queue health check failed with exception');
+        fastify.log.error(
+          {
+            error:
+              error instanceof Error
+                ? {
+                    message: error.message,
+                    stack: error.stack,
+                    name: error.name,
+                  }
+                : error,
+          },
+          'Queue health check failed with exception',
+        );
         checks.queue = 'unhealthy';
       }
 

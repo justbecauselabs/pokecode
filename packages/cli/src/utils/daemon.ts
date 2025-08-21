@@ -2,8 +2,8 @@
  * Cross-platform daemon management utilities
  */
 
-import { join } from 'node:path';
 import { homedir, platform } from 'node:os';
+import { join } from 'node:path';
 
 export interface DaemonInfo {
   pid: number;
@@ -30,7 +30,7 @@ export class DaemonManager {
 
   private getBaseConfigDir(): string {
     const isWindows = platform() === 'win32';
-    
+
     if (isWindows) {
       return join(process.env.APPDATA || join(homedir(), 'AppData', 'Roaming'), 'pokecode');
     } else {
@@ -47,11 +47,11 @@ export class DaemonManager {
 
   async saveDaemonInfo(info: DaemonInfo): Promise<void> {
     await this.ensureConfigDir();
-    
+
     // Write PID file with secure permissions (0o600 = owner read/write only)
     await Bun.write(this.pidFile, info.pid.toString());
     await Bun.$`chmod 600 ${this.pidFile}`;
-    
+
     // Write full daemon info with secure permissions
     const infoFile = join(this.configDir, 'daemon.json');
     await Bun.write(infoFile, JSON.stringify(info, null, 2));
@@ -78,7 +78,7 @@ export class DaemonManager {
       if (await file.exists()) {
         const content = await file.text();
         const pid = parseInt(content.trim(), 10);
-        return isNaN(pid) ? null : pid;
+        return Number.isNaN(pid) ? null : pid;
       }
       return null;
     } catch {
@@ -93,7 +93,7 @@ export class DaemonManager {
     try {
       // Send signal 0 to check if process exists
       process.kill(pid, 0);
-      
+
       // Additional validation: check if it's actually our process
       return await this.validateProcess(pid);
     } catch {
@@ -121,7 +121,7 @@ export class DaemonManager {
           return true;
         }
       }
-      
+
       // On Windows or if validation fails, assume process is valid if it exists
       return true;
     } catch {
@@ -136,11 +136,11 @@ export class DaemonManager {
     try {
       const signal = force ? 'SIGKILL' : 'SIGTERM';
       process.kill(pid, signal);
-      
+
       // Wait a bit for graceful shutdown
       if (!force) {
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+
         // Check if it's still running
         try {
           process.kill(pid, 0);
@@ -150,10 +150,10 @@ export class DaemonManager {
           // Already stopped
         }
       }
-      
+
       await this.cleanup();
       return true;
-    } catch (error) {
+    } catch (_error) {
       // Process might not exist
       await this.cleanup();
       return false;
@@ -169,7 +169,7 @@ export class DaemonManager {
     } catch {
       // File might not exist
     }
-    
+
     try {
       const infoFile = join(this.configDir, 'daemon.json');
       const file = Bun.file(infoFile);

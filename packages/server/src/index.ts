@@ -1,29 +1,27 @@
+import { join } from 'node:path';
 import helmet from '@fastify/helmet';
-import Fastify, { type FastifyPluginAsync, type FastifyInstance } from 'fastify';
+import { DatabaseManager } from '@pokecode/core';
+import Fastify, { type FastifyInstance, type FastifyPluginAsync } from 'fastify';
 import { FastifySSEPlugin } from 'fastify-sse-v2';
 import {
   serializerCompiler,
   validatorCompiler,
   type ZodTypeProvider,
 } from 'fastify-type-provider-zod';
-import { join } from 'node:path';
-import { DatabaseManager } from '@pokecode/core';
-
-// Import plugins
-import corsPlugin from './plugins/cors.js';
-import errorHandlerPlugin from './plugins/error-handler.js';
-import requestLoggerPlugin from './plugins/request-logger.js';
-
 // Import routes
-import healthRoutes from './health.js';
-import repositoryRoutes from './repositories.js';
-import sessionRoutes from './sessions/index.js';
+import healthRoutes from './health';
+// Import plugins
+import corsPlugin from './plugins/cors';
+import errorHandlerPlugin from './plugins/error-handler';
+import requestLoggerPlugin from './plugins/request-logger';
+import repositoryRoutes from './repositories';
+import sessionRoutes from './sessions';
 
 export interface ServerConfig {
   port: number;
   host: string;
   dataDir?: string; // Optional - database now defaults to ~/.pokecode/
-  logLevel: string;
+  logLevel?: 'fatal' | 'error' | 'warn' | 'info' | 'debug' | 'trace';
   cors: boolean;
   helmet: boolean;
   NODE_ENV?: string;
@@ -32,16 +30,21 @@ export interface ServerConfig {
 // Global database instance to share across the app
 let globalDb: DatabaseManager | null = null;
 
-export const createApp: FastifyPluginAsync<ServerConfig> = async (fastify, opts) => {
+export const createApp: FastifyPluginAsync<{
+  dataDir?: string;
+  cors: boolean;
+  helmet: boolean;
+  NODE_ENV?: string;
+}> = async (fastify, opts) => {
   // Initialize database
   if (!globalDb) {
     const dbPath = opts.dataDir ? join(opts.dataDir, 'pokecode.db') : undefined;
     globalDb = new DatabaseManager({
       isTest: opts.NODE_ENV === 'test',
       enableWAL: true,
-      dbPath
+      ...(dbPath && { dbPath }),
     });
-    
+
     // Ensure tables exist
     try {
       await globalDb.ensureTablesExist();
@@ -71,11 +74,11 @@ export const createApp: FastifyPluginAsync<ServerConfig> = async (fastify, opts)
 
   // Register plugins in order
   await fastify.register(errorHandlerPlugin);
-  
+
   if (opts.cors) {
     await fastify.register(corsPlugin);
   }
-  
+
   await fastify.register(requestLoggerPlugin);
 
   // Register routes
@@ -127,21 +130,28 @@ export const createApp: FastifyPluginAsync<ServerConfig> = async (fastify, opts)
 // Export database instance for access in routes
 export const getDatabase = () => globalDb;
 
-export async function createServer(config: ServerConfig): Promise<FastifyInstance> {
+export async function createServer(config: ServerConfig) {
   const fastify = Fastify({
     logger: {
       level: config.logLevel || 'info',
-      transport: config.NODE_ENV === 'development' ? {
-        target: 'pino-pretty',
-        options: {
-          colorize: true,
-          translateTime: 'HH:MM:ss Z',
-          ignore: 'pid,hostname'
-        }
-      } : undefined
-    }
+      ...(config.NODE_ENV === 'development' && {
+        transport: {
+          target: 'pino-pretty',
+          options: {
+            colorize: true,
+            translateTime: 'HH:MM:ss Z',
+            ignore: 'pid,hostname',
+          },
+        },
+      }),
+    },
   }).withTypeProvider<ZodTypeProvider>();
 
-  await fastify.register(createApp, config);
+  await fastify.register(createApp, {
+    ...(config.dataDir && { dataDir: config.dataDir }),
+    cors: config.cors,
+    helmet: config.helmet,
+    ...(config.NODE_ENV && { NODE_ENV: config.NODE_ENV }),
+  });
   return fastify;
 }

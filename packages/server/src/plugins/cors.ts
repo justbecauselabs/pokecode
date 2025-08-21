@@ -1,7 +1,7 @@
 import cors from '@fastify/cors';
+import { config } from '@pokecode/core';
 import type { FastifyPluginAsync } from 'fastify';
 import fp from 'fastify-plugin';
-import { config } from '@pokecode/core';
 
 const corsPlugin: FastifyPluginAsync = async (fastify) => {
   await fastify.register(cors, {

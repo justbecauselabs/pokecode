@@ -1,6 +1,5 @@
 import { join } from 'node:path';
 import { createServer } from '@pokecode/server';
-import { DatabaseManager } from '@pokecode/core';
 
 export interface ServerConfig {
   port: number;
@@ -27,11 +26,6 @@ export function makeConfigFromEnv(): ServerConfig {
 }
 
 export async function startServer(config: ServerConfig): Promise<void> {
-  // Ensure DB & tables exist
-  const dbPath = join(config.dataDir, 'pokecode.db');
-  const dbManager = new DatabaseManager({ dbPath, isTest: config.NODE_ENV === 'test', enableWAL: true });
-  await dbManager.ensureTablesExist();
-
   const server = await createServer(config);
 
   const signals = ['SIGTERM', 'SIGINT', 'SIGUSR2'] as const;
@@ -66,7 +60,7 @@ export async function startServer(config: ServerConfig): Promise<void> {
   });
 
   await server.listen({ port: config.port, host: config.host });
-  
+
   console.log(`🚀 PokéCode server running at http://${config.host}:${config.port}`);
   console.log(`📁 Data directory: ${config.dataDir}`);
   console.log(`📊 Log level: ${config.logLevel}`);

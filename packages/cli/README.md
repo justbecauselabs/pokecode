@@ -55,6 +55,7 @@ pokecode logs --follow
 
 # Show last 100 lines
 pokecode logs --lines 100
+
 ```
 
 ### Configuration
@@ -116,13 +117,12 @@ bun run typecheck
 ## Features
 
 - ✅ **Cross-platform**: Works on Windows, macOS, and Linux
-- ✅ **Runtime detection**: Automatically uses Bun or Node.js
 - ✅ **Daemon mode**: Run server in background with proper process management
 - ✅ **Robust logging**: Structured logging with multiple levels
 - ✅ **Configuration management**: File-based config with environment override
 - ✅ **Health monitoring**: Built-in health checks and status reporting
 - ✅ **Graceful shutdown**: Proper cleanup on termination signals
-- ✅ **Self-contained**: Bundled dependencies for reliable global installation
+- ✅ **Single binary**: Built with Bun compile for simple installs
 
 ## Architecture
 

@@ -3,21 +3,21 @@
  */
 
 import chalk from 'chalk';
-import { DaemonManager } from '../utils/daemon.js';
+import { DaemonManager } from '../utils/daemon';
 
 export interface StatusOptions {
   port: string;
   host: string;
 }
 
-export const status = async (options: StatusOptions): Promise<void> => {
+export const status = async (_options: StatusOptions): Promise<void> => {
   const daemonManager = new DaemonManager();
-  
+
   console.log(chalk.blue('🔍 Checking PokéCode server status...\n'));
 
   try {
     const isRunning = await daemonManager.isRunning();
-    
+
     if (!isRunning) {
       console.log(chalk.red('❌ PokéCode server is not running'));
       console.log(`\nTo start the server, run: ${chalk.cyan('pokecode serve')}`);
@@ -43,7 +43,7 @@ export const status = async (options: StatusOptions): Promise<void> => {
     const uptimeSeconds = Math.floor(uptime / 1000);
     const uptimeMinutes = Math.floor(uptimeSeconds / 60);
     const uptimeHours = Math.floor(uptimeMinutes / 60);
-    
+
     let uptimeStr = '';
     if (uptimeHours > 0) {
       uptimeStr = `${uptimeHours}h ${uptimeMinutes % 60}m`;
@@ -67,9 +67,10 @@ export const status = async (options: StatusOptions): Promise<void> => {
         console.log(`🩺 Health check: ${chalk.yellow('DEGRADED')} (HTTP ${response.status})`);
       }
     } catch (error) {
-      console.log(`🩺 Health check: ${chalk.red('FAILED')} (${error instanceof Error ? error.message : 'Unknown error'})`);
+      console.log(
+        `🩺 Health check: ${chalk.red('FAILED')} (${error instanceof Error ? error.message : 'Unknown error'})`,
+      );
     }
-
   } catch (error) {
     console.error(chalk.red('❌ Error checking server status:'));
     console.error(chalk.red(error instanceof Error ? error.message : String(error)));
