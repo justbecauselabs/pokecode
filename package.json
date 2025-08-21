@@ -3,7 +3,6 @@
   "private": true,
   "workspaces": [
     "packages/*",
-    "backend",
     "mobile"
   ],
   "scripts": {
@@ -18,27 +17,24 @@
     "lint": "bunx @biomejs/biome check .",
     "lint:fix": "bunx @biomejs/biome check . --write",
     "format": "bunx @biomejs/biome format . --write",
-    "typecheck": "bun run typecheck:api && bun run typecheck:core && bun run typecheck:server && bun run typecheck:cli && bun run typecheck:backend && bun run typecheck:mobile",
+    "typecheck": "bun run typecheck:api && bun run typecheck:core && bun run typecheck:server && bun run typecheck:cli && bun run typecheck:mobile",
     "typecheck:api": "cd packages/api && bun run typecheck",
     "typecheck:core": "cd packages/core && bun run typecheck",
     "typecheck:server": "cd packages/server && bun run typecheck",
     "typecheck:cli": "cd packages/cli && bun run typecheck",
-    "typecheck:backend": "cd backend && bun run typecheck",
     "typecheck:mobile": "cd mobile && bun run type-check",
-    "test": "bun run test:api && bun run test:core && bun run test:server && bun run test:cli && bun run test:backend && bun run test:mobile",
+    "test": "bun run test:api && bun run test:core && bun run test:server && bun run test:cli && bun run test:mobile",
     "test:api": "cd packages/api && bun run test",
     "test:core": "cd packages/core && bun run test",
     "test:server": "cd packages/server && bun run test",
     "test:cli": "cd packages/cli && bun run test",
-    "test:backend": "cd backend && bun run test",
     "test:mobile": "cd mobile && bun run test",
-    "publish:cli": "cd packages/cli && npm publish"
+    "cli:compile": "cd packages/cli && bun build --compile src/cli.js --outfile ../../dist/pokecode"
   },
   "devDependencies": {
     "typescript": "^5.0.0"
   },
   "engines": {
     "bun": ">=1.0.0"
-  },
-  "packageManager": "yarn@4.9.2+sha512.1fc009bc09d13cfd0e19efa44cbfc2b9cf6ca61482725eb35bbc5e257e093ebf4130db6dfe15d604ff4b79efd8e1e8e99b25fa7d0a6197c9f9826358d4d65c3c"
+  }
 }

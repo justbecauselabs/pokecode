@@ -13,10 +13,6 @@
       "packages/*/tests/**/*.ts",
       "packages/*/tests/**/*.tsx",
       "packages/*/drizzle.config.ts",
-      "backend/src/**/*.ts",
-      "backend/src/**/*.tsx",
-      "backend/tests/**/*.ts",
-      "backend/tests/**/*.tsx",
       "mobile/**/*.ts",
       "mobile/**/*.tsx"
     ],
@@ -88,26 +84,6 @@
     }
   },
   "overrides": [
-    {
-      "includes": ["packages/*/scripts/**/*", "backend/scripts/**/*"],
-      "linter": {
-        "rules": {
-          "suspicious": {
-            "noConsole": "off"
-          }
-        }
-      }
-    },
-    {
-      "includes": ["packages/*/tests/**/*", "backend/tests/**/*"],
-      "linter": {
-        "rules": {
-          "suspicious": {
-            "noExplicitAny": "off"
-          }
-        }
-      }
-    },
     {
       "includes": ["packages/cli/**/*"],
       "linter": {
