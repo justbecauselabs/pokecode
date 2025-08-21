@@ -1,7 +1,21 @@
 {
   "$schema": "https://biomejs.dev/schemas/2.2.0/schema.json",
+  "vcs": {
+    "enabled": true,
+    "clientKind": "git",
+    "useIgnoreFile": true
+  },
   "files": {
-    "includes": ["src/**/*.ts", "src/**/*.tsx", "tests/**/*.ts", "drizzle.config.ts"],
+    "includes": [
+      "packages/*/src/**/*.ts",
+      "packages/*/src/**/*.tsx",
+      "packages/*/scripts/**/*.ts",
+      "packages/*/drizzle.config.ts",
+      "backend/src/**/*.ts",
+      "backend/src/**/*.tsx",
+      "mobile/**/*.ts",
+      "mobile/**/*.tsx"
+    ],
     "ignoreUnknown": false
   },
   "linter": {
@@ -15,14 +29,18 @@
       "correctness": {
         "recommended": true,
         "noUnusedVariables": "error",
-        "noUnusedImports": "error"
+        "noUnusedImports": "error",
+        "useExhaustiveDependencies": "warn",
+        "noChildrenProp": "error",
+        "noStringCaseMismatch": "error"
       },
       "style": {
         "recommended": true,
         "noNonNullAssertion": "error",
         "noDefaultExport": "off",
         "noCommonJs": "error",
-        "useConst": "error"
+        "useConst": "error",
+        "useTemplate": "error"
       },
       "suspicious": {
         "recommended": true,
@@ -33,6 +51,9 @@
             "allow": ["error", "warn", "info"]
           }
         }
+      },
+      "a11y": {
+        "recommended": true
       },
       "nursery": {
         "recommended": true
@@ -54,9 +75,17 @@
       "semicolons": "always"
     }
   },
+  "assist": {
+    "enabled": true,
+    "actions": {
+      "source": {
+        "organizeImports": "on"
+      }
+    }
+  },
   "overrides": [
     {
-      "includes": ["scripts/**/*"],
+      "includes": ["packages/*/scripts/**/*", "backend/scripts/**/*"],
       "linter": {
         "rules": {
           "suspicious": {
@@ -66,12 +95,36 @@
       }
     },
     {
-      "includes": ["tests/**/*"],
+      "includes": ["packages/*/tests/**/*", "backend/tests/**/*"],
       "linter": {
         "rules": {
           "suspicious": {
             "noExplicitAny": "off"
           }
+        }
+      }
+    },
+    {
+      "includes": ["packages/cli/**/*"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noConsole": {
+              "level": "warn",
+              "options": {
+                "allow": ["error", "warn", "info", "log"]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["mobile/**/*"],
+      "javascript": {
+        "formatter": {
+          "jsxQuoteStyle": "double",
+          "trailingCommas": "es5"
         }
       }
     }

@@ -1,10 +1,10 @@
+import { getModelDisplayName } from '@pokecode/api';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Alert, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from '@/components/common';
 import { useSettingsStore } from '@/stores/settingsStore';
 import type { SettingsFormData } from '@/types/settings';
-import { getModelDisplayName } from '@pokecode/api';
 
 /**
  * Settings screen for configuring app preferences

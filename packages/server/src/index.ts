@@ -1,7 +1,7 @@
 import { join } from 'node:path';
 import helmet from '@fastify/helmet';
 import { DatabaseManager } from '@pokecode/core';
-import Fastify, { type FastifyInstance, type FastifyPluginAsync } from 'fastify';
+import Fastify, { type FastifyPluginAsync } from 'fastify';
 import { FastifySSEPlugin } from 'fastify-sse-v2';
 import {
   serializerCompiler,

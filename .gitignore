@@ -36,3 +36,6 @@ packages/**/dev-data/
 **/*.db
 **/*.db-wal
 **/*.db-shm
+
+# Legacy conductor directory
+.conductor/

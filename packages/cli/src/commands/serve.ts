@@ -161,7 +161,7 @@ const startDaemon = async (config: {
 
     const child = spawnDetached(execPath, execArgs, {
       env: Object.fromEntries(
-        Object.entries({ ...process.env, ...env }).filter(([, value]) => value !== undefined)
+        Object.entries({ ...process.env, ...env }).filter(([, value]) => value !== undefined),
       ) as Record<string, string>,
       stdout: logFile,
       stderr: logFile,

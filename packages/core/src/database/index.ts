@@ -23,7 +23,6 @@ export class DatabaseManager {
     // Ensure data directory exists synchronously for now
     try {
       mkdirSync(path.dirname(dbPath), { recursive: true });
-
     } catch (_error) {
       // Directory might already exist
     }

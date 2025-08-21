@@ -1,5 +1,6 @@
 import type { BottomSheetModal } from '@gorhom/bottom-sheet';
 import type { AssistantMessageToolResult } from '@pokecode/api';
+import { CLAUDE_MODELS, type ClaudeModel } from '@pokecode/api';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useRef, useState } from 'react';
 import { Keyboard, KeyboardAvoidingView, Platform, Text, View } from 'react-native';
@@ -19,7 +20,6 @@ import { useSessionMessages } from '../../src/hooks/useSessionMessages';
 import { useSlashCommands } from '../../src/hooks/useSlashCommands';
 import { useDefaultModel } from '../../src/stores/settingsStore';
 import type { Message } from '../../src/types/messages';
-import { CLAUDE_MODELS, type ClaudeModel } from '@pokecode/api';
 
 export default function SessionDetailScreen() {
   const { sessionId } = useLocalSearchParams<{ sessionId: string }>();

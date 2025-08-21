@@ -1,8 +1,8 @@
 import { Feather } from '@expo/vector-icons';
+import { type ClaudeModel, getModelDisplayName } from '@pokecode/api';
 import { forwardRef, useImperativeHandle, useRef, useState } from 'react';
 import { Alert, Keyboard, Text, type TextInput, TouchableOpacity, View } from 'react-native';
 import type { SessionInfo } from '@/types/messages';
-import { getModelDisplayName, type ClaudeModel } from '@pokecode/api';
 import { TextField } from '../common';
 
 export interface MessageInputRef {
@@ -188,9 +188,7 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>((prop
           disabled={disabled || isSending}
           activeOpacity={0.7}
         >
-          <Text
-            className={`text-sm text-blue-500 ${disabled || isSending ? 'opacity-50' : ''}`}
-          >
+          <Text className={`text-sm text-blue-500 ${disabled || isSending ? 'opacity-50' : ''}`}>
             {selectedModel ? getModelDisplayName(selectedModel) : 'model'}
           </Text>
         </TouchableOpacity>
