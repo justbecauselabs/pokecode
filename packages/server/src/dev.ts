@@ -10,7 +10,7 @@ process.env.NODE_ENV = 'development';
 import { createServer } from './index';
 
 const config = {
-  port: 3004,
+  port: 3001,
   host: '0.0.0.0',
   dataDir: './dev-data',
   logLevel: 'debug' as const,

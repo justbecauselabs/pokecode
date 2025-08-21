@@ -1,6 +1,6 @@
 import { join } from 'node:path';
 import helmet from '@fastify/helmet';
-import { DatabaseManager } from '@pokecode/core';
+import { DatabaseManager, getConfig } from '@pokecode/core';
 import Fastify, { type FastifyPluginAsync } from 'fastify';
 import { FastifySSEPlugin } from 'fastify-sse-v2';
 import {
@@ -149,6 +149,9 @@ export const getDatabase = () => globalDb;
 export const getWorker = () => globalWorker;
 
 export async function createServer(config: ServerConfig) {
+  console.log('Creating server with config:', config);
+  const envConfig = await getConfig();
+  console.log('Config initialized:', envConfig);
   const fastify = Fastify({
     logger: {
       level: config.logLevel || 'info',

@@ -215,6 +215,7 @@ const startEmbedded = async (config: {
     console.log(`🚀 Server running at: ${chalk.cyan(`http://${config.host}:${config.port}`)}`);
     console.log(`📁 Data directory: ${chalk.gray(config.dataDir)}`);
     console.log(`📊 Log level: ${chalk.gray(config.logLevel)}`);
+    console.log(`🔍 Claude Code path: ${chalk.gray(config.claudeCodePath)}`);
     console.log(chalk.yellow('\nPress Ctrl+C to stop the server'));
 
     // Use the new unified server module

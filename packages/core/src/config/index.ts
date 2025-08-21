@@ -14,6 +14,7 @@ async function initializeConfig() {
   // Infer CLAUDE_CODE_PATH if not provided
   if (!baseConfig.CLAUDE_CODE_PATH) {
     try {
+      console.log('Inferring Claude Code path');
       const inferredPath = await inferClaudeCodePath();
       _config = { ...baseConfig, CLAUDE_CODE_PATH: inferredPath };
     } catch (error) {

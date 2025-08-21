@@ -1,0 +1,8 @@
+[alias]
+"@pokecode/api" = "./packages/api/src/index.ts"
+"@pokecode/api/*" = "./packages/api/src/*"
+"@pokecode/core" = "./packages/core/src/index.ts"
+"@pokecode/core/*" = "./packages/core/src/*"
+"@pokecode/server" = "./packages/server/src/index.ts"
+"@pokecode/server/*" = "./packages/server/src/*"
+

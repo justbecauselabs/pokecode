@@ -64,6 +64,7 @@ export async function startServer(config: ServerConfig): Promise<void> {
   console.log(`🚀 PokéCode server running at http://${config.host}:${config.port}`);
   console.log(`📁 Data directory: ${config.dataDir}`);
   console.log(`📊 Log level: ${config.logLevel}`);
+  console.log(`🔍 Claude Code path: ${config.claudeCodePath}`);
 
   // Server is now listening and should naturally keep the process alive
   // The Fastify server handles should prevent the event loop from exiting

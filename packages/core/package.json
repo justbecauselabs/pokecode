@@ -6,22 +6,27 @@
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
+      "bun": "./src/index.ts",
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
     "./config": {
+      "bun": "./src/config/index.ts",
       "types": "./dist/config/index.d.ts",
       "default": "./dist/config/index.js"
     },
     "./database": {
+      "bun": "./src/database/index.ts",
       "types": "./dist/database/index.d.ts",
       "default": "./dist/database/index.js"
     },
     "./database/migrations": {
+      "bun": "./src/database/migrations/index.ts",
       "types": "./dist/database/migrations/index.d.ts",
       "default": "./dist/database/migrations/index.js"
     },
     "./services/*": {
+      "bun": "./src/services/*.ts",
       "types": "./dist/services/*.d.ts",
       "default": "./dist/services/*.js"
     }
