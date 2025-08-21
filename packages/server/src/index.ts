@@ -16,6 +16,7 @@ import errorHandlerPlugin from './plugins/error-handler';
 import requestLoggerPlugin from './plugins/request-logger';
 import repositoryRoutes from './repositories';
 import sessionRoutes from './sessions';
+import { ClaudeCodeSQLiteWorker } from './workers';
 
 export interface ServerConfig {
   port: number;
@@ -27,8 +28,9 @@ export interface ServerConfig {
   NODE_ENV?: string;
 }
 
-// Global database instance to share across the app
+// Global instances to share across the app
 let globalDb: DatabaseManager | null = null;
+let globalWorker: ClaudeCodeSQLiteWorker | null = null;
 
 export const createApp: FastifyPluginAsync<{
   dataDir?: string;
@@ -86,12 +88,19 @@ export const createApp: FastifyPluginAsync<{
   await fastify.register(repositoryRoutes, { prefix: '/api/claude-code/repositories' });
   await fastify.register(sessionRoutes, { prefix: '/api/claude-code/sessions' });
 
-  // Health check database connection
+  // Health check database connection and start worker
   fastify.addHook('onReady', async () => {
     if (globalDb) {
       const isHealthy = await globalDb.checkHealth();
       if (isHealthy) {
         fastify.log.info('Database connection verified');
+
+        // Start the worker after database is ready
+        if (!globalWorker) {
+          globalWorker = new ClaudeCodeSQLiteWorker();
+          await globalWorker.start();
+          fastify.log.info('Worker started successfully');
+        }
       } else {
         fastify.log.error('Database health check failed');
         throw new Error('Database initialization failed');
@@ -99,8 +108,16 @@ export const createApp: FastifyPluginAsync<{
     }
   });
 
-  // Close database on shutdown
+  // Close database and worker on shutdown
   fastify.addHook('onClose', async () => {
+    // Stop worker first
+    if (globalWorker) {
+      await globalWorker.shutdown();
+      globalWorker = null;
+      fastify.log.info('Worker stopped');
+    }
+
+    // Then close database
     if (globalDb) {
       globalDb.close();
       globalDb = null;
@@ -127,8 +144,9 @@ export const createApp: FastifyPluginAsync<{
   }
 };
 
-// Export database instance for access in routes
+// Export instances for access in routes
 export const getDatabase = () => globalDb;
+export const getWorker = () => globalWorker;
 
 export async function createServer(config: ServerConfig) {
   const fastify = Fastify({

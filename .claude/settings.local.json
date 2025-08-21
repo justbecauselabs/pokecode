@@ -2,6 +2,9 @@
   "permissions": {
     "additionalDirectories": [
       "/Users/billy/.claude"
+    ],
+    "allow": [
+      "Bash(mkdir:*)"
     ]
   }
 }

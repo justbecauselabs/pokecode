@@ -10,9 +10,13 @@
       "packages/*/src/**/*.ts",
       "packages/*/src/**/*.tsx",
       "packages/*/scripts/**/*.ts",
+      "packages/*/tests/**/*.ts",
+      "packages/*/tests/**/*.tsx",
       "packages/*/drizzle.config.ts",
       "backend/src/**/*.ts",
       "backend/src/**/*.tsx",
+      "backend/tests/**/*.ts",
+      "backend/tests/**/*.tsx",
       "mobile/**/*.ts",
       "mobile/**/*.tsx"
     ],
@@ -121,6 +125,18 @@
     },
     {
       "includes": ["mobile/**/*"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noConsole": {
+              "level": "warn",
+              "options": {
+                "allow": ["error", "warn", "info", "log"]
+              }
+            }
+          }
+        }
+      },
       "javascript": {
         "formatter": {
           "jsxQuoteStyle": "double",

@@ -8,7 +8,9 @@ export {
   type DatabaseConfig,
   DatabaseManager,
   db,
+  jobQueue,
   schema,
+  sessions,
   sqlite,
 } from './database';
 // Service exports
