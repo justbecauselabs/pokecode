@@ -1,0 +1,66 @@
+{
+  "name": "@pokecode/core",
+  "version": "0.1.0",
+  "description": "Core business logic and database layer for PokéCode",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./config": {
+      "types": "./dist/config/index.d.ts",
+      "default": "./dist/config/index.js"
+    },
+    "./database": {
+      "types": "./dist/database/index.d.ts",
+      "default": "./dist/database/index.js"
+    },
+    "./database/migrations": {
+      "types": "./dist/database/migrations/index.d.ts",
+      "default": "./dist/database/migrations/index.js"
+    },
+    "./services/*": {
+      "types": "./dist/services/*.d.ts",
+      "default": "./dist/services/*.js"
+    }
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "build": "bun run db:generate && bun build src/index.ts --outdir dist --target bun --format esm",
+    "build:types": "tsc --emitDeclarationOnly --outDir dist --skipLibCheck",
+    "dev": "bun build src/index.ts --outdir dist --target bun --format esm --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "bun test",
+    "lint": "echo 'Linting @pokecode/core...'",
+    "db:generate": "bunx drizzle-kit generate && bun scripts/generate-migration-module.ts",
+    "db:push": "bunx drizzle-kit push",
+    "db:studio": "bunx drizzle-kit studio",
+    "generate-migration-module": "bun scripts/generate-migration-module.ts"
+  },
+  "dependencies": {
+    "@pokecode/api": "workspace:*",
+    "drizzle-orm": "^0.30.10",
+    "@anthropic-ai/claude-code": "^1.0.72",
+    "@anthropic-ai/sdk": "^0.60.0",
+    "pino": "^9.8.0",
+    "pino-pretty": "^11.0.0",
+    "zod": "^4.0.17",
+    "yaml": "^2.4.1",
+    "@paralleldrive/cuid2": "^2.2.2"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "drizzle-kit": "^0.21.2"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "engines": {
+    "bun": ">=1.0.0"
+  }
+}

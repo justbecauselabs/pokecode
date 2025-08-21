@@ -1,0 +1,48 @@
+{
+  "name": "@pokecode/server",
+  "version": "0.1.0",
+  "description": "HTTP server layer for PokéCode using Fastify",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "build": "bun build src/index.ts --outdir dist --target bun --format esm",
+    "build:types": "tsc --emitDeclarationOnly --outDir dist",
+    "dev": "bun build src/index.ts --outdir dist --target bun --format esm --watch",
+    "start": "bun run dist/index.js",
+    "typecheck": "tsc --noEmit",
+    "test": "bun test",
+    "lint": "echo 'Linting @pokecode/server...'"
+  },
+  "dependencies": {
+    "@pokecode/api": "workspace:*",
+    "@pokecode/core": "workspace:*",
+    "fastify": "^4.27.0",
+    "fastify-plugin": "^4.5.1",
+    "fastify-sse-v2": "^4.2.1",
+    "fastify-type-provider-zod": "^5.0.3",
+    "@fastify/cors": "^9.0.1",
+    "@fastify/helmet": "^11.1.1",
+    "@fastify/rate-limit": "^9.1.0",
+    "pino": "^9.8.0",
+    "zod": "^4.0.17"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "engines": {
+    "bun": ">=1.0.0"
+  }
+}

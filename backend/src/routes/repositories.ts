@@ -3,7 +3,7 @@ import type { FastifyPluginAsync } from 'fastify';
 import { repositoryService } from '@/services/repository.service';
 
 const repositoryRoutes: FastifyPluginAsync = async (fastify) => {
-  // List all git repositories in GITHUB_REPOS_DIRECTORY
+  // List all git repositories from configured paths
   fastify.get(
     '/',
     {

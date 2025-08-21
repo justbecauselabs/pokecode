@@ -1,41 +1,33 @@
 import type { ListRepositoriesResponse, RepositoryResponse } from '@pokecode/api';
-import { config } from '@/config';
 import { directoryExists, joinPath, listDirectory, validateGitRepository } from '@/utils/file';
+import { getRepositoryPaths } from '@/utils/env';
 
 export class RepositoryService {
   /**
-   * List all git repositories in the GITHUB_REPOS_DIRECTORY using File Service
+   * List all git repositories from configured repository paths
    */
   async listRepositories(): Promise<ListRepositoriesResponse> {
-    const githubReposDirectory = config.GITHUB_REPOS_DIRECTORY;
-
     try {
-      // Check if the github repos directory exists
-      if (!(await directoryExists(githubReposDirectory))) {
-        throw new Error(`Directory does not exist: ${githubReposDirectory}`);
-      }
-
-      // Use File Utils to list directory contents
-      const items = await listDirectory(githubReposDirectory, {
-        includeHidden: false,
-      });
-
-      // Filter for directories only
-      const directories = items.filter((item) => item.isDirectory);
-
+      const repositoryPaths = await getRepositoryPaths();
       const repositories: RepositoryResponse[] = [];
 
-      // Check each directory for git repository status
-      for (const dir of directories) {
-        const folderPath = joinPath(githubReposDirectory, dir.name);
+      // Check each configured repository path
+      for (const repoPath of repositoryPaths) {
+        if (!(await directoryExists(repoPath))) {
+          console.warn(`Repository path does not exist: ${repoPath}`);
+          continue;
+        }
 
         // Use the dedicated git validation method
-        const { exists, isGitRepository } = await validateGitRepository(folderPath);
+        const { exists, isGitRepository } = await validateGitRepository(repoPath);
 
         if (exists) {
+          // Extract folder name from path
+          const folderName = repoPath.split('/').pop() || repoPath;
+          
           repositories.push({
-            folderName: dir.name,
-            path: folderPath,
+            folderName,
+            path: repoPath,
             isGitRepository,
           });
         }
@@ -47,28 +39,35 @@ export class RepositoryService {
       return {
         repositories,
         total: repositories.length,
-        githubReposDirectory,
+        githubReposDirectory: '~/.pokecode/config.json repositories list',
       };
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      throw new Error(`Failed to read repositories directory: ${message}`);
+      throw new Error(`Failed to read repositories: ${message}`);
     }
   }
 
   /**
-   * Resolve a folder name to an absolute path within GITHUB_REPOS_DIRECTORY
+   * Resolve a folder name to an absolute path from configured repositories
    */
-  resolveFolderPath(folderName: string): string {
+  async resolveFolderPath(folderName: string): Promise<string> {
     if (!folderName || typeof folderName !== 'string') {
       throw new Error('Folder name is required');
     }
 
-    // Basic validation to prevent path traversal
-    if (folderName.includes('..') || folderName.includes('/') || folderName.includes('\\')) {
-      throw new Error('Invalid folder name: cannot contain path separators or traversal');
+    const repositoryPaths = await getRepositoryPaths();
+    
+    // Find the repository path that ends with this folder name
+    const matchingPath = repositoryPaths.find(path => {
+      const pathFolderName = path.split('/').pop();
+      return pathFolderName === folderName;
+    });
+
+    if (!matchingPath) {
+      throw new Error(`Repository folder '${folderName}' not found in configured repositories`);
     }
 
-    return joinPath(config.GITHUB_REPOS_DIRECTORY, folderName);
+    return matchingPath;
   }
 
   /**
@@ -78,7 +77,7 @@ export class RepositoryService {
     folderName: string,
   ): Promise<{ exists: boolean; isGitRepository: boolean }> {
     try {
-      const folderPath = this.resolveFolderPath(folderName);
+      const folderPath = await this.resolveFolderPath(folderName);
       return await validateGitRepository(folderPath);
     } catch (error) {
       // Log validation error but don't throw, just return false

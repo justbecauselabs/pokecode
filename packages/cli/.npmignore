@@ -1,0 +1,42 @@
+# Source files
+src/
+*.ts
+!dist/**/*.d.ts
+
+# Development files
+.gitignore
+tsconfig.json
+bun.lock
+bunfig.toml
+
+# Testing
+test/
+tests/
+**/*.test.*
+**/*.spec.*
+
+# Documentation (keep README.md)
+docs/
+*.md
+!README.md
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Node modules (should not be in package anyway)
+node_modules/
+
+# Development scripts
+scripts/

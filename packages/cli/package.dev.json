@@ -1,0 +1,58 @@
+{
+  "name": "@pokecode/cli",
+  "version": "0.1.0",
+  "description": "PokéCode CLI tool for running local development servers",
+  "keywords": ["claude", "code", "development", "server", "cli"],
+  "author": "Just Because Labs",
+  "license": "MIT",
+  "homepage": "https://github.com/justbecauselabs/pokecode",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/justbecauselabs/pokecode.git",
+    "directory": "packages/cli"
+  },
+  "bin": {
+    "pokecode": "./dist/cli.js"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "bun run build:bundle && bun run build:types",
+    "build:bundle": "bun build src/cli.ts --outdir dist --target bun --format esm --minify --splitting && bun build src/server-entry.ts --outdir dist --target bun --format esm --minify --external react --external react-dom",
+    "build:types": "tsc --emitDeclarationOnly --outDir dist",
+    "dev": "bun --watch src/cli.ts",
+    "typecheck": "tsc --noEmit",
+    "lint": "bun run typecheck && echo '✅ @pokecode/cli: TypeScript checks passed'",
+    "bundle-deps": "bun scripts/bundle-dependencies.js",
+    "prepare:publish": "bun run build && bun run bundle-deps && cp package.production.json package.json",
+    "prepare:dev": "cp package.dev.json package.json || echo 'No dev package.json found'",
+    "pack": "bun run prepare:publish && npm pack",
+    "test:global": "bun run pack && npm install -g pokecode-*.tgz"
+  },
+  "dependencies": {
+    "@pokecode/server": "workspace:*",
+    "commander": "^12.0.0",
+    "chalk": "^5.3.0",
+    "ora": "^8.0.1",
+    "cross-spawn": "^7.0.3",
+    "find-up": "^7.0.0",
+    "node-fetch": "^3.3.2"
+  },
+  "devDependencies": {
+    "@types/cross-spawn": "^6.0.6",
+    "@types/better-sqlite3": "^7.6.8",
+    "typescript": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "preferGlobal": true,
+  "publishConfig": {
+    "access": "public"
+  }
+}
