@@ -1,4 +1,4 @@
-import { getModelDisplayName } from '@pokecode/api';
+import { ClaudeModel, getModelDisplayName } from '@pokecode/api';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Alert, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
@@ -16,7 +16,7 @@ export default function SettingsScreen() {
 
   const [formData, setFormData] = useState<SettingsFormData>({
     customApiBaseUrl: customApiBaseUrl || '',
-    defaultModel: defaultModel || 'sonnet',
+    defaultModel: defaultModel || ClaudeModel.SONNET,
   });
 
   const handleSave = () => {
@@ -48,7 +48,7 @@ export default function SettingsScreen() {
           style: 'destructive',
           onPress: () => {
             resetSettings();
-            setFormData({ customApiBaseUrl: '', defaultModel: 'sonnet' });
+            setFormData({ customApiBaseUrl: '', defaultModel: ClaudeModel.SONNET });
             Alert.alert('Settings Reset', 'All settings have been reset to default values.');
           },
         },

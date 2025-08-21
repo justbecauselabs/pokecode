@@ -24,5 +24,6 @@ export * from './services/repository.service';
 export * from './services/session.service';
 // Types exports
 export * from './types';
+export { getClaudeCodePath, getRepositoryPaths } from './utils/env';
 // Utils exports
 export * from './utils/logger';

@@ -1,6 +1,5 @@
 import { homedir } from 'node:os';
 import { join } from 'node:path';
-import { logger } from './logger';
 
 export function isTest(): boolean {
   return (
@@ -11,33 +10,29 @@ export function isTest(): boolean {
   );
 }
 
-export async function inferClaudeCodePath(): Promise<string> {
-  logger.debug('Inferring Claude Code path');
-  const proc = Bun.spawn(['which', 'claude'], {
-    stdout: 'pipe',
-    stderr: 'pipe',
-  });
+export async function getClaudeCodePath(): Promise<string> {
+  try {
+    const configPath = join(homedir(), '.pokecode', 'config.json');
+    const configFile = Bun.file(configPath);
 
-  const output = await new Response(proc.stdout).text();
-  const exitCode = await proc.exited;
+    if (!(await configFile.exists())) {
+      throw new Error('Configuration not found. Please run `pokecode setup` first.');
+    }
 
-  if (exitCode !== 0) {
-    throw new Error('claude command not found in PATH');
+    const configContent = await configFile.text();
+    const config = JSON.parse(configContent);
+
+    if (!config.claudeCodePath) {
+      throw new Error('Claude Code path not configured. Please run `pokecode setup` first.');
+    }
+
+    return config.claudeCodePath;
+  } catch (error) {
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error('Failed to read Claude Code path from config.');
   }
-
-  // Extract the path from output like "claude: aliased to /Users/billy/.claude/local/claude"
-  const match = output.trim().match(/aliased to (.+)/) || [null, output.trim()];
-  const claudePath = match[1] || output.trim();
-
-  // Replace the last "/claude" with "node_modules/@anthropic-ai/claude-code/cli.js"
-  const claudeCodePath = claudePath.replace(
-    /\/claude$/,
-    '/node_modules/@anthropic-ai/claude-code/cli.js',
-  );
-
-  logger.debug('Claude Code path inferred', { claudeCodePath });
-
-  return claudeCodePath;
 }
 
 export async function getRepositoryPaths(): Promise<string[]> {

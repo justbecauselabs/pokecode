@@ -4,6 +4,7 @@
 
 import { homedir } from 'node:os';
 import { join, resolve } from 'node:path';
+import { getClaudeCodePath } from '@pokecode/core';
 import chalk from 'chalk';
 import ora from 'ora';
 import { startServer } from '../server';
@@ -108,14 +109,33 @@ export const serve = async (options: ServeOptions): Promise<void> => {
 
   const { cors, helmet } = options;
 
+  // Get Claude Code path
+  const claudeCodePath = await getClaudeCodePath();
+
   // Determine data directory
   const configDir = daemonManager.getConfigFile().replace('/config.json', '');
   const finalDataDir = dataDir || join(configDir, 'data');
 
   if (options.daemon) {
-    await startDaemon({ port, host, dataDir: finalDataDir, logLevel, cors, helmet });
+    await startDaemon({
+      port,
+      host,
+      dataDir: finalDataDir,
+      logLevel,
+      cors,
+      helmet,
+      claudeCodePath,
+    });
   } else {
-    await startEmbedded({ port, host, dataDir: finalDataDir, logLevel, cors, helmet });
+    await startEmbedded({
+      port,
+      host,
+      dataDir: finalDataDir,
+      logLevel,
+      cors,
+      helmet,
+      claudeCodePath,
+    });
   }
 };
 
@@ -126,6 +146,7 @@ const startDaemon = async (config: {
   logLevel: string;
   cors: boolean;
   helmet: boolean;
+  claudeCodePath: string;
 }): Promise<void> => {
   const spinner = ora('Starting PokéCode server in daemon mode...').start();
   const daemonManager = new DaemonManager();
@@ -207,6 +228,7 @@ const startEmbedded = async (config: {
   logLevel: string;
   cors: boolean;
   helmet: boolean;
+  claudeCodePath: string;
 }): Promise<void> => {
   const spinner = ora('Starting PokéCode server...').start();
 

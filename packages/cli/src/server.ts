@@ -1,4 +1,5 @@
 import { join } from 'node:path';
+import { getClaudeCodePath } from '@pokecode/core';
 import { createServer } from '@pokecode/server';
 
 export interface ServerConfig {
@@ -8,12 +9,14 @@ export interface ServerConfig {
   logLevel: string;
   cors: boolean;
   helmet: boolean;
+  claudeCodePath: string;
   NODE_ENV?: string;
 }
 
-export function makeConfigFromEnv(): ServerConfig {
+export async function makeConfigFromEnv(): Promise<ServerConfig> {
   const home = process.env.HOME || process.env.USERPROFILE || '/tmp';
   const defaultData = join(home, '.pokecode', 'data');
+  const claudeCodePath = await getClaudeCodePath();
   return {
     port: Number(process.env.POKECODE_PORT) || 3001,
     host: process.env.POKECODE_HOST || '0.0.0.0',
@@ -21,6 +24,7 @@ export function makeConfigFromEnv(): ServerConfig {
     logLevel: process.env.POKECODE_LOG_LEVEL || 'info',
     cors: process.env.POKECODE_CORS !== 'false',
     helmet: process.env.POKECODE_HELMET !== 'false',
+    claudeCodePath,
     NODE_ENV: process.env.NODE_ENV || 'production',
   };
 }

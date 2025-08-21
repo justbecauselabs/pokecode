@@ -149,9 +149,7 @@ export const getDatabase = () => globalDb;
 export const getWorker = () => globalWorker;
 
 export async function createServer(config: ServerConfig) {
-  console.log('Creating server with config:', config);
-  const envConfig = await getConfig();
-  console.log('Config initialized:', envConfig);
+  const _envConfig = await getConfig();
   const fastify = Fastify({
     logger: {
       level: config.logLevel || 'info',

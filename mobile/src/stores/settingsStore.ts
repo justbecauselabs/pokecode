@@ -1,3 +1,4 @@
+import { ClaudeModel, type ClaudeModel as ClaudeModelType } from '@pokecode/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
@@ -6,13 +7,13 @@ import type { AppSettings } from '../types/settings';
 interface SettingsStore extends AppSettings {
   // Actions
   setCustomApiBaseUrl: (url: string | undefined) => void;
-  setDefaultModel: (model: string | undefined) => void;
+  setDefaultModel: (model: ClaudeModelType | undefined) => void;
   resetSettings: () => void;
 }
 
 const defaultSettings: AppSettings = {
   customApiBaseUrl: undefined,
-  defaultModel: 'sonnet',
+  defaultModel: ClaudeModel.SONNET,
 };
 
 export const useSettingsStore = create<SettingsStore>()(
@@ -23,8 +24,8 @@ export const useSettingsStore = create<SettingsStore>()(
       setCustomApiBaseUrl: (customApiBaseUrl: string | undefined) =>
         set({ customApiBaseUrl: customApiBaseUrl || undefined }),
 
-      setDefaultModel: (defaultModel: string | undefined) =>
-        set({ defaultModel: defaultModel || 'sonnet' }),
+      setDefaultModel: (defaultModel: ClaudeModelType | undefined) =>
+        set({ defaultModel: defaultModel || ClaudeModel.SONNET }),
 
       resetSettings: () => set(defaultSettings),
     }),
@@ -48,7 +49,7 @@ export function useApiBaseUrl(): string | undefined {
  * Hook to get the default model for new sessions
  * Returns the user's preferred default model
  */
-export function useDefaultModel(): string {
+export function useDefaultModel(): ClaudeModelType {
   const { defaultModel } = useSettingsStore();
-  return defaultModel || 'sonnet';
+  return defaultModel || ClaudeModel.SONNET;
 }

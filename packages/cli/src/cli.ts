@@ -5,7 +5,7 @@ import { makeConfigFromEnv, startServer } from './server';
 // Handle internal server mode
 if (process.argv.includes('--internal-run-server')) {
   // Run as daemon child process (no CLI)
-  await startServer(makeConfigFromEnv());
+  await startServer(await makeConfigFromEnv());
   // Server keeps the process alive naturally - no need to exit
 } else {
   // Normal CLI mode
@@ -15,6 +15,7 @@ if (process.argv.includes('--internal-run-server')) {
   const { stop } = await import('./commands/stop');
   const { logs } = await import('./commands/logs');
   const { config } = await import('./commands/config');
+  const { setup } = await import('./commands/setup');
 
   const pkg = {
     version: process.env.npm_package_version || '0.1.0',
@@ -65,6 +66,8 @@ if (process.argv.includes('--internal-run-server')) {
     .option('--show', 'Show current configuration')
     .option('--edit', 'Edit configuration file')
     .action(config);
+
+  program.command('setup').description('Setup PokéCode with Claude Code path').action(setup);
 
   // Parse normally so --help and errors are handled by commander
   program.parse();

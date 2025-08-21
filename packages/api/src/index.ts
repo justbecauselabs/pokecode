@@ -1,7 +1,5 @@
 // Agent schemas
 
-// Model definitions
-export * from './models/claude.models';
 export * from './schemas/agent.schema';
 // Re-export for convenience
 export * as AgentSchemas from './schemas/agent.schema';
@@ -11,6 +9,8 @@ export * as CommandSchemas from './schemas/command.schema';
 // Message schemas
 export * from './schemas/message.schema';
 export * as MessageSchemas from './schemas/message.schema';
+// Model definitions
+export * from './schemas/model.schema';
 // Repository schemas
 export * from './schemas/repository.schema';
 export * as RepositorySchemas from './schemas/repository.schema';

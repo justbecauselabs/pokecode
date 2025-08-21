@@ -1,27 +1,24 @@
-import { inferClaudeCodePath } from '../utils/env';
+import { getClaudeCodePath } from '../utils/env';
 import { validateEnv } from './env.schema';
 
 // Base config without inference
 const baseConfig = validateEnv();
 
-// Initialize config with inferred values
+// Initialize config with Claude Code path from config file
 let _config = baseConfig;
 let _initialized = false;
 
 async function initializeConfig() {
   if (_initialized) return _config;
 
-  // Infer CLAUDE_CODE_PATH if not provided
+  // Get CLAUDE_CODE_PATH from config file if not provided in env
   if (!baseConfig.CLAUDE_CODE_PATH) {
     try {
-      console.log('Inferring Claude Code path');
-      const inferredPath = await inferClaudeCodePath();
-      _config = { ...baseConfig, CLAUDE_CODE_PATH: inferredPath };
+      const claudeCodePath = await getClaudeCodePath();
+      _config = { ...baseConfig, CLAUDE_CODE_PATH: claudeCodePath };
     } catch (error) {
-      console.error('Failed to infer CLAUDE_CODE_PATH:', error);
-      throw new Error(
-        'CLAUDE_CODE_PATH must be provided or claude command must be available in PATH',
-      );
+      console.error('Failed to get CLAUDE_CODE_PATH:', error);
+      throw new Error('CLAUDE_CODE_PATH must be provided or run `pokecode setup` to configure it');
     }
   }
 
