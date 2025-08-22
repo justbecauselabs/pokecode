@@ -1,41 +1,15 @@
 import { ClaudeModel, getModelDisplayName } from '@pokecode/api';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
-import { Alert, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
-import { SafeAreaView } from '@/components/common';
+import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
+import { Row, SafeAreaView } from '@/components/common';
 import { useSettingsStore } from '@/stores/settingsStore';
-import type { SettingsFormData } from '@/types/settings';
 
 /**
  * Settings screen for configuring app preferences
  */
 export default function SettingsScreen() {
   const router = useRouter();
-  const { customApiBaseUrl, defaultModel, setCustomApiBaseUrl, setDefaultModel, resetSettings } =
-    useSettingsStore();
-
-  const [formData, setFormData] = useState<SettingsFormData>({
-    customApiBaseUrl: customApiBaseUrl || '',
-    defaultModel: defaultModel || ClaudeModel.SONNET,
-  });
-
-  const handleSave = () => {
-    const trimmedUrl = formData.customApiBaseUrl.trim();
-
-    // Validate URL format if provided
-    if (trimmedUrl && !isValidUrl(trimmedUrl)) {
-      Alert.alert('Invalid URL', 'Please enter a valid URL (e.g., https://api.example.com)');
-      return;
-    }
-
-    // Save to store
-    setCustomApiBaseUrl(trimmedUrl || undefined);
-    setDefaultModel(formData.defaultModel);
-
-    Alert.alert('Settings Saved', 'Your settings have been updated successfully.', [
-      { text: 'OK', onPress: () => router.back() },
-    ]);
-  };
+  const { customApiBaseUrl, defaultModel, resetSettings } = useSettingsStore();
 
   const handleReset = () => {
     Alert.alert(
@@ -48,7 +22,6 @@ export default function SettingsScreen() {
           style: 'destructive',
           onPress: () => {
             resetSettings();
-            setFormData({ customApiBaseUrl: '', defaultModel: ClaudeModel.SONNET });
             Alert.alert('Settings Reset', 'All settings have been reset to default values.');
           },
         },
@@ -56,194 +29,172 @@ export default function SettingsScreen() {
     );
   };
 
-  const isValidUrl = (url: string): boolean => {
-    try {
-      new URL(url);
-      return true;
-    } catch {
-      return false;
-    }
-  };
-
-  const hasChanges =
-    formData.customApiBaseUrl !== (customApiBaseUrl || '') ||
-    formData.defaultModel !== (defaultModel || 'sonnet');
-
   return (
     <SafeAreaView className="flex-1 bg-background">
       <View className="flex-1 bg-background">
-        {/* Header */}
-        <View className="flex-row items-center justify-between p-4 border-b border-border">
-          <View className="flex-1">
-            <Text className="text-2xl font-bold text-foreground mb-1">Settings</Text>
-            <Text className="text-muted-foreground">Configure app preferences</Text>
-          </View>
-          <Pressable onPress={() => router.back()} className="ml-4 p-2 rounded-lg bg-muted">
-            <Text className="text-muted-foreground text-sm font-medium font-mono">Cancel</Text>
-          </Pressable>
-        </View>
-
         {/* Settings Content */}
         <ScrollView className="flex-1 p-4">
-          {/* API Configuration */}
-          <View className="bg-card rounded-lg p-4 border border-border mb-4">
-            <Text className="text-lg font-semibold text-card-foreground mb-4 font-mono">
-              API Configuration
-            </Text>
-
-            {/* Custom API Base URL */}
-            <View className="mb-6">
-              <Text className="text-sm font-medium text-card-foreground mb-2 font-mono">
-                Custom API Base URL
+          {/* API Configuration Section */}
+          <View className="bg-card rounded-lg border border-border mb-4">
+            <View className="p-4 border-b border-border">
+              <Text className="text-lg font-semibold text-card-foreground font-mono">
+                API Configuration
               </Text>
-              <Text className="text-xs text-muted-foreground mb-3 font-mono">
-                Override the default API endpoint. Leave empty to use default.
-              </Text>
-              <TextInput
-                value={formData.customApiBaseUrl}
-                onChangeText={(text) => setFormData({ ...formData, customApiBaseUrl: text })}
-                placeholder="https://api.example.com"
-                placeholderTextColor="#888"
-                className="bg-background border border-border rounded-lg px-3 py-3 text-foreground font-mono"
-                autoCapitalize="none"
-                autoCorrect={false}
-                keyboardType="url"
-              />
-            </View>
-
-            {/* Current Status */}
-            <View className="mb-6 p-3 bg-muted rounded-lg">
-              <Text className="text-sm font-medium text-muted-foreground mb-1 font-mono">
-                Current API Endpoint:
-              </Text>
-              <Text className="text-sm text-foreground font-mono">
-                {customApiBaseUrl || 'Default (built-in)'}
+              <Text className="text-xs text-muted-foreground mt-1 font-mono">
+                Configure backend API settings
               </Text>
             </View>
 
-            {/* Default Model Selection */}
-            <View className="mb-6">
-              <Text className="text-sm font-medium text-card-foreground mb-2 font-mono">
-                Default Claude Model
-              </Text>
-              <Text className="text-xs text-muted-foreground mb-3 font-mono">
-                Default model for messages. You can override per message.
-              </Text>
-              <View className="bg-background border border-border rounded-lg px-3 py-3 flex-row items-center justify-between">
-                <Text className="text-foreground font-mono flex-1">
-                  {getModelDisplayName(formData.defaultModel)}
-                </Text>
-                <Text className="text-muted-foreground font-mono text-sm">Current</Text>
-              </View>
-            </View>
+            <Row
+              title="Backend URL"
+              subtitle={customApiBaseUrl || 'Default (built-in)'}
+              leading={{
+                type: 'icon',
+                library: 'MaterialIcons',
+                name: 'cloud',
+                size: 24,
+                color: '#666666',
+              }}
+              trailing={{
+                type: 'text',
+                content: getModelDisplayName(defaultModel || ClaudeModel.SONNET),
+                className: 'text-xs font-mono',
+              }}
+              showCaret
+              onPress={() => router.push('/settings/backend-url')}
+              className="border-b border-border"
+            />
 
-            {/* Action Buttons */}
-            <View className="space-y-3">
-              <Pressable
-                onPress={handleSave}
-                disabled={!hasChanges}
-                className={`py-3 px-4 rounded-lg ${hasChanges ? 'bg-primary' : 'bg-muted'}`}
-              >
-                <Text
-                  className={`text-center font-medium font-mono ${
-                    hasChanges ? 'text-primary-foreground' : 'text-muted-foreground'
-                  }`}
-                >
-                  Save Changes
-                </Text>
-              </Pressable>
-
-              <Pressable
-                onPress={handleReset}
-                className="py-3 px-4 rounded-lg border border-destructive"
-              >
-                <Text className="text-center font-medium text-destructive font-mono">
-                  Reset to Defaults
-                </Text>
-              </Pressable>
-            </View>
+            <Row
+              title="Reset All Settings"
+              subtitle="Reset all settings to default values"
+              leading={{
+                type: 'icon',
+                library: 'MaterialIcons',
+                name: 'restore',
+                size: 24,
+                color: '#ef4444',
+              }}
+              onPress={handleReset}
+              titleClassName="text-destructive"
+              subtitleClassName="text-destructive/70"
+            />
           </View>
 
           {/* UI Playground Section */}
-          <View className="bg-card rounded-lg p-4 border border-border">
-            <Text className="text-lg font-semibold text-card-foreground mb-4 font-mono">
-              UI Playground
-            </Text>
-            <Text className="text-xs text-muted-foreground mb-4 font-mono">
-              Explore and test UI components used throughout the app
-            </Text>
-
-            <View className="space-y-2">
-              <Pressable
-                onPress={() => router.push('/playground/fonts')}
-                className="py-3 px-4 rounded-lg bg-muted border border-border active:opacity-80"
-              >
-                <Text className="text-foreground font-mono font-medium">Typography & Fonts</Text>
-                <Text className="text-xs text-muted-foreground font-mono mt-1">
-                  Explore different font sizes, weights, and styles
-                </Text>
-              </Pressable>
-
-              <Pressable
-                onPress={() => router.push('/playground/buttons')}
-                className="py-3 px-4 rounded-lg bg-muted border border-border active:opacity-80"
-              >
-                <Text className="text-foreground font-mono font-medium">Buttons</Text>
-                <Text className="text-xs text-muted-foreground font-mono mt-1">
-                  Test different button variants, sizes, and states
-                </Text>
-              </Pressable>
-
-              <Pressable
-                onPress={() => router.push('/playground/pills')}
-                className="py-3 px-4 rounded-lg bg-muted border border-border active:opacity-80"
-              >
-                <Text className="text-foreground font-mono font-medium">Pills</Text>
-                <Text className="text-xs text-muted-foreground font-mono mt-1">
-                  Interactive pill components with different variants
-                </Text>
-              </Pressable>
-
-              <Pressable
-                onPress={() => router.push('/playground/rows')}
-                className="py-3 px-4 rounded-lg bg-muted border border-border active:opacity-80"
-              >
-                <Text className="text-foreground font-mono font-medium">Rows</Text>
-                <Text className="text-xs text-muted-foreground font-mono mt-1">
-                  Flexible row components with leading/trailing elements
-                </Text>
-              </Pressable>
-
-              <Pressable
-                onPress={() => router.push('/playground/colors')}
-                className="py-3 px-4 rounded-lg bg-muted border border-border active:opacity-80"
-              >
-                <Text className="text-foreground font-mono font-medium">Colors</Text>
-                <Text className="text-xs text-muted-foreground font-mono mt-1">
-                  Theme color palette and usage examples
-                </Text>
-              </Pressable>
-
-              <Pressable
-                onPress={() => router.push('/playground/message-view')}
-                className="py-3 px-4 rounded-lg bg-muted border border-border active:opacity-80"
-              >
-                <Text className="text-foreground font-mono font-medium">Message View</Text>
-                <Text className="text-xs text-muted-foreground font-mono mt-1">
-                  API message components for user and assistant conversations
-                </Text>
-              </Pressable>
-
-              <Pressable
-                onPress={() => router.push('/playground/textfield')}
-                className="py-3 px-4 rounded-lg bg-muted border border-border active:opacity-80"
-              >
-                <Text className="text-foreground font-mono font-medium">TextField</Text>
-                <Text className="text-xs text-muted-foreground font-mono mt-1">
-                  Interactive text input with multiline, autogrow, and size options
-                </Text>
-              </Pressable>
+          <View className="bg-card rounded-lg border border-border">
+            <View className="p-4 border-b border-border">
+              <Text className="text-lg font-semibold text-card-foreground font-mono">
+                UI Playground
+              </Text>
+              <Text className="text-xs text-muted-foreground mt-1 font-mono">
+                Explore and test UI components used throughout the app
+              </Text>
             </View>
+
+            <Row
+              title="Typography & Fonts"
+              subtitle="Explore different font sizes, weights, and styles"
+              leading={{
+                type: 'icon',
+                library: 'MaterialIcons',
+                name: 'text-format',
+                size: 24,
+                color: '#666666',
+              }}
+              showCaret
+              onPress={() => router.push('/playground/fonts')}
+              className="border-b border-border"
+            />
+
+            <Row
+              title="Buttons"
+              subtitle="Test different button variants, sizes, and states"
+              leading={{
+                type: 'icon',
+                library: 'MaterialIcons',
+                name: 'radio-button-unchecked',
+                size: 24,
+                color: '#666666',
+              }}
+              showCaret
+              onPress={() => router.push('/playground/buttons')}
+              className="border-b border-border"
+            />
+
+            <Row
+              title="Pills"
+              subtitle="Interactive pill components with different variants"
+              leading={{
+                type: 'icon',
+                library: 'MaterialIcons',
+                name: 'label',
+                size: 24,
+                color: '#666666',
+              }}
+              showCaret
+              onPress={() => router.push('/playground/pills')}
+              className="border-b border-border"
+            />
+
+            <Row
+              title="Rows"
+              subtitle="Flexible row components with leading/trailing elements"
+              leading={{
+                type: 'icon',
+                library: 'MaterialIcons',
+                name: 'view-list',
+                size: 24,
+                color: '#666666',
+              }}
+              showCaret
+              onPress={() => router.push('/playground/rows')}
+              className="border-b border-border"
+            />
+
+            <Row
+              title="Colors"
+              subtitle="Theme color palette and usage examples"
+              leading={{
+                type: 'icon',
+                library: 'MaterialIcons',
+                name: 'palette',
+                size: 24,
+                color: '#666666',
+              }}
+              showCaret
+              onPress={() => router.push('/playground/colors')}
+              className="border-b border-border"
+            />
+
+            <Row
+              title="Message View"
+              subtitle="API message components for user and assistant conversations"
+              leading={{
+                type: 'icon',
+                library: 'MaterialIcons',
+                name: 'message',
+                size: 24,
+                color: '#666666',
+              }}
+              showCaret
+              onPress={() => router.push('/playground/message-view')}
+              className="border-b border-border"
+            />
+
+            <Row
+              title="TextField"
+              subtitle="Interactive text input with multiline, autogrow, and size options"
+              leading={{
+                type: 'icon',
+                library: 'MaterialIcons',
+                name: 'text-fields',
+                size: 24,
+                color: '#666666',
+              }}
+              showCaret
+              onPress={() => router.push('/playground/textfield')}
+            />
           </View>
         </ScrollView>
       </View>
