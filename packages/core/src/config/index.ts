@@ -46,8 +46,8 @@ const defaultConfig: Config = {
 };
 
 const fileConfigSchema = z.object({
-  repositories: z.array(z.string()).optional(),
-  claudeCodePath: z.string().optional(),
+  repositories: z.array(z.string()),
+  claudeCodePath: z.string(),
 });
 
 export type FileConfig = z.infer<typeof fileConfigSchema>;

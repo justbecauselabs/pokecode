@@ -15,9 +15,7 @@ overrideConfig({
   port: 3001,
   host: '0.0.0.0',
   dataDir: './dev-data',
-  logLevel: 'debug',
-  corsEnabled: true,
-  helmetEnabled: false, // Disable for easier development
+  logLevel: 'debug', // Disable for easier development
 });
 
 console.info('🚀 Starting PokéCode development server...');

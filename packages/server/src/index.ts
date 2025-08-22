@@ -1,4 +1,3 @@
-import helmet from '@fastify/helmet';
 import { checkDatabaseHealth, getConfig } from '@pokecode/core';
 import Fastify, { type FastifyPluginAsync } from 'fastify';
 import { FastifySSEPlugin } from 'fastify-sse-v2';
@@ -10,7 +9,6 @@ import {
 // Import routes
 import healthRoutes from './health';
 // Import plugins
-import corsPlugin from './plugins/cors';
 import errorHandlerPlugin from './plugins/error-handler';
 import requestLoggerPlugin from './plugins/request-logger';
 import repositoryRoutes from './repositories';
@@ -21,8 +19,6 @@ import { ClaudeCodeSQLiteWorker } from './workers';
 let globalWorker: ClaudeCodeSQLiteWorker | null = null;
 
 export const createApp: FastifyPluginAsync = async (fastify) => {
-  const config = await getConfig();
-
   // Set up Zod type provider
   fastify.setValidatorCompiler(validatorCompiler);
   fastify.setSerializerCompiler(serializerCompiler);
@@ -33,20 +29,8 @@ export const createApp: FastifyPluginAsync = async (fastify) => {
     highWaterMark: 16384,
   });
 
-  // Register security headers if enabled
-  if (config.helmetEnabled) {
-    await fastify.register(helmet, {
-      contentSecurityPolicy: false,
-      crossOriginEmbedderPolicy: false,
-    });
-  }
-
   // Register plugins in order
   await fastify.register(errorHandlerPlugin);
-
-  if (config.corsEnabled) {
-    await fastify.register(corsPlugin);
-  }
 
   await fastify.register(requestLoggerPlugin);
 

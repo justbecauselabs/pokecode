@@ -10,7 +10,6 @@
     "declarationMap": true,
     "emitDeclarationOnly": false,
     "outDir": "./dist",
-    "rootDir": "./src",
     "removeComments": false,
     "isolatedModules": true,
     "allowSyntheticDefaultImports": true,
@@ -35,8 +34,7 @@
     "allowUnusedLabels": false,
     "allowUnreachableCode": false,
     "skipLibCheck": true,
-    "verbatimModuleSyntax": true,
-    "composite": true
+    "verbatimModuleSyntax": true
   },
   "include": [
     "src/**/*"

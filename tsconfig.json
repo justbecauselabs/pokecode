@@ -22,7 +22,12 @@
     "sourceMap": true,
     "outDir": "./dist",
     "rootDir": ".",
-    "composite": true
+    "baseUrl": ".",
+    "paths": {
+      "@pokecode/api": ["./packages/api/src/index.ts"],
+      "@pokecode/core": ["./packages/core/src/index.ts"],
+      "@pokecode/server": ["./packages/server/src/index.ts"]
+    },
   },
   "include": [
     "packages/*/src/**/*"
@@ -31,11 +36,5 @@
     "node_modules",
     "dist",
     "mobile"
-  ],
-  "references": [
-    { "path": "./packages/api" },
-    { "path": "./packages/core" },
-    { "path": "./packages/server" },
-    { "path": "./packages/cli" }
   ]
 }
