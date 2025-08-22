@@ -7,6 +7,9 @@
 
 import { readdir, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
+import { createChildLogger } from '../src/utils/logger.js';
+
+const logger = createChildLogger('migration-generator');
 
 async function generateMigrationModule() {
   const migrationsDir = join(process.cwd(), 'src/database/migrations');
@@ -17,7 +20,7 @@ async function generateMigrationModule() {
     const files = await readdir(migrationsDir);
     const sqlFiles = files.filter((f) => f.endsWith('.sql')).sort(); // Sort to maintain order
 
-    console.log(`Found ${sqlFiles.length} migration files`);
+    logger.info(`Found ${sqlFiles.length} migration files`);
 
     const migrations = [];
 
@@ -31,7 +34,7 @@ async function generateMigrationModule() {
         sql: sql.trim(),
       });
 
-      console.log(`  - ${id}`);
+      logger.info(`  - ${id}`);
     }
 
     // Generate TypeScript module
@@ -54,9 +57,9 @@ export type Migration = typeof migrations[number];
 `;
 
     await writeFile(outputFile, moduleContent);
-    console.log(`✅ Generated migration module: ${outputFile}`);
+    logger.info(`✅ Generated migration module: ${outputFile}`);
   } catch (error) {
-    console.error('❌ Failed to generate migration module:', error);
+    logger.error('❌ Failed to generate migration module:', error);
     process.exit(1);
   }
 }

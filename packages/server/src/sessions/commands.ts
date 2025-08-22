@@ -28,10 +28,6 @@ const commandRoutes: FastifyPluginAsync = async (fastify) => {
     '/',
     {
       schema: {
-        summary: 'List available slash commands',
-        description:
-          'Discover slash commands from both user Claude home directory and project directory',
-        tags: ['Commands'],
         params: SessionIdParamsSchema,
         querystring: ListCommandsQuerySchema,
         response: {

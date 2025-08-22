@@ -7,6 +7,7 @@ import { readFile } from 'node:fs/promises';
 import { platform } from 'node:os';
 import chalk from 'chalk';
 import { DaemonManager } from '../utils/daemon';
+import { getConfig } from '@pokecode/core';
 
 export interface LogsOptions {
   follow?: boolean;
@@ -14,18 +15,10 @@ export interface LogsOptions {
 }
 
 export const logs = async (options: LogsOptions): Promise<void> => {
-  const daemonManager = new DaemonManager();
+  const config = await getConfig();
 
   try {
-    const info = await daemonManager.getDaemonInfo();
-
-    if (!info) {
-      console.log(chalk.yellow('⚠️  No daemon info found. Server may not be running.'));
-      console.log(`To start the server, run: ${chalk.cyan('pokecode serve --daemon')}`);
-      return;
-    }
-
-    const logFile = info.logFile;
+    const logFile = config.logFile;
     const numLines = parseInt(options.lines, 10);
 
     if (options.follow) {

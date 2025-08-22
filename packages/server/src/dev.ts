@@ -14,7 +14,6 @@ import { createServer } from './index';
 overrideConfig({
   port: 3001,
   host: '0.0.0.0',
-  dataDir: './dev-data',
   logLevel: 'debug', // Disable for easier development
 });
 

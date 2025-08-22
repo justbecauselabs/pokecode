@@ -28,9 +28,6 @@ const agentRoutes: FastifyPluginAsync = async (fastify) => {
     '/',
     {
       schema: {
-        summary: 'List available agents',
-        description: 'Discover agents from both user Claude home directory and project directory',
-        tags: ['Agents'],
         params: SessionIdParamsSchema,
         querystring: ListAgentsQuerySchema,
         response: {

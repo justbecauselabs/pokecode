@@ -16,8 +16,11 @@ export interface Config {
   // Paths
   configDir: string; // Base config directory (~/.pokecode)
   claudeCodePath: string | undefined;
-  dataDir: string;
   repositories: string[];
+  configFile: string;
+  logFile: string;
+  pidFile: string;
+  daemonFile: string;
 
   // Worker
   workerConcurrency: number;
@@ -33,12 +36,15 @@ const defaultConfig: Config = {
   host: '0.0.0.0',
   logLevel: 'info',
   configDir: BASE_CONFIG_DIR,
-  databasePath: join(BASE_CONFIG_DIR, 'data', 'pokecode.db'),
+  databasePath: join(BASE_CONFIG_DIR, 'pokecode.db'),
   databaseWAL: true,
   databaseCacheSize: 1000000, // 1GB
   claudeCodePath: undefined,
-  dataDir: join(BASE_CONFIG_DIR, 'data'),
   repositories: [],
+  configFile: join(BASE_CONFIG_DIR, 'config.json'),
+  logFile: join(BASE_CONFIG_DIR, 'pokecode.log'),
+  pidFile: join(BASE_CONFIG_DIR, 'pokecode.pid'),
+  daemonFile: join(BASE_CONFIG_DIR, 'daemon.json'),
   workerConcurrency: 5,
   workerPollingInterval: 1000,
   jobRetention: 30, // days
@@ -55,8 +61,7 @@ export type FileConfig = z.infer<typeof fileConfigSchema>;
 let configOverrides: Partial<Config> | undefined;
 
 export async function getConfig(): Promise<Config> {
-  const configPath = join(BASE_CONFIG_DIR, 'config.json');
-  const configFile = Bun.file(configPath);
+  const configFile = Bun.file(defaultConfig.configFile);
   let fileConfig: FileConfig | undefined;
   if (await configFile.exists()) {
     const content = await configFile.text();

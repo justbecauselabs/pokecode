@@ -58,8 +58,8 @@ CREATE INDEX \`idx_session_messages_type\` ON \`session_messages\` (\`type\`);--
 CREATE INDEX \`idx_session_messages_created_at\` ON \`session_messages\` (\`created_at\`);--> statement-breakpoint
 CREATE INDEX \`idx_session_messages_claude_code_session_id\` ON \`session_messages\` (\`claude_code_session_id\`);--> statement-breakpoint
 CREATE INDEX \`idx_sessions_last_accessed\` ON \`claude_code_sessions\` (\`last_accessed_at\`);--> statement-breakpoint
-CREATE INDEX \`idx_sessions_is_working\` ON \`claude_code_sessions\` (\`is_working\`);`
-  }
+CREATE INDEX \`idx_sessions_is_working\` ON \`claude_code_sessions\` (\`is_working\`);`,
+  },
 ] as const;
 
-export type Migration = typeof migrations[number];
+export type Migration = (typeof migrations)[number];
