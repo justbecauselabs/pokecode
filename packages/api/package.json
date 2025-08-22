@@ -1,7 +1,7 @@
 {
   "name": "@pokecode/api",
   "version": "0.1.0",
-  "description": "Shared API schemas and types for PokéCode backend and mobile",
+  "description": "Shared API schemas and types for PokéCode server and mobile",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {

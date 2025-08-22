@@ -4,7 +4,7 @@ Shared API schemas and TypeScript types for the PokéCode project.
 
 ## Overview
 
-This package contains all the Zod schemas and TypeScript types used across the PokéCode backend and mobile applications. It serves as the single source of truth for API contracts and data validation.
+This package contains all the Zod schemas and TypeScript types used across the PokéCode server and mobile applications. It serves as the single source of truth for API contracts and data validation.
 
 ## Installation
 

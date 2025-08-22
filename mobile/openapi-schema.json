@@ -2,7 +2,7 @@
   "openapi": "3.0.3",
   "info": {
     "title": "Claude Code Mobile API",
-    "description": "Backend API for Claude Code Mobile application",
+    "description": "Server API for Claude Code Mobile application",
     "version": "1.0.0"
   },
   "components": {

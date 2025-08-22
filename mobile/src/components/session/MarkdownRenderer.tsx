@@ -2,7 +2,7 @@ import type React from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
 import Markdown from 'react-native-markdown-display';
 
-// Citation type matching backend types
+// Citation type matching server types
 type CharLocationCitation = {
   type: 'char_location';
   cited_text: string;

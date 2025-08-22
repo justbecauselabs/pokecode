@@ -1,6 +1,6 @@
 /**
  * Agent-related TypeScript types for the mobile app
- * These correspond to the backend agent schema
+ * These correspond to the server agent schema
  */
 
 export interface Agent {

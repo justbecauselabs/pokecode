@@ -1,10 +1,11 @@
 {
   "permissions": {
+    "allow": [
+      "Bash(mkdir:*)",
+      "WebFetch(domain:v0-pokecode-landing-page.vercel.app)"
+    ],
     "additionalDirectories": [
       "/Users/billy/.claude"
-    ],
-    "allow": [
-      "Bash(mkdir:*)"
     ]
   }
 }
