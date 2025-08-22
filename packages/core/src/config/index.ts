@@ -9,14 +9,11 @@ export interface Config {
   logLevel: 'fatal' | 'error' | 'warn' | 'info' | 'debug' | 'trace';
 
   // Database
-  databasePath: string;
   databaseWAL: boolean;
   databaseCacheSize: number;
 
-  // Paths
-  configDir: string; // Base config directory (~/.pokecode)
-  claudeCodePath: string | undefined;
-  dataDir: string;
+  // File Config
+  claudeCodePath: string;
   repositories: string[];
 
   // Worker
@@ -26,18 +23,20 @@ export interface Config {
   maxJobAttempts: number;
 }
 
-const BASE_CONFIG_DIR = join(homedir(), '.pokecode');
+export const CONFIG_DIR = join(homedir(), '.pokecode');
+export const CONFIG_FILE = join(CONFIG_DIR, 'config.json');
+export const DATABASE_PATH = join(CONFIG_DIR, 'pokecode.db');
+export const LOG_FILE = join(CONFIG_DIR, 'pokecode.log');
+export const PID_FILE = join(CONFIG_DIR, 'pokecode.pid');
+export const DAEMON_FILE = join(CONFIG_DIR, 'daemon.json');
 
 const defaultConfig: Config = {
   port: 3001,
   host: '0.0.0.0',
   logLevel: 'info',
-  configDir: BASE_CONFIG_DIR,
-  databasePath: join(BASE_CONFIG_DIR, 'data', 'pokecode.db'),
   databaseWAL: true,
   databaseCacheSize: 1000000, // 1GB
-  claudeCodePath: undefined,
-  dataDir: join(BASE_CONFIG_DIR, 'data'),
+  claudeCodePath: '',
   repositories: [],
   workerConcurrency: 5,
   workerPollingInterval: 1000,
@@ -55,12 +54,13 @@ export type FileConfig = z.infer<typeof fileConfigSchema>;
 let configOverrides: Partial<Config> | undefined;
 
 export async function getConfig(): Promise<Config> {
-  const configPath = join(BASE_CONFIG_DIR, 'config.json');
-  const configFile = Bun.file(configPath);
+  const configFile = Bun.file(CONFIG_FILE);
   let fileConfig: FileConfig | undefined;
   if (await configFile.exists()) {
     const content = await configFile.text();
     fileConfig = fileConfigSchema.parse(JSON.parse(content));
+  } else {
+    throw new Error('.pokecode/config.json not found. Please run `pokecode setup`.');
   }
 
   return {

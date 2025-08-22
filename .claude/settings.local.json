@@ -7,7 +7,8 @@
       "Bash(cat:*)",
       "WebSearch",
       "Bash(grep:*)",
-      "WebFetch(domain:orm.drizzle.team)"
+      "WebFetch(domain:orm.drizzle.team)",
+      "Bash(bun dev:cli:*)"
     ],
     "additionalDirectories": [
       "/Users/billy/.claude",

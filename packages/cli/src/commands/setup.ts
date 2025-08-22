@@ -1,16 +1,16 @@
-import { join } from 'node:path';
-import { getConfig } from '@pokecode/core';
+import { CONFIG_DIR, CONFIG_FILE, type FileConfig } from '@pokecode/core';
 
 type SetupOptions = Record<string, never>;
 
-interface Config {
-  claudeCodePath?: string;
-  [key: string]: unknown;
-}
-
 export async function setup(_options: SetupOptions): Promise<void> {
-  console.log('PokéCode Setup');
-  console.log('=============');
+  if (await Bun.file(CONFIG_FILE).exists()) {
+    console.log('Pokecode is already setup! Run `pokecode serve` to start the server.');
+    process.exit(0);
+  }
+
+  console.log('==================');
+  console.log('  PokéCode Setup  ');
+  console.log('==================');
   console.log();
   console.log('To get started, I need the path to your Claude Code installation.');
   console.log('Please run `which claude` in your terminal and paste the output below:');
@@ -114,28 +114,15 @@ async function processClaudePath(rawPath: string): Promise<void> {
 }
 
 async function saveClaudeCodePath(cliJsPath: string): Promise<void> {
-  const systemConfig = await getConfig();
-  const configPath = join(systemConfig.configDir, 'config.json');
-
   // Ensure config directory exists
-  await Bun.$`mkdir -p ${systemConfig.configDir}`;
+  await Bun.$`mkdir -p ${CONFIG_DIR}`;
 
   // Read existing config or create new one
-  let config: Config = {};
-  const configFile = Bun.file(configPath);
-
-  if (await configFile.exists()) {
-    try {
-      const configContent = await configFile.text();
-      config = JSON.parse(configContent);
-    } catch (_error) {
-      console.warn('Warning: Could not parse existing config file. Creating new one.');
-    }
-  }
-
-  // Update config with Claude Code path
-  config.claudeCodePath = cliJsPath;
+  const config: FileConfig = {
+    repositories: [],
+    claudeCodePath: cliJsPath,
+  };
 
   // Write config file
-  await Bun.write(configPath, JSON.stringify(config, null, 2));
+  await Bun.write(CONFIG_FILE, JSON.stringify(config, null, 2));
 }

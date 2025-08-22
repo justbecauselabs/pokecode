@@ -2,9 +2,7 @@
  * Serve command implementation with robust daemon support
  */
 
-import { homedir } from 'node:os';
-import { resolve } from 'node:path';
-import { getConfig, overrideConfig } from '@pokecode/core';
+import { getConfig, LOG_FILE, overrideConfig } from '@pokecode/core';
 import chalk from 'chalk';
 import ora from 'ora';
 import { startServer } from '../server';
@@ -15,10 +13,7 @@ export interface ServeOptions {
   port: string;
   host: string;
   daemon?: boolean;
-  dataDir?: string;
   logLevel: string;
-  cors: boolean;
-  helmet: boolean;
 }
 
 // Security validation functions
@@ -69,22 +64,6 @@ const validateLogLevel = (level: string): string => {
   return sanitized;
 };
 
-const sanitizePath = (userPath: string): string => {
-  // Remove dangerous characters and resolve path
-  const cleaned = userPath.replace(/[<>:"|?*]/g, '').trim();
-  const resolved = resolve(cleaned);
-
-  // Ensure path is within reasonable bounds (no traversal outside user directory)
-  const homeDir = homedir();
-  if (!resolved.startsWith(homeDir) && !resolved.startsWith('/tmp')) {
-    throw new Error(
-      `Path "${userPath}" is outside allowed directories. Use paths within your home directory.`,
-    );
-  }
-
-  return resolved;
-};
-
 export const serve = async (options: ServeOptions): Promise<void> => {
   const daemonManager = new DaemonManager();
 
@@ -92,16 +71,12 @@ export const serve = async (options: ServeOptions): Promise<void> => {
   const port = validatePort(options.port);
   const host = validateHost(options.host);
   const logLevel = validateLogLevel(options.logLevel);
-  const dataDir = options.dataDir ? sanitizePath(options.dataDir) : undefined;
 
   // Set CLI overrides FIRST before any services call getConfig()
   overrideConfig({
     port,
     host,
     logLevel: logLevel as 'fatal' | 'error' | 'warn' | 'info' | 'debug' | 'trace',
-    ...(dataDir && { dataDir }),
-    corsEnabled: options.cors,
-    helmetEnabled: options.helmet,
   });
 
   // Check if daemon is already running
@@ -130,9 +105,6 @@ const startDaemon = async (): Promise<void> => {
   const daemonManager = new DaemonManager();
 
   try {
-    await daemonManager.ensureConfigDir();
-    const logFile = await daemonManager.getLogFile();
-
     const env: Record<string, string> = {
       NODE_ENV: 'production',
     };
@@ -156,8 +128,8 @@ const startDaemon = async (): Promise<void> => {
       env: Object.fromEntries(
         Object.entries({ ...process.env, ...env }).filter(([, value]) => value !== undefined),
       ) as Record<string, string>,
-      stdout: logFile,
-      stderr: logFile,
+      stdout: LOG_FILE,
+      stderr: LOG_FILE,
     });
 
     if (!child.pid) throw new Error('Failed to start daemon process');
@@ -167,14 +139,11 @@ const startDaemon = async (): Promise<void> => {
       port: config.port,
       host: config.host,
       startTime: new Date().toISOString(),
-      dataDir: config.dataDir,
-      logFile,
     });
 
     spinner.succeed(chalk.green('✅ PokéCode server started in daemon mode!'));
     console.log(`🚀 Server running at: ${chalk.cyan(`http://${config.host}:${config.port}`)}`);
-    console.log(`📝 Logs: ${chalk.gray(logFile)}`);
-    console.log(`📁 Data: ${chalk.gray(config.dataDir)}`);
+    console.log(`📝 Logs: ${chalk.gray(LOG_FILE)}`);
     console.log(`🆔 PID: ${chalk.gray(child.pid)}`);
     console.log('\nUse the following commands:');
     console.log(`  ${chalk.cyan('pokecode status')} - Check server status`);
@@ -200,7 +169,7 @@ const startEmbedded = async (): Promise<void> => {
   try {
     spinner.succeed(chalk.green('✅ PokéCode server started successfully!'));
     console.log(`🚀 Server running at: ${chalk.cyan(`http://${config.host}:${config.port}`)}`);
-    console.log(`📁 Data directory: ${chalk.gray(config.dataDir)}`);
+    console.log(`� Logs: ${chalk.gray(LOG_FILE)}`);
     console.log(`📊 Log level: ${chalk.gray(config.logLevel)}`);
     console.log(`🔍 Claude Code path: ${chalk.gray(config.claudeCodePath)}`);
     console.log(chalk.yellow('\nPress Ctrl+C to stop the server'));

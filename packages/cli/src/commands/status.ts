@@ -2,6 +2,9 @@
  * Status command implementation
  */
 
+import type { HealthResponse } from '@pokecode/api';
+import { HealthResponseSchema } from '@pokecode/api';
+import { LOG_FILE } from '@pokecode/core';
 import chalk from 'chalk';
 import { DaemonManager } from '../utils/daemon';
 
@@ -34,8 +37,7 @@ export const status = async (_options: StatusOptions): Promise<void> => {
     console.log(`📍 URL: ${chalk.cyan(`http://${info.host}:${info.port}`)}`);
     console.log(`🔢 PID: ${chalk.gray(info.pid)}`);
     console.log(`⏰ Started: ${chalk.gray(info.startTime)}`);
-    console.log(`📁 Data directory: ${chalk.gray(info.dataDir)}`);
-    console.log(`📝 Log file: ${chalk.gray(info.logFile)}`);
+    console.log(`� Log file: ${chalk.gray(LOG_FILE)}`);
 
     // Calculate uptime
     const startTime = new Date(info.startTime);
@@ -58,10 +60,26 @@ export const status = async (_options: StatusOptions): Promise<void> => {
     try {
       const response = await fetch(`http://${info.host}:${info.port}/health`);
       if (response.ok) {
-        const data = await response.json();
-        console.log(`🩺 Health check: ${chalk.green('OK')}`);
-        if (data.version) {
+        const rawData = await response.json();
+        const parseResult = HealthResponseSchema.safeParse(rawData);
+
+        if (parseResult.success) {
+          const data: HealthResponse = parseResult.data;
+          console.log(`🩺 Health check: ${chalk.green('OK')}`);
           console.log(`📦 Version: ${chalk.gray(data.version)}`);
+
+          // Show service statuses
+          const dbStatus = data.services.database;
+          const queueStatus = data.services.queue;
+
+          console.log(
+            `💾 Database: ${dbStatus === 'healthy' ? chalk.green(dbStatus) : dbStatus === 'unhealthy' ? chalk.red(dbStatus) : chalk.yellow(dbStatus)}`,
+          );
+          console.log(
+            `📋 Queue: ${queueStatus === 'healthy' ? chalk.green(queueStatus) : queueStatus === 'unhealthy' ? chalk.red(queueStatus) : chalk.yellow(queueStatus)}`,
+          );
+        } else {
+          console.log(`🩺 Health check: ${chalk.yellow('DEGRADED')} (Invalid response format)`);
         }
       } else {
         console.log(`🩺 Health check: ${chalk.yellow('DEGRADED')} (HTTP ${response.status})`);

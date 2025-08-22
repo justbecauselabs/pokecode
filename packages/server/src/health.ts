@@ -1,17 +1,10 @@
+import {
+  HealthResponseSchema,
+  LivenessResponseSchema,
+  ReadinessResponseSchema,
+} from '@pokecode/api';
 import { checkDatabaseHealth, sqliteQueueService } from '@pokecode/core';
 import type { FastifyPluginAsync } from 'fastify';
-import { z } from 'zod';
-
-const HealthResponseSchema = z.object({
-  status: z.enum(['healthy', 'unhealthy']),
-  timestamp: z.string(),
-  services: z.object({
-    database: z.enum(['healthy', 'unhealthy', 'unknown']),
-    queue: z.enum(['healthy', 'unhealthy', 'unknown']),
-  }),
-  version: z.string(),
-  uptime: z.number(),
-});
 
 const healthRoute: FastifyPluginAsync = async (fastify) => {
   fastify.get(
@@ -107,10 +100,7 @@ const healthRoute: FastifyPluginAsync = async (fastify) => {
     {
       schema: {
         response: {
-          200: z.object({
-            status: z.literal('ok'),
-            timestamp: z.string(),
-          }),
+          200: LivenessResponseSchema,
         },
       },
     },
@@ -128,15 +118,8 @@ const healthRoute: FastifyPluginAsync = async (fastify) => {
     {
       schema: {
         response: {
-          200: z.object({
-            status: z.literal('ready'),
-            timestamp: z.string(),
-          }),
-          503: z.object({
-            status: z.literal('not_ready'),
-            timestamp: z.string(),
-            reason: z.string(),
-          }),
+          200: ReadinessResponseSchema,
+          503: ReadinessResponseSchema,
         },
       },
     },

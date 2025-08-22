@@ -201,12 +201,25 @@ function parseBashToolUse(toolUseBlocks: Array<ToolUseBlockParam>): {
     };
 
     if (input?.command && bashBlock.id) {
-      return {
+      const result: {
+        toolId: string;
+        command: string;
+        timeout?: number;
+        description?: string;
+      } = {
         toolId: bashBlock.id,
         command: input.command,
-        timeout: input.timeout,
-        description: input.description,
       };
+
+      if (input.timeout !== undefined) {
+        result.timeout = input.timeout;
+      }
+
+      if (input.description !== undefined) {
+        result.description = input.description;
+      }
+
+      return result;
     }
   }
   return null;
@@ -294,11 +307,22 @@ function parseMultiEditToolUse(
       // Validate and transform edits
       const validEdits = input.edits
         .filter((edit) => edit.old_string && edit.new_string)
-        .map((edit) => ({
-          oldString: edit.old_string as string,
-          newString: edit.new_string as string,
-          replaceAll: edit.replace_all,
-        }));
+        .map((edit) => {
+          const result: {
+            oldString: string;
+            newString: string;
+            replaceAll?: boolean;
+          } = {
+            oldString: edit.old_string as string,
+            newString: edit.new_string as string,
+          };
+
+          if (edit.replace_all !== undefined) {
+            result.replaceAll = edit.replace_all;
+          }
+
+          return result;
+        });
 
       if (validEdits.length > 0) {
         return {
@@ -379,15 +403,34 @@ function parseGrepToolUse(
         path = relativePath.startsWith('/') ? relativePath.slice(1) : relativePath;
       }
 
-      return {
+      const result: {
+        toolId: string;
+        pattern: string;
+        path: string;
+        outputMode: string;
+        lineNumbers?: boolean;
+        headLimit?: number;
+        contextLines?: number;
+      } = {
         toolId: grepBlock.id,
         pattern: input.pattern,
         path,
         outputMode: input.output_mode,
-        lineNumbers: input['-n'],
-        headLimit: input.head_limit,
-        contextLines: input['-C'],
       };
+
+      if (input['-n'] !== undefined) {
+        result.lineNumbers = input['-n'];
+      }
+
+      if (input.head_limit !== undefined) {
+        result.headLimit = input.head_limit;
+      }
+
+      if (input['-C'] !== undefined) {
+        result.contextLines = input['-C'];
+      }
+
+      return result;
     }
   }
   return null;
@@ -422,11 +465,20 @@ function parseGlobToolUse(
         path = relativePath.startsWith('/') ? relativePath.slice(1) : relativePath;
       }
 
-      return {
+      const result: {
+        toolId: string;
+        pattern: string;
+        path?: string;
+      } = {
         toolId: globBlock.id,
         pattern: input.pattern,
-        path,
       };
+
+      if (path !== undefined) {
+        result.path = path;
+      }
+
+      return result;
     }
   }
   return null;

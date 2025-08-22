@@ -10,6 +10,7 @@ export class RepositoryService {
     try {
       const config = await getConfig();
       const repositoryPaths = config.repositories;
+      console.log('repositoryPaths', repositoryPaths);
       const repositories: RepositoryResponse[] = [];
 
       // Check each configured repository path

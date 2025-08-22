@@ -1,7 +1,11 @@
 import { homedir } from 'node:os';
 import path from 'node:path';
-import { parse as parseYaml } from 'yaml';
 import { NotFoundError, ValidationError } from '../types';
+
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+// biome-ignore lint/style/noCommonJs: Required for yaml module compatibility
+const YAML = require('yaml');
+const parseYaml = YAML.parse;
 
 // Export Node.js path and os utilities for consistency
 export const getHomeDirectory = homedir;

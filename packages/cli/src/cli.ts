@@ -14,7 +14,6 @@ if (process.argv.includes('--internal-run-server')) {
   const { status } = await import('./commands/status');
   const { stop } = await import('./commands/stop');
   const { logs } = await import('./commands/logs');
-  const { config } = await import('./commands/config');
   const { setup } = await import('./commands/setup');
 
   const pkg = {
@@ -58,14 +57,6 @@ if (process.argv.includes('--internal-run-server')) {
     .option('-f, --follow', 'Follow log output')
     .option('-n, --lines <number>', 'Number of lines to show', '50')
     .action(logs);
-
-  program
-    .command('config')
-    .description('Manage configuration')
-    .option('--init', 'Initialize configuration file')
-    .option('--show', 'Show current configuration')
-    .option('--edit', 'Edit configuration file')
-    .action(config);
 
   program.command('setup').description('Setup PokéCode with Claude Code path').action(setup);
 

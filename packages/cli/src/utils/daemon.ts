@@ -2,91 +2,29 @@
  * Cross-platform daemon management utilities
  */
 
-import { join } from 'node:path';
-import { getConfig } from '@pokecode/core';
+import { DAEMON_FILE, PID_FILE } from '@pokecode/core';
 
 export interface DaemonInfo {
   pid: number;
   port: number;
   host: string;
   startTime: string;
-  dataDir: string;
-  logFile: string;
 }
 
 export class DaemonManager {
-  private pidFile: string;
-  private logFile: string;
-  private configFile: string;
-
-  private async ensurePaths() {
-    const config = await getConfig();
-    this.pidFile = join(config.configDir, 'pokecode.pid');
-    this.logFile = join(config.configDir, 'pokecode.log');
-    this.configFile = join(config.configDir, 'config.json');
-  }
-
-  private async getInitializedConfigDir(): Promise<string> {
-    await this.ensurePaths();
-    if (!this.configDir) {
-      throw new Error('Config directory not initialized');
-    }
-    return this.configDir;
-  }
-
-  private async getInitializedPidFile(): Promise<string> {
-    await this.ensurePaths();
-    if (!this.pidFile) {
-      throw new Error('PID file path not initialized');
-    }
-    return this.pidFile;
-  }
-
-  private async getInitializedLogFile(): Promise<string> {
-    await this.ensurePaths();
-    if (!this.logFile) {
-      throw new Error('Log file path not initialized');
-    }
-    return this.logFile;
-  }
-
-  private async getInitializedConfigFile(): Promise<string> {
-    await this.ensurePaths();
-    if (!this.configFile) {
-      throw new Error('Config file path not initialized');
-    }
-    return this.configFile;
-  }
-
-  async ensureConfigDir(): Promise<void> {
-    const configDir = await this.getInitializedConfigDir();
-    const dir = Bun.file(configDir);
-    if (!(await dir.exists())) {
-      await Bun.$`mkdir -p ${configDir}`;
-    }
-  }
-
   async saveDaemonInfo(info: DaemonInfo): Promise<void> {
-    await this.ensureConfigDir();
-
-    const pidFile = await this.getInitializedPidFile();
-    const configDir = await this.getInitializedConfigDir();
-
     // Write PID file with secure permissions (0o600 = owner read/write only)
-    await Bun.write(pidFile, info.pid.toString());
-    await Bun.$`chmod 600 ${pidFile}`;
+    await Bun.write(PID_FILE, info.pid.toString());
+    await Bun.$`chmod 600 ${PID_FILE}`;
 
     // Write full daemon info with secure permissions
-    const infoFile = join(configDir, 'daemon.json');
-    await Bun.write(infoFile, JSON.stringify(info, null, 2));
-    await Bun.$`chmod 600 ${infoFile}`;
+    await Bun.write(DAEMON_FILE, JSON.stringify(info, null, 2));
+    await Bun.$`chmod 600 ${DAEMON_FILE}`;
   }
 
   async getDaemonInfo(): Promise<DaemonInfo | null> {
     try {
-      const configDir = await this.getInitializedConfigDir();
-      const infoFile = join(configDir, 'daemon.json');
-      const file = Bun.file(infoFile);
+      const file = Bun.file(DAEMON_FILE);
       if (await file.exists()) {
         const content = await file.text();
         return JSON.parse(content);
@@ -99,8 +37,7 @@ export class DaemonManager {
 
   async getPid(): Promise<number | null> {
     try {
-      const pidFile = await this.getInitializedPidFile();
-      const file = Bun.file(pidFile);
+      const file = Bun.file(PID_FILE);
       if (await file.exists()) {
         const content = await file.text();
         const pid = parseInt(content.trim(), 10);
@@ -188,36 +125,21 @@ export class DaemonManager {
 
   async cleanup(): Promise<void> {
     try {
-      const pidFile = await this.getInitializedPidFile();
-      const pidFileObj = Bun.file(pidFile);
+      const pidFileObj = Bun.file(PID_FILE);
       if (await pidFileObj.exists()) {
-        await Bun.$`rm ${pidFile}`;
+        await Bun.$`rm ${PID_FILE}`;
       }
     } catch {
       // File might not exist
     }
 
     try {
-      const configDir = await this.getInitializedConfigDir();
-      const infoFile = join(configDir, 'daemon.json');
-      const file = Bun.file(infoFile);
+      const file = Bun.file(DAEMON_FILE);
       if (await file.exists()) {
-        await Bun.$`rm ${infoFile}`;
+        await Bun.$`rm ${DAEMON_FILE}`;
       }
     } catch {
       // File might not exist
     }
-  }
-
-  async getLogFile(): Promise<string> {
-    return await this.getInitializedLogFile();
-  }
-
-  async getConfigFile(): Promise<string> {
-    return await this.getInitializedConfigFile();
-  }
-
-  async getConfigDir(): Promise<string> {
-    return await this.getInitializedConfigDir();
   }
 }
