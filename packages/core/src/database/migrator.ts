@@ -130,7 +130,7 @@ export class DatabaseMigrator {
           this.logger.info(`    ✅ Statement ${i + 1} executed successfully`);
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : String(error);
-          this.logger.error(`    ❌ Statement ${i + 1} failed: ${errorMessage}`, error);
+          this.logger.error(`    ❌ Statement ${i + 1} failed: ${errorMessage}`);
           throw new Error(
             `Migration ${migration.id} failed at statement ${i + 1}: ${errorMessage}`,
           );
@@ -154,7 +154,7 @@ export class DatabaseMigrator {
       this.logger.info(`  ✅ Migration ${migration.id} completed in ${duration}ms`);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      this.logger.error(`  ❌ Failed to record migration: ${errorMessage}`, error);
+      this.logger.error(`  ❌ Failed to record migration: ${errorMessage}`);
       throw new Error(`Failed to record migration ${migration.id} as applied: ${errorMessage}`);
     }
   }

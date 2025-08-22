@@ -1,4 +1,4 @@
-import { ApiError, config } from '@pokecode/core';
+import { ApiError } from '@pokecode/core';
 import type { FastifyError, FastifyPluginAsync } from 'fastify';
 import fp from 'fastify-plugin';
 
@@ -118,7 +118,7 @@ const errorHandlerPlugin: FastifyPluginAsync = async (fastify) => {
         statusCode: 500,
         details: error.message,
         debug:
-          config.NODE_ENV === 'development'
+          process.env.NODE_ENV === 'development'
             ? {
                 allErrorKeys: Object.keys(error),
                 errorConstructor: error.constructor.name,

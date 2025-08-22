@@ -1,9 +1,11 @@
 import cors from '@fastify/cors';
-import { config } from '@pokecode/core';
+import { getConfig } from '@pokecode/core';
 import type { FastifyPluginAsync } from 'fastify';
 import fp from 'fastify-plugin';
 
 const corsPlugin: FastifyPluginAsync = async (fastify) => {
+  const config = await getConfig();
+
   await fastify.register(cors, {
     origin: (origin, cb) => {
       // Log the origin for debugging
@@ -16,8 +18,8 @@ const corsPlugin: FastifyPluginAsync = async (fastify) => {
         return;
       }
 
-      // Parse allowed origins from config
-      const allowedOrigins = config.CORS_ORIGIN.split(',').map((o) => o.trim());
+      // Get allowed origins from config
+      const allowedOrigins = config.corsOrigins;
       fastify.log.debug({ allowedOrigins, requestedOrigin: origin }, 'CORS: Checking origin');
 
       // Check if origin is allowed

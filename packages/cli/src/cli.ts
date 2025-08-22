@@ -1,11 +1,11 @@
 #!/usr/bin/env bun
 
-import { makeConfigFromEnv, startServer } from './server';
+import { startServer } from './server';
 
 // Handle internal server mode
 if (process.argv.includes('--internal-run-server')) {
   // Run as daemon child process (no CLI)
-  await startServer(await makeConfigFromEnv());
+  await startServer();
   // Server keeps the process alive naturally - no need to exit
 } else {
   // Normal CLI mode

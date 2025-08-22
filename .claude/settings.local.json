@@ -2,10 +2,16 @@
   "permissions": {
     "allow": [
       "Bash(mkdir:*)",
-      "WebFetch(domain:v0-pokecode-landing-page.vercel.app)"
+      "WebFetch(domain:v0-pokecode-landing-page.vercel.app)",
+      "Bash(bun pm ls:*)",
+      "Bash(cat:*)",
+      "WebSearch",
+      "Bash(grep:*)",
+      "WebFetch(domain:orm.drizzle.team)"
     ],
     "additionalDirectories": [
-      "/Users/billy/.claude"
+      "/Users/billy/.claude",
+      "/Users/billy/.pokecode/data"
     ]
   }
 }

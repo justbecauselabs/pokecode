@@ -318,13 +318,14 @@ export class MessageService {
    */
   async cancelSession(sessionId: string): Promise<void> {
     // Get the current session to check if it's working
-    const session = await db.query.sessions.findFirst({
-      where: eq(sessions.id, sessionId),
-      columns: {
-        currentJobId: true,
-        isWorking: true,
-      },
-    });
+    const session = await db
+      .select({
+        currentJobId: sessions.currentJobId,
+        isWorking: sessions.isWorking,
+      })
+      .from(sessions)
+      .where(eq(sessions.id, sessionId))
+      .get();
 
     if (!session || !session.isWorking) {
       logger.debug(

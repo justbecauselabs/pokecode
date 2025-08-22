@@ -1,100 +1,86 @@
-import { getClaudeCodePath } from '../utils/env';
-import { validateEnv } from './env.schema';
+import { homedir } from 'node:os';
+import { join } from 'node:path';
+import { z } from 'zod';
 
-// Base config without inference
-const baseConfig = validateEnv();
+export interface Config {
+  // Server
+  port: number;
+  host: string;
+  logLevel: 'fatal' | 'error' | 'warn' | 'info' | 'debug' | 'trace';
 
-// Initialize config with Claude Code path from config file
-let _config = baseConfig;
-let _initialized = false;
+  // Database
+  databasePath: string;
+  databaseWAL: boolean;
+  databaseCacheSize: number;
 
-async function initializeConfig() {
-  if (_initialized) return _config;
+  // Paths
+  configDir: string; // Base config directory (~/.pokecode)
+  claudeCodePath: string | undefined;
+  dataDir: string;
+  repositories: string[];
 
-  // Get CLAUDE_CODE_PATH from config file if not provided in env
-  if (!baseConfig.CLAUDE_CODE_PATH) {
-    try {
-      const claudeCodePath = await getClaudeCodePath();
-      _config = { ...baseConfig, CLAUDE_CODE_PATH: claudeCodePath };
-    } catch (error) {
-      console.error('Failed to get CLAUDE_CODE_PATH:', error);
-      throw new Error('CLAUDE_CODE_PATH must be provided or run `pokecode setup` to configure it');
-    }
+  // Worker
+  workerConcurrency: number;
+  workerPollingInterval: number;
+  jobRetention: number; // days
+  maxJobAttempts: number;
+}
+
+const BASE_CONFIG_DIR = join(homedir(), '.pokecode');
+
+const defaultConfig: Config = {
+  port: 3001,
+  host: '0.0.0.0',
+  logLevel: 'info',
+  configDir: BASE_CONFIG_DIR,
+  databasePath: join(BASE_CONFIG_DIR, 'data', 'pokecode.db'),
+  databaseWAL: true,
+  databaseCacheSize: 1000000, // 1GB
+  claudeCodePath: undefined,
+  dataDir: join(BASE_CONFIG_DIR, 'data'),
+  repositories: [],
+  workerConcurrency: 5,
+  workerPollingInterval: 1000,
+  jobRetention: 30, // days
+  maxJobAttempts: 1,
+};
+
+const fileConfigSchema = z.object({
+  repositories: z.array(z.string()).optional(),
+  claudeCodePath: z.string().optional(),
+});
+
+export type FileConfig = z.infer<typeof fileConfigSchema>;
+
+let configOverrides: Partial<Config> | undefined;
+
+export async function getConfig(): Promise<Config> {
+  const configPath = join(BASE_CONFIG_DIR, 'config.json');
+  const configFile = Bun.file(configPath);
+  let fileConfig: FileConfig | undefined;
+  if (await configFile.exists()) {
+    const content = await configFile.text();
+    fileConfig = fileConfigSchema.parse(JSON.parse(content));
   }
 
-  _initialized = true;
-  return _config;
+  return {
+    ...defaultConfig,
+    ...fileConfig,
+    ...configOverrides,
+  };
 }
 
-// Export a function to get initialized config
-export async function getConfig() {
-  return await initializeConfig();
+// Set temporary overrides for CLI commands
+export function overrideConfig(overrides: Partial<Config>): void {
+  configOverrides = { ...configOverrides, ...overrides };
 }
 
-// Export synchronous config for backwards compatibility (but requires CLAUDE_CODE_PATH to be set manually)
-export const config = baseConfig;
+// Clear all overrides (useful for tests or resetting)
+export function clearConfigOverrides(): void {
+  configOverrides = {};
+}
 
-export const isDevelopment = config.NODE_ENV === 'development';
-export const isProduction = config.NODE_ENV === 'production';
-export const isTest = config.NODE_ENV === 'test';
-
-// Rate limit configurations
-export const rateLimitConfig = {
-  prompt: {
-    max: 10,
-    timeWindow: '1 minute',
-  },
-  file: {
-    max: 100,
-    timeWindow: '1 minute',
-  },
-  read: {
-    max: 1000,
-    timeWindow: '1 minute',
-  },
-};
-
-// File storage configuration
-export const fileStorageConfig = {
-  maxFileSize: 10 * 1024 * 1024, // 10MB
-  allowedExtensions: [
-    '.js',
-    '.ts',
-    '.jsx',
-    '.tsx',
-    '.json',
-    '.md',
-    '.txt',
-    '.html',
-    '.css',
-    '.scss',
-    '.less',
-    '.py',
-    '.java',
-    '.cpp',
-    '.c',
-    '.h',
-    '.hpp',
-    '.rs',
-    '.go',
-    '.rb',
-    '.php',
-    '.swift',
-    '.kt',
-    '.yaml',
-    '.yml',
-    '.toml',
-    '.xml',
-    '.sh',
-    '.bash',
-    '.zsh',
-    '.fish',
-    '.gitignore',
-    '.dockerignore',
-    'Dockerfile',
-    'Makefile',
-  ],
-};
-
-// Re-export env as alias for config for compatibility
-export const env = config;
+// Helper functions for backwards compatibility and specific needs
+export const isTest =
+  typeof (globalThis as Record<string, unknown>).test !== 'undefined' ||
+  process.argv.some((arg) => arg.includes('bun test') || arg.includes('test'));

@@ -1,4 +1,4 @@
-import { createChildLogger, db, env } from '@pokecode/core';
+import { createChildLogger, db } from '@pokecode/core';
 import { sql } from 'drizzle-orm';
 import { ClaudeCodeSQLiteWorker } from './claude-code-sqlite.worker';
 
@@ -47,7 +47,7 @@ async function verifyDatabaseConnection(): Promise<void> {
  * Main worker startup function
  */
 async function startWorker(): Promise<ClaudeCodeSQLiteWorker> {
-  logger.info({ environment: env.NODE_ENV }, 'Starting Claude Code SQLite Worker...');
+  logger.info({ environment: process.env.NODE_ENV }, 'Starting Claude Code SQLite Worker...');
 
   // Verify database connection
   await verifyDatabaseConnection();

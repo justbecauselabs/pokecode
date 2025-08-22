@@ -1,5 +1,6 @@
 import { createId } from '@paralleldrive/cuid2';
 import { and, asc, eq, isNull, lte, or, sql } from 'drizzle-orm';
+import { getConfig } from '../config';
 import { db } from '../database';
 import { jobQueue, sessions } from '../database/schema-sqlite';
 import type { CompleteEvent, ErrorEvent, PromptJobData } from '../types';
@@ -19,10 +20,11 @@ export class SQLiteQueueService {
     model?: string,
   ) {
     // Get project path from session
-    const session = await db.query.sessions.findFirst({
-      where: eq(sessions.id, sessionId),
-      columns: { projectPath: true },
-    });
+    const session = await db
+      .select({ projectPath: sessions.projectPath })
+      .from(sessions)
+      .where(eq(sessions.id, sessionId))
+      .get();
 
     if (!session) {
       throw new Error('Session not found');
@@ -43,7 +45,7 @@ export class SQLiteQueueService {
         ...(model !== undefined && { model }),
       },
       attempts: 0,
-      maxAttempts: 1, // Disable retries - fail immediately
+      maxAttempts: 1, // Default, can be overridden by config
     });
 
     logger.info({ jobId, promptId, sessionId }, 'Job added to queue');
@@ -109,9 +111,7 @@ export class SQLiteQueueService {
   }
 
   async getJobStatus(jobId: string) {
-    const job = await db.query.jobQueue.findFirst({
-      where: eq(jobQueue.id, jobId),
-    });
+    const job = await db.select().from(jobQueue).where(eq(jobQueue.id, jobId)).get();
 
     if (!job) {
       return null;
@@ -190,20 +190,33 @@ export class SQLiteQueueService {
   async getNextJob(): Promise<(typeof jobQueue.$inferSelect & { data: PromptJobData }) | null> {
     const now = new Date();
 
+    logger.info({}, 'Getting next job');
+
     // Get the oldest pending job or a job ready for retry
-    const job = await db.query.jobQueue.findFirst({
-      where: and(
-        eq(jobQueue.status, 'pending'),
-        // Either no retry time set, or retry time has passed
-        or(isNull(jobQueue.nextRetryAt), lte(jobQueue.nextRetryAt, now)),
-      ),
-      orderBy: [asc(jobQueue.createdAt)],
-    });
+    const job = await db
+      .select()
+      .from(jobQueue)
+      .where(
+        and(
+          eq(jobQueue.status, 'pending'),
+          // Either no retry time set, or retry time has passed
+          or(isNull(jobQueue.nextRetryAt), lte(jobQueue.nextRetryAt, now)),
+        ),
+      )
+      .orderBy(asc(jobQueue.createdAt))
+      .limit(1)
+      .get();
 
     if (!job) {
       return null;
     }
 
+    return this.convertJobToPromptData(job);
+  }
+
+  private convertJobToPromptData(
+    job: typeof jobQueue.$inferSelect,
+  ): typeof jobQueue.$inferSelect & { data: PromptJobData } {
     // Convert the data to match PromptJobData interface
     const promptJobData: PromptJobData = {
       sessionId: job.sessionId,
@@ -212,6 +225,7 @@ export class SQLiteQueueService {
       projectPath: job.data.projectPath,
       ...(job.data.allowedTools !== undefined && { allowedTools: job.data.allowedTools }),
       ...(job.data.messageId !== undefined && { messageId: job.data.messageId }),
+      ...(job.data.model !== undefined && { model: job.data.model }),
     };
 
     return {
@@ -235,6 +249,7 @@ export class SQLiteQueueService {
           allowedTools: promptJobData.allowedTools,
         }),
         ...(promptJobData.messageId !== undefined && { messageId: promptJobData.messageId }),
+        ...(promptJobData.model !== undefined && { model: promptJobData.model }),
       },
     };
   }
@@ -268,9 +283,7 @@ export class SQLiteQueueService {
 
   // Mark a job as failed and handle retry logic
   async markJobFailed(jobId: string, error: string): Promise<void> {
-    const job = await db.query.jobQueue.findFirst({
-      where: eq(jobQueue.id, jobId),
-    });
+    const job = await db.select().from(jobQueue).where(eq(jobQueue.id, jobId)).get();
 
     if (!job) {
       return;
@@ -301,14 +314,15 @@ export class SQLiteQueueService {
 
   // Clean up old completed/failed jobs
   async cleanup(): Promise<void> {
-    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const config = await getConfig();
+    const retentionDaysAgo = new Date(Date.now() - config.jobRetention * 24 * 60 * 60 * 1000);
 
     await db
       .delete(jobQueue)
       .where(
         and(
           sql`${jobQueue.status} IN ('completed', 'failed')`,
-          lte(jobQueue.completedAt, thirtyDaysAgo),
+          lte(jobQueue.completedAt, retentionDaysAgo),
         ),
       );
 

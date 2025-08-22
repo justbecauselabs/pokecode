@@ -8,23 +8,7 @@ export const CreateSessionRequestSchema = z.object({
   projectPath: z
     .string()
     .regex(/^[a-zA-Z0-9._/-]+$/)
-    .min(1)
-    .max(255)
-    .optional(),
-  folderName: z
-    .string()
-    .regex(/^[a-zA-Z0-9._-]+$/)
-    .min(1)
-    .max(100)
-    .optional(),
-  context: z.string().max(5000).optional(),
-  metadata: z
-    .object({
-      repository: z.string().optional(),
-      branch: z.string().optional(),
-      allowedTools: z.array(z.string()).optional(),
-    })
-    .optional(),
+    .min(1),
 });
 
 export const SessionSchema = z.object({
@@ -32,9 +16,7 @@ export const SessionSchema = z.object({
   projectPath: z.string(),
   name: z.string(),
   claudeDirectoryPath: z.string().nullable(),
-  context: z.string().nullable(),
   state: z.union([z.literal('active'), z.literal('inactive')]),
-  metadata: z.any().nullable(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
   lastAccessedAt: z.string().datetime(),

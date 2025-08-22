@@ -18,22 +18,35 @@ interface PokeCodeConfig {
   port?: number;
   host?: string;
   dataDir?: string;
-  logLevel?: 'trace' | 'debug' | 'info' | 'warn' | 'error';
-  cors?: boolean;
-  helmet?: boolean;
+  logLevel?: 'fatal' | 'error' | 'warn' | 'info' | 'debug' | 'trace';
+  corsEnabled?: boolean;
+  helmetEnabled?: boolean;
+  claudeCodePath?: string;
+  repositories?: string[];
+  workerConcurrency?: number;
+  workerPollingInterval?: number;
+  maxFileSize?: number;
+  jobRetention?: number;
+  maxJobAttempts?: number;
 }
 
 const defaultConfig: PokeCodeConfig = {
   port: 3001,
   host: '0.0.0.0',
   logLevel: 'info',
-  cors: true,
-  helmet: true,
+  corsEnabled: true,
+  helmetEnabled: true,
+  workerConcurrency: 5,
+  workerPollingInterval: 1000,
+  maxFileSize: 10 * 1024 * 1024,
+  jobRetention: 30,
+  maxJobAttempts: 1,
+  repositories: [],
 };
 
 export const config = async (options: ConfigOptions): Promise<void> => {
   const daemonManager = new DaemonManager();
-  const configFile = daemonManager.getConfigFile();
+  const configFile = await daemonManager.getConfigFile();
 
   if (options.init) {
     await initConfig(configFile);
@@ -47,15 +60,16 @@ export const config = async (options: ConfigOptions): Promise<void> => {
   }
 };
 
-const initConfig = async (configFile: string): Promise<void> => {
+const initConfig = async (_configFile: string): Promise<void> => {
   try {
     const daemonManager = new DaemonManager();
     await daemonManager.ensureConfigDir();
 
     // Set default data directory
+    const configFile = await daemonManager.getConfigFile();
     const configWithDefaults = {
       ...defaultConfig,
-      dataDir: `${daemonManager.getConfigFile().replace('/config.json', '')}/data`,
+      dataDir: `${configFile.replace('/config.json', '')}/data`,
     };
 
     await writeFile(configFile, JSON.stringify(configWithDefaults, null, 2), 'utf-8');

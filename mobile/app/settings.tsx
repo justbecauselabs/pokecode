@@ -1,6 +1,6 @@
 import { ClaudeModel, getModelDisplayName } from '@pokecode/api';
 import { useRouter } from 'expo-router';
-import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
+import { Alert, ScrollView, Text, View } from 'react-native';
 import { Row, SafeAreaView } from '@/components/common';
 import { useSettingsStore } from '@/stores/settingsStore';
 

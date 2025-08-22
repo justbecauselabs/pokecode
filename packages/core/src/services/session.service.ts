@@ -10,52 +10,15 @@ import {
   getHomeDirectory,
   getParentPath,
   getRelativePath,
-  isAbsolute,
   joinPath,
-  normalizePath,
 } from '../utils/file';
 import { logger } from '../utils/logger';
-import { repositoryService } from './repository.service';
 
 export class SessionService {
   async createSession(data: CreateSessionRequest) {
-    // Validate that either projectPath or folderName is provided
-    if (!data.projectPath && !data.folderName) {
-      throw new ValidationError('Either projectPath or folderName must be provided');
-    }
-
-    // Validate that both are not provided
-    if (data.projectPath && data.folderName) {
-      throw new ValidationError('Cannot provide both projectPath and folderName');
-    }
-
-    let projectPath: string;
-
-    if (data.folderName) {
-      // Use repository service to resolve folder name to absolute path
-      try {
-        projectPath = await repositoryService.resolveFolderPath(data.folderName);
-
-        // Validate that the repository exists
-        const validation = await repositoryService.validateRepository(data.folderName);
-        if (!validation.exists) {
-          throw new ValidationError(`Repository folder '${data.folderName}' does not exist`);
-        }
-      } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        throw new ValidationError(`Invalid repository folder: ${message}`);
-      }
-    } else if (data.projectPath) {
-      // Use existing projectPath validation
-      projectPath = this.normalizeProjectPath(data.projectPath);
-    } else {
-      // This should never happen due to validation above, but TypeScript doesn't know that
-      throw new ValidationError('Either projectPath or folderName must be provided');
-    }
-
     // Generate session ID upfront to create session-specific Claude directory path
     const sessionId = createId();
-    const projectKey = projectPath.replace(/\//g, '-').replace(/_/g, '-');
+    const projectKey = data.projectPath.replace(/\//g, '-').replace(/_/g, '-');
     const claudeDirectoryPath = joinPath(
       getHomeDirectory(),
       '.claude',
@@ -65,18 +28,16 @@ export class SessionService {
     );
 
     // Extract name from the project path (last path component)
-    const name = this.extractNameFromPath(projectPath);
+    const name = this.extractNameFromPath(data.projectPath);
 
     // Create the session with all required data in a single operation
     const result = await db
       .insert(sessions)
       .values({
         id: sessionId,
-        projectPath,
+        projectPath: data.projectPath,
         name,
         claudeDirectoryPath,
-        ...(data.context !== undefined && { context: data.context }),
-        ...(data.metadata !== undefined && { metadata: data.metadata }),
       })
       .returning();
 
@@ -89,9 +50,7 @@ export class SessionService {
   }
 
   async getSession(sessionId: string) {
-    const session = await db.query.sessions.findFirst({
-      where: eq(sessions.id, sessionId),
-    });
+    const session = await db.select().from(sessions).where(eq(sessions.id, sessionId)).get();
 
     if (!session) {
       throw new NotFoundError('Session');
@@ -121,12 +80,13 @@ export class SessionService {
     const count = countResult[0]?.count ?? 0;
 
     // Get sessions ordered by updated_at descending
-    const results = await db.query.sessions.findMany({
-      where: whereClause,
-      orderBy: [desc(sessions.updatedAt)],
-      limit: effectiveLimit,
-      offset,
-    });
+    const results = await db
+      .select()
+      .from(sessions)
+      .where(whereClause)
+      .orderBy(desc(sessions.updatedAt))
+      .limit(effectiveLimit)
+      .offset(offset);
 
     logger.info({ results }, 'Sessions listed');
 
@@ -147,9 +107,7 @@ export class SessionService {
 
   async updateSession(sessionId: string, data: UpdateSessionRequest) {
     // Verify session exists
-    const session = await db.query.sessions.findFirst({
-      where: eq(sessions.id, sessionId),
-    });
+    const session = await db.select().from(sessions).where(eq(sessions.id, sessionId)).get();
 
     if (!session) {
       throw new NotFoundError('Session');
@@ -183,9 +141,7 @@ export class SessionService {
 
   async deleteSession(sessionId: string) {
     // Verify session exists
-    const session = await db.query.sessions.findFirst({
-      where: eq(sessions.id, sessionId),
-    });
+    const session = await db.select().from(sessions).where(eq(sessions.id, sessionId)).get();
 
     if (!session) {
       throw new NotFoundError('Session');
@@ -275,26 +231,6 @@ export class SessionService {
     }
 
     return null; // No git root found
-  }
-
-  private normalizeProjectPath(inputPath: string): string {
-    const raw = inputPath.trim();
-
-    // Basic character allowlist to keep things sane
-    if (!/^[a-zA-Z0-9._/-]+$/.test(raw)) {
-      throw new ValidationError('Invalid project path');
-    }
-
-    const normalized = normalizePath(raw);
-
-    // Must be absolute and not contain traversal after normalization
-    if (!isAbsolute(normalized) || normalized.includes('..')) {
-      throw new ValidationError('Project path must be an absolute path');
-    }
-
-    // Resolve to an absolute canonical path
-    const resolved = normalized; // Bun handles absolute paths directly
-    return resolved;
   }
 }
 

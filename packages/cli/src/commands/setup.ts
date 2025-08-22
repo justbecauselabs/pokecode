@@ -1,5 +1,5 @@
-import { homedir } from 'node:os';
 import { join } from 'node:path';
+import { getConfig } from '@pokecode/core';
 
 type SetupOptions = Record<string, never>;
 
@@ -114,11 +114,11 @@ async function processClaudePath(rawPath: string): Promise<void> {
 }
 
 async function saveClaudeCodePath(cliJsPath: string): Promise<void> {
-  const configDir = join(homedir(), '.pokecode');
-  const configPath = join(configDir, 'config.json');
+  const systemConfig = await getConfig();
+  const configPath = join(systemConfig.configDir, 'config.json');
 
   // Ensure config directory exists
-  await Bun.$`mkdir -p ${configDir}`;
+  await Bun.$`mkdir -p ${systemConfig.configDir}`;
 
   // Read existing config or create new one
   let config: Config = {};

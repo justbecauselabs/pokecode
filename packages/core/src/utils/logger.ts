@@ -1,41 +1,39 @@
 import { createWriteStream } from 'node:fs';
 import pino, { type StreamEntry } from 'pino';
 import pinoPretty from 'pino-pretty';
-import { config } from '../config';
+import { isTest } from '../config';
 
-const isDevelopment = config.NODE_ENV === 'development';
+// Create simple logger with sensible defaults
+// Config file can override log level via server startup
+const defaultLogLevel = 'info';
 
 // Create streams array for multistream
 const streams: StreamEntry[] = [];
 
-// Add console stream with pretty printing in development
-if (isDevelopment) {
+// Add console stream with pretty printing (but not in tests)
+if (!isTest) {
   streams.push({
-    level: config.LOG_LEVEL || 'trace',
+    level: defaultLogLevel,
     stream: pinoPretty({
       colorize: true,
       translateTime: 'SYS:standard',
       ignore: 'pid,hostname',
     }),
   });
-} else {
-  // In production, write to stdout
-  streams.push({
-    level: config.LOG_LEVEL || 'info',
-    stream: process.stdout,
-  });
 }
 
-// Always add file stream for server.log
-streams.push({
-  level: config.LOG_LEVEL || (isDevelopment ? 'trace' : 'info'),
-  stream: createWriteStream('./server.log', { flags: 'a' }),
-});
+// Always add file stream for server.log (except in tests)
+if (!isTest) {
+  streams.push({
+    level: defaultLogLevel,
+    stream: createWriteStream('./server.log', { flags: 'a' }),
+  });
+}
 
 // Create multistream logger
 export const logger = pino(
   {
-    level: config.LOG_LEVEL || (isDevelopment ? 'trace' : 'info'),
+    level: defaultLogLevel,
     formatters: {
       level: (label) => {
         return { level: label.toUpperCase() };
@@ -43,7 +41,7 @@ export const logger = pino(
     },
     timestamp: pino.stdTimeFunctions.isoTime,
   },
-  pino.multistream(streams),
+  streams.length > 0 ? pino.multistream(streams) : undefined,
 );
 
 export const createChildLogger = (name: string) => {

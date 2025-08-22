@@ -336,7 +336,9 @@ const messageRoutes: FastifyPluginAsync = async (fastify) => {
         const rawMessages = await messageService.getRawMessages(sessionId);
 
         // Extract only the contentData from each message
-        const contentDataOnly = rawMessages.map((msg) => msg.contentData).filter(Boolean);
+        const contentDataOnly = rawMessages
+          .map((msg: { contentData: unknown }) => msg.contentData)
+          .filter(Boolean);
 
         logger.debug(
           {

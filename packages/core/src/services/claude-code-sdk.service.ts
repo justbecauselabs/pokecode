@@ -48,10 +48,10 @@ export class ClaudeCodeSDKService {
     if (this.pathToClaudeCodeExecutable) return;
 
     const config = await getConfig();
-    if (!config.CLAUDE_CODE_PATH) {
-      throw new Error('CLAUDE_CODE_PATH is required');
+    if (!config.claudeCodePath) {
+      throw new Error('claudeCodePath is required');
     }
-    this.pathToClaudeCodeExecutable = config.CLAUDE_CODE_PATH;
+    this.pathToClaudeCodeExecutable = config.claudeCodePath;
   }
 
   /**

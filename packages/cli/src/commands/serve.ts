@@ -3,8 +3,8 @@
  */
 
 import { homedir } from 'node:os';
-import { join, resolve } from 'node:path';
-import { getClaudeCodePath } from '@pokecode/core';
+import { resolve } from 'node:path';
+import { getConfig, overrideConfig } from '@pokecode/core';
 import chalk from 'chalk';
 import ora from 'ora';
 import { startServer } from '../server';
@@ -94,6 +94,16 @@ export const serve = async (options: ServeOptions): Promise<void> => {
   const logLevel = validateLogLevel(options.logLevel);
   const dataDir = options.dataDir ? sanitizePath(options.dataDir) : undefined;
 
+  // Set CLI overrides FIRST before any services call getConfig()
+  overrideConfig({
+    port,
+    host,
+    logLevel: logLevel as 'fatal' | 'error' | 'warn' | 'info' | 'debug' | 'trace',
+    ...(dataDir && { dataDir }),
+    corsEnabled: options.cors,
+    helmetEnabled: options.helmet,
+  });
+
   // Check if daemon is already running
   if (await daemonManager.isRunning()) {
     const info = await daemonManager.getDaemonInfo();
@@ -107,62 +117,24 @@ export const serve = async (options: ServeOptions): Promise<void> => {
     return;
   }
 
-  const { cors, helmet } = options;
-
-  // Get Claude Code path
-  const claudeCodePath = await getClaudeCodePath();
-
-  // Determine data directory
-  const configDir = daemonManager.getConfigFile().replace('/config.json', '');
-  const finalDataDir = dataDir || join(configDir, 'data');
-
   if (options.daemon) {
-    await startDaemon({
-      port,
-      host,
-      dataDir: finalDataDir,
-      logLevel,
-      cors,
-      helmet,
-      claudeCodePath,
-    });
+    await startDaemon();
   } else {
-    await startEmbedded({
-      port,
-      host,
-      dataDir: finalDataDir,
-      logLevel,
-      cors,
-      helmet,
-      claudeCodePath,
-    });
+    await startEmbedded();
   }
 };
 
-const startDaemon = async (config: {
-  port: number;
-  host: string;
-  dataDir: string;
-  logLevel: string;
-  cors: boolean;
-  helmet: boolean;
-  claudeCodePath: string;
-}): Promise<void> => {
+const startDaemon = async (): Promise<void> => {
+  const config = await getConfig();
   const spinner = ora('Starting PokéCode server in daemon mode...').start();
   const daemonManager = new DaemonManager();
 
   try {
     await daemonManager.ensureConfigDir();
-    const logFile = daemonManager.getLogFile();
+    const logFile = await daemonManager.getLogFile();
 
     const env: Record<string, string> = {
-      POKECODE_PORT: String(config.port),
-      POKECODE_HOST: config.host,
-      POKECODE_DATA_DIR: config.dataDir,
-      POKECODE_LOG_LEVEL: config.logLevel,
-      POKECODE_CORS: String(config.cors),
-      POKECODE_HELMET: String(config.helmet),
-      NODE_ENV: process.env.NODE_ENV || 'production',
+      NODE_ENV: 'production',
     };
 
     // Re-exec the current process (handle both dev and compiled modes)
@@ -221,15 +193,8 @@ const startDaemon = async (config: {
   }
 };
 
-const startEmbedded = async (config: {
-  port: number;
-  host: string;
-  dataDir: string;
-  logLevel: string;
-  cors: boolean;
-  helmet: boolean;
-  claudeCodePath: string;
-}): Promise<void> => {
+const startEmbedded = async (): Promise<void> => {
+  const config = await getConfig();
   const spinner = ora('Starting PokéCode server...').start();
 
   try {
@@ -241,7 +206,7 @@ const startEmbedded = async (config: {
     console.log(chalk.yellow('\nPress Ctrl+C to stop the server'));
 
     // Use the new unified server module
-    await startServer(config);
+    await startServer();
   } catch (error) {
     spinner.fail(chalk.red('❌ Failed to start PokéCode server'));
     console.error(chalk.red('Error:'), error instanceof Error ? error.message : String(error));

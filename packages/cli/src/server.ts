@@ -1,36 +1,9 @@
-import { join } from 'node:path';
-import { getClaudeCodePath } from '@pokecode/core';
+import { getConfig } from '@pokecode/core';
 import { createServer } from '@pokecode/server';
 
-export interface ServerConfig {
-  port: number;
-  host: string;
-  dataDir: string;
-  logLevel: string;
-  cors: boolean;
-  helmet: boolean;
-  claudeCodePath: string;
-  NODE_ENV?: string;
-}
-
-export async function makeConfigFromEnv(): Promise<ServerConfig> {
-  const home = process.env.HOME || process.env.USERPROFILE || '/tmp';
-  const defaultData = join(home, '.pokecode', 'data');
-  const claudeCodePath = await getClaudeCodePath();
-  return {
-    port: Number(process.env.POKECODE_PORT) || 3001,
-    host: process.env.POKECODE_HOST || '0.0.0.0',
-    dataDir: process.env.POKECODE_DATA_DIR || defaultData,
-    logLevel: process.env.POKECODE_LOG_LEVEL || 'info',
-    cors: process.env.POKECODE_CORS !== 'false',
-    helmet: process.env.POKECODE_HELMET !== 'false',
-    claudeCodePath,
-    NODE_ENV: process.env.NODE_ENV || 'production',
-  };
-}
-
-export async function startServer(config: ServerConfig): Promise<void> {
-  const server = await createServer(config);
+export async function startServer(): Promise<void> {
+  const config = await getConfig();
+  const server = await createServer();
 
   const signals = ['SIGTERM', 'SIGINT', 'SIGUSR2'] as const;
   signals.forEach((signal) => {

@@ -20,6 +20,7 @@ export const jobQueue = sqliteTable(
         projectPath: string;
         allowedTools?: string[];
         messageId?: string;
+        model?: string;
       }>()
       .notNull(),
     attempts: integer('attempts').default(0).notNull(),

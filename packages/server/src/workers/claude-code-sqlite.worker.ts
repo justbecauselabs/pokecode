@@ -3,6 +3,7 @@ import {
   createChildLogger,
   db,
   emitSessionDone,
+  getConfig,
   jobQueue,
   messageService,
   sessions,
@@ -18,8 +19,8 @@ const logger = createChildLogger('claude-code-sqlite-worker');
  */
 export class ClaudeCodeSQLiteWorker {
   private isRunning = false;
-  private readonly pollingInterval = 1000; // 1 second
-  private readonly concurrency = 5;
+  private pollingInterval = 1000; // Default, will be updated from config
+  private concurrency = 5; // Default, will be updated from config
   private activeSessions: Map<string, ClaudeCodeSDKService> = new Map();
   private processingJobs = 0;
   private pollingTimer: ReturnType<typeof setTimeout> | null = null;
@@ -32,6 +33,11 @@ export class ClaudeCodeSQLiteWorker {
     if (this.isRunning) {
       return;
     }
+
+    // Load config values
+    const config = await getConfig();
+    this.pollingInterval = config.workerPollingInterval;
+    this.concurrency = config.workerConcurrency;
 
     this.isRunning = true;
     logger.info({ concurrency: this.concurrency }, 'Starting SQLite worker');
