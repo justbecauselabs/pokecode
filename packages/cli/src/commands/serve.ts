@@ -167,15 +167,15 @@ const startEmbedded = async (): Promise<void> => {
   const spinner = ora('Starting PokéCode server...').start();
 
   try {
+    // Use the new unified server module
+    await startServer();
+
     spinner.succeed(chalk.green('✅ PokéCode server started successfully!'));
     console.log(`🚀 Server running at: ${chalk.cyan(`http://${config.host}:${config.port}`)}`);
     console.log(`� Logs: ${chalk.gray(LOG_FILE)}`);
     console.log(`📊 Log level: ${chalk.gray(config.logLevel)}`);
     console.log(`🔍 Claude Code path: ${chalk.gray(config.claudeCodePath)}`);
     console.log(chalk.yellow('\nPress Ctrl+C to stop the server'));
-
-    // Use the new unified server module
-    await startServer();
   } catch (error) {
     spinner.fail(chalk.red('❌ Failed to start PokéCode server'));
     console.error(chalk.red('Error:'), error instanceof Error ? error.message : String(error));

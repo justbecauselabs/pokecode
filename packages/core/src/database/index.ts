@@ -1,32 +1,27 @@
 import { Database } from 'bun:sqlite';
 import { mkdirSync } from 'node:fs';
-import { homedir } from 'node:os';
-import path, { join } from 'node:path';
+import path from 'node:path';
 import { type BunSQLiteDatabase, drizzle } from 'drizzle-orm/bun-sqlite';
+import { DATABASE_PATH } from '../config';
 import { DatabaseMigrator } from './migrator';
 import * as schema from './schema-sqlite';
 
-// Single database instance - use defaults that can be overridden by config
-const BASE_CONFIG_DIR = join(homedir(), '.pokecode');
-let dbPath: string;
+// Single database instance
 let sqlite: Database;
 let db: BunSQLiteDatabase<typeof schema>;
 
 function initializeDatabase() {
   if (db) return; // Already initialized
 
-  // Use default path - matches config BASE_CONFIG_DIR
-  dbPath = join(BASE_CONFIG_DIR, 'data', 'pokecode.db');
-
-  // Ensure data directory exists
+  // Ensure directory exists
   try {
-    mkdirSync(path.dirname(dbPath), { recursive: true });
+    mkdirSync(path.dirname(DATABASE_PATH), { recursive: true });
   } catch (_error) {
     // Directory might already exist
   }
 
   // Create SQLite connection
-  sqlite = new Database(dbPath);
+  sqlite = new Database(DATABASE_PATH);
 
   // Configure SQLite with sensible defaults
   sqlite.exec('PRAGMA journal_mode = WAL;');
@@ -42,13 +37,36 @@ function initializeDatabase() {
   const migrator = new DatabaseMigrator(sqlite);
   migrator.migrate().catch((error) => {
     console.error('Failed to run database migrations:', error);
+    throw error; // Propagate error instead of swallowing it
   });
 }
 
-// Initialize immediately
+// Export initialization function for explicit control
+export { initializeDatabase };
+
+// Initialize on first access to allow config overrides
+function ensureInitialized() {
+  if (!db) {
+    initializeDatabase();
+  }
+}
+
+// Lazy getter for database
+export function getDatabase(): BunSQLiteDatabase<typeof schema> {
+  ensureInitialized();
+  return db;
+}
+
+// Lazy getter for sqlite
+export function getSqlite(): Database {
+  ensureInitialized();
+  return sqlite;
+}
+
+// Initialize immediately to maintain backward compatibility
 initializeDatabase();
 
-// Export the single instance
+// Export the instances
 export { db, sqlite };
 
 // Export schema and utilities

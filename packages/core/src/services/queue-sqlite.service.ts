@@ -190,8 +190,6 @@ export class SQLiteQueueService {
   async getNextJob(): Promise<(typeof jobQueue.$inferSelect & { data: PromptJobData }) | null> {
     const now = new Date();
 
-    logger.info({}, 'Getting next job');
-
     // Get the oldest pending job or a job ready for retry
     const job = await db
       .select()

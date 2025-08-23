@@ -1,7 +1,8 @@
-import { createWriteStream } from 'node:fs';
+import { createWriteStream, mkdirSync } from 'node:fs';
+import path from 'node:path';
 import pino, { type StreamEntry } from 'pino';
 import pinoPretty from 'pino-pretty';
-import { isTest } from '../config';
+import { isTest, LOG_FILE } from '../config';
 
 // Create simple logger with sensible defaults
 // Config file can override log level via server startup
@@ -22,11 +23,18 @@ if (!isTest) {
   });
 }
 
-// Always add file stream for server.log (except in tests)
+// Always add file stream to LOG_FILE (except in tests)
 if (!isTest) {
+  // Ensure log directory exists
+  try {
+    mkdirSync(path.dirname(LOG_FILE), { recursive: true });
+  } catch (_error) {
+    // Directory might already exist
+  }
+
   streams.push({
     level: defaultLogLevel,
-    stream: createWriteStream('./server.log', { flags: 'a' }),
+    stream: createWriteStream(LOG_FILE, { flags: 'a' }),
   });
 }
 
