@@ -9,12 +9,18 @@ export interface Config {
   logLevel: 'fatal' | 'error' | 'warn' | 'info' | 'debug' | 'trace';
 
   // Database
+  databasePath: string;
   databaseWAL: boolean;
   databaseCacheSize: number;
 
-  // File Config
-  claudeCodePath: string;
+  // Paths
+  configDir: string; // Base config directory (~/.pokecode)
+  claudeCodePath: string | undefined;
   repositories: string[];
+  configFile: string;
+  logFile: string;
+  pidFile: string;
+  daemonFile: string;
 
   // Worker
   workerConcurrency: number;
@@ -23,21 +29,22 @@ export interface Config {
   maxJobAttempts: number;
 }
 
-export const CONFIG_DIR = join(homedir(), '.pokecode');
-export const CONFIG_FILE = join(CONFIG_DIR, 'config.json');
-export const DATABASE_PATH = join(CONFIG_DIR, 'pokecode.db');
-export const LOG_FILE = join(CONFIG_DIR, 'pokecode.log');
-export const PID_FILE = join(CONFIG_DIR, 'pokecode.pid');
-export const DAEMON_FILE = join(CONFIG_DIR, 'daemon.json');
+const BASE_CONFIG_DIR = join(homedir(), '.pokecode');
 
 const defaultConfig: Config = {
   port: 3001,
   host: '0.0.0.0',
   logLevel: 'info',
+  configDir: BASE_CONFIG_DIR,
+  databasePath: join(BASE_CONFIG_DIR, 'pokecode.db'),
   databaseWAL: true,
   databaseCacheSize: 1000000, // 1GB
-  claudeCodePath: '',
+  claudeCodePath: undefined,
   repositories: [],
+  configFile: join(BASE_CONFIG_DIR, 'config.json'),
+  logFile: join(BASE_CONFIG_DIR, 'pokecode.log'),
+  pidFile: join(BASE_CONFIG_DIR, 'pokecode.pid'),
+  daemonFile: join(BASE_CONFIG_DIR, 'daemon.json'),
   workerConcurrency: 5,
   workerPollingInterval: 1000,
   jobRetention: 30, // days
@@ -54,13 +61,11 @@ export type FileConfig = z.infer<typeof fileConfigSchema>;
 let configOverrides: Partial<Config> | undefined;
 
 export async function getConfig(): Promise<Config> {
-  const configFile = Bun.file(CONFIG_FILE);
+  const configFile = Bun.file(defaultConfig.configFile);
   let fileConfig: FileConfig | undefined;
   if (await configFile.exists()) {
     const content = await configFile.text();
     fileConfig = fileConfigSchema.parse(JSON.parse(content));
-  } else {
-    throw new Error('.pokecode/config.json not found. Please run `pokecode setup`.');
   }
 
   return {

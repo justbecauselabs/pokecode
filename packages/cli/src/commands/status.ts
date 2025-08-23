@@ -4,7 +4,7 @@
 
 import type { HealthResponse } from '@pokecode/api';
 import { HealthResponseSchema } from '@pokecode/api';
-import { LOG_FILE } from '@pokecode/core';
+import { getConfig } from '@pokecode/core';
 import chalk from 'chalk';
 import { DaemonManager } from '../utils/daemon';
 
@@ -15,6 +15,7 @@ export interface StatusOptions {
 
 export const status = async (_options: StatusOptions): Promise<void> => {
   const daemonManager = new DaemonManager();
+  const config = await getConfig();
 
   console.log(chalk.blue('🔍 Checking PokéCode server status...\n'));
 
@@ -37,7 +38,7 @@ export const status = async (_options: StatusOptions): Promise<void> => {
     console.log(`📍 URL: ${chalk.cyan(`http://${info.host}:${info.port}`)}`);
     console.log(`🔢 PID: ${chalk.gray(info.pid)}`);
     console.log(`⏰ Started: ${chalk.gray(info.startTime)}`);
-    console.log(`� Log file: ${chalk.gray(LOG_FILE)}`);
+    console.log(`📝 Log file: ${chalk.gray(config.logFile)}`);
 
     // Calculate uptime
     const startTime = new Date(info.startTime);

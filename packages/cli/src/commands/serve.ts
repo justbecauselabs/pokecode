@@ -2,7 +2,7 @@
  * Serve command implementation with robust daemon support
  */
 
-import { getConfig, LOG_FILE, overrideConfig } from '@pokecode/core';
+import { getConfig, overrideConfig } from '@pokecode/core';
 import chalk from 'chalk';
 import ora from 'ora';
 import { startServer } from '../server';
@@ -128,8 +128,8 @@ const startDaemon = async (): Promise<void> => {
       env: Object.fromEntries(
         Object.entries({ ...process.env, ...env }).filter(([, value]) => value !== undefined),
       ) as Record<string, string>,
-      stdout: LOG_FILE,
-      stderr: LOG_FILE,
+      stdout: config.logFile,
+      stderr: config.logFile,
     });
 
     if (!child.pid) throw new Error('Failed to start daemon process');
@@ -143,7 +143,7 @@ const startDaemon = async (): Promise<void> => {
 
     spinner.succeed(chalk.green('✅ PokéCode server started in daemon mode!'));
     console.log(`🚀 Server running at: ${chalk.cyan(`http://${config.host}:${config.port}`)}`);
-    console.log(`📝 Logs: ${chalk.gray(LOG_FILE)}`);
+    console.log(`📝 Logs: ${chalk.gray(config.logFile)}`);
     console.log(`🆔 PID: ${chalk.gray(child.pid)}`);
     console.log('\nUse the following commands:');
     console.log(`  ${chalk.cyan('pokecode status')} - Check server status`);
@@ -172,7 +172,7 @@ const startEmbedded = async (): Promise<void> => {
 
     spinner.succeed(chalk.green('✅ PokéCode server started successfully!'));
     console.log(`🚀 Server running at: ${chalk.cyan(`http://${config.host}:${config.port}`)}`);
-    console.log(`� Logs: ${chalk.gray(LOG_FILE)}`);
+    console.log(`📝 Logs: ${chalk.gray(config.logFile)}`);
     console.log(`📊 Log level: ${chalk.gray(config.logLevel)}`);
     console.log(`🔍 Claude Code path: ${chalk.gray(config.claudeCodePath)}`);
     console.log(chalk.yellow('\nPress Ctrl+C to stop the server'));

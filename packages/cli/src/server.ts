@@ -1,4 +1,4 @@
-import { getConfig, LOG_FILE } from '@pokecode/core';
+import { getConfig } from '@pokecode/core';
 import { createServer, setWorker } from '@pokecode/server';
 import { ClaudeCodeSQLiteWorker } from '../../server/src/workers';
 
@@ -40,7 +40,7 @@ export async function startServer(): Promise<void> {
   await server.listen({ port: config.port, host: config.host });
 
   console.log(`🚀 PokéCode server running at http://${config.host}:${config.port}`);
-  console.log(`� Logs: ${LOG_FILE}`);
+  console.log(`📝 Logs: ${config.logFile}`);
   console.log(`📊 Log level: ${config.logLevel}`);
   console.log(`🔍 Claude Code path: ${config.claudeCodePath}`);
 

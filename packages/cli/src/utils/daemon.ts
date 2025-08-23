@@ -2,7 +2,7 @@
  * Cross-platform daemon management utilities
  */
 
-import { DAEMON_FILE, PID_FILE } from '@pokecode/core';
+import { getConfig } from '@pokecode/core';
 
 export interface DaemonInfo {
   pid: number;
@@ -13,18 +13,21 @@ export interface DaemonInfo {
 
 export class DaemonManager {
   async saveDaemonInfo(info: DaemonInfo): Promise<void> {
+    const config = await getConfig();
+
     // Write PID file with secure permissions (0o600 = owner read/write only)
-    await Bun.write(PID_FILE, info.pid.toString());
-    await Bun.$`chmod 600 ${PID_FILE}`;
+    await Bun.write(config.pidFile, info.pid.toString());
+    await Bun.$`chmod 600 ${config.pidFile}`;
 
     // Write full daemon info with secure permissions
-    await Bun.write(DAEMON_FILE, JSON.stringify(info, null, 2));
-    await Bun.$`chmod 600 ${DAEMON_FILE}`;
+    await Bun.write(config.daemonFile, JSON.stringify(info, null, 2));
+    await Bun.$`chmod 600 ${config.daemonFile}`;
   }
 
   async getDaemonInfo(): Promise<DaemonInfo | null> {
     try {
-      const file = Bun.file(DAEMON_FILE);
+      const config = await getConfig();
+      const file = Bun.file(config.daemonFile);
       if (await file.exists()) {
         const content = await file.text();
         return JSON.parse(content);
@@ -37,7 +40,8 @@ export class DaemonManager {
 
   async getPid(): Promise<number | null> {
     try {
-      const file = Bun.file(PID_FILE);
+      const config = await getConfig();
+      const file = Bun.file(config.pidFile);
       if (await file.exists()) {
         const content = await file.text();
         const pid = parseInt(content.trim(), 10);
@@ -125,18 +129,20 @@ export class DaemonManager {
 
   async cleanup(): Promise<void> {
     try {
-      const pidFileObj = Bun.file(PID_FILE);
+      const config = await getConfig();
+      const pidFileObj = Bun.file(config.pidFile);
       if (await pidFileObj.exists()) {
-        await Bun.$`rm ${PID_FILE}`;
+        await Bun.$`rm ${config.pidFile}`;
       }
     } catch {
       // File might not exist
     }
 
     try {
-      const file = Bun.file(DAEMON_FILE);
+      const config = await getConfig();
+      const file = Bun.file(config.daemonFile);
       if (await file.exists()) {
-        await Bun.$`rm ${DAEMON_FILE}`;
+        await Bun.$`rm ${config.daemonFile}`;
       }
     } catch {
       // File might not exist

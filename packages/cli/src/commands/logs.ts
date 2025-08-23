@@ -5,8 +5,9 @@
 import { spawn } from 'node:child_process';
 import { readFile } from 'node:fs/promises';
 import { platform } from 'node:os';
-import { LOG_FILE } from '@pokecode/core';
+import { getConfig } from '@pokecode/core';
 import chalk from 'chalk';
+import { DaemonManager } from '../utils/daemon';
 
 export interface LogsOptions {
   follow?: boolean;
@@ -14,18 +15,21 @@ export interface LogsOptions {
 }
 
 export const logs = async (options: LogsOptions): Promise<void> => {
+  const config = await getConfig();
+
   try {
+    const logFile = config.logFile;
     const numLines = parseInt(options.lines, 10);
 
     if (options.follow) {
-      console.log(chalk.blue(`📝 Following logs from: ${LOG_FILE}\n`));
+      console.log(chalk.blue(`📝 Following logs from: ${logFile}\n`));
       console.log(chalk.gray('Press Ctrl+C to stop following logs\n'));
 
-      await followLogs(LOG_FILE, numLines);
+      await followLogs(logFile, numLines);
     } else {
-      console.log(chalk.blue(`📝 Showing last ${numLines} lines from: ${LOG_FILE}\n`));
+      console.log(chalk.blue(`📝 Showing last ${numLines} lines from: ${logFile}\n`));
 
-      await showLogs(LOG_FILE, numLines);
+      await showLogs(logFile, numLines);
     }
   } catch (error) {
     console.error(chalk.red('❌ Error reading logs:'));
