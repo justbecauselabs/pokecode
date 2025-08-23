@@ -13,7 +13,7 @@ import errorHandlerPlugin from './plugins/error-handler';
 import requestLoggerPlugin from './plugins/request-logger';
 import repositoryRoutes from './repositories';
 import sessionRoutes from './sessions';
-import { ClaudeCodeSQLiteWorker } from './workers';
+import type { ClaudeCodeSQLiteWorker } from './workers';
 
 // Global worker instance
 let globalWorker: ClaudeCodeSQLiteWorker | null = null;
@@ -39,18 +39,11 @@ export const createApp: FastifyPluginAsync = async (fastify) => {
   await fastify.register(repositoryRoutes, { prefix: '/api/claude-code/repositories' });
   await fastify.register(sessionRoutes, { prefix: '/api/claude-code/sessions' });
 
-  // Health check database connection and start worker
+  // Health check database connection (worker started separately by CLI)
   fastify.addHook('onReady', async () => {
     const isHealthy = await checkDatabaseHealth();
     if (isHealthy) {
       fastify.log.info('Database connection verified');
-
-      // Start the worker after database is ready
-      if (!globalWorker) {
-        globalWorker = new ClaudeCodeSQLiteWorker();
-        await globalWorker.start();
-        fastify.log.info('Worker started successfully');
-      }
     } else {
       fastify.log.error('Database health check failed');
       throw new Error('Database initialization failed');
@@ -85,6 +78,11 @@ export const createApp: FastifyPluginAsync = async (fastify) => {
 
 // Export worker for access in routes
 export const getWorker = () => globalWorker;
+
+// Set the global worker instance
+export const setWorker = (worker: ClaudeCodeSQLiteWorker | null) => {
+  globalWorker = worker;
+};
 
 export async function createServer() {
   const config = await getConfig();

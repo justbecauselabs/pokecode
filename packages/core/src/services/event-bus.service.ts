@@ -1,5 +1,8 @@
 import { EventEmitter } from 'node:events';
 import type { Message, SSEEvent } from '@pokecode/api';
+import { createChildLogger } from '../utils/logger';
+
+const logger = createChildLogger('event-bus');
 
 // Type-safe event definitions
 interface EventBusEvents {
@@ -31,7 +34,12 @@ export const messageEvents = new TypedEventEmitter();
 
 // Helper functions to emit SSE events
 export function emitNewMessage(sessionId: string, message: Message) {
-  messageEvents.emit('sse-event', {
+  logger.debug(
+    { sessionId, messageId: message.id, messageType: message.type },
+    'Emitting new message event to SSE clients',
+  );
+
+  const success = messageEvents.emit('sse-event', {
     sessionId,
     event: {
       type: 'update',
@@ -41,10 +49,22 @@ export function emitNewMessage(sessionId: string, message: Message) {
       },
     },
   });
+
+  logger.debug(
+    {
+      sessionId,
+      messageId: message.id,
+      success,
+      listenerCount: messageEvents.listenerCount('sse-event'),
+    },
+    'SSE event emission result',
+  );
 }
 
 export function emitSessionDone(sessionId: string) {
-  messageEvents.emit('sse-event', {
+  logger.debug({ sessionId }, 'Emitting session done event to SSE clients');
+
+  const success = messageEvents.emit('sse-event', {
     sessionId,
     event: {
       type: 'update',
@@ -54,6 +74,11 @@ export function emitSessionDone(sessionId: string) {
       },
     },
   });
+
+  logger.debug(
+    { sessionId, success, listenerCount: messageEvents.listenerCount('sse-event') },
+    'Session done event emission result',
+  );
 }
 
 export function emitHeartbeat(sessionId: string) {

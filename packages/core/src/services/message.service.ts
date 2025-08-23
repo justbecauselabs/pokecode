@@ -203,7 +203,22 @@ export class MessageService {
         const parsedMessage = parseDbMessage(insertedMessage, session.projectPath);
         if (parsedMessage) {
           emitNewMessage(sessionId, parsedMessage);
+        } else {
+          logger.warn(
+            {
+              sessionId,
+              messageId: insertedMessage.id,
+              messageType: insertedMessage.type,
+              hasContentData: !!insertedMessage.contentData,
+            },
+            'parseDbMessage returned null - SSE event will not be emitted',
+          );
         }
+      } else {
+        logger.warn(
+          { sessionId, hasMessage: !!insertedMessage, hasSession: !!session },
+          'Missing message or session - SSE event will not be emitted',
+        );
       }
     });
   }
@@ -256,7 +271,22 @@ export class MessageService {
         const parsedMessage = parseDbMessage(insertedMessage, session.projectPath);
         if (parsedMessage) {
           emitNewMessage(sessionId, parsedMessage);
+        } else {
+          logger.warn(
+            {
+              sessionId,
+              messageId: insertedMessage.id,
+              messageType: insertedMessage.type,
+              hasContentData: !!insertedMessage.contentData,
+            },
+            'parseDbMessage returned null - SSE event will not be emitted',
+          );
         }
+      } else {
+        logger.warn(
+          { sessionId, hasMessage: !!insertedMessage, hasSession: !!session },
+          'Missing message or session - SSE event will not be emitted',
+        );
       }
     });
   }

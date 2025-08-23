@@ -44,6 +44,10 @@ class EventQueue {
     });
   }
 
+  get size(): number {
+    return this.queue.length;
+  }
+
   abort() {
     this.aborted = true;
     // Resolve all pending promises with null
@@ -86,13 +90,35 @@ const messageRoutes: FastifyPluginAsync = async (fastify) => {
 
             // Set up event listener for SSE events
             const onSSEEvent = (data: { sessionId: string; event: SSEEvent }) => {
+              logger.debug(
+                {
+                  eventSessionId: data.sessionId,
+                  targetSessionId: sessionId,
+                  eventType: data.event.type,
+                  matches: data.sessionId === sessionId,
+                },
+                'SSE endpoint received event',
+              );
+
               if (data.sessionId === sessionId) {
                 eventQueue.push(data.event);
+                logger.debug(
+                  {
+                    sessionId,
+                    eventType: data.event.type,
+                    queueLength: eventQueue.size,
+                  },
+                  'Event added to SSE queue',
+                );
               }
             };
 
             // Register listener
             messageEvents.on('sse-event', onSSEEvent);
+            logger.debug(
+              { sessionId, totalListeners: messageEvents.listenerCount('sse-event') },
+              'SSE endpoint registered event listener',
+            );
 
             // Clean up on client disconnect
             const cleanup = () => {
