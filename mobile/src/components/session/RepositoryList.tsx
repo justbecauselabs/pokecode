@@ -21,21 +21,21 @@ const RepositoryItem = memo(({ repository, onPress, isCreating }: RepositoryItem
     <Pressable
       onPress={() => onPress(repository)}
       disabled={isCreating}
-      className="flex-row items-center py-3 px-4 active:bg-gray-50 dark:active:bg-gray-700"
+      className="flex-row items-center py-4 px-4 active:opacity-80"
     >
       {/* Repository Info */}
       <View className="flex-1">
         <View className="flex-row items-center mb-1">
-          <Text className="text-lg font-medium text-gray-900 dark:text-white mr-2">
+          <Text className="text-base font-semibold text-foreground font-mono mr-2">
             {repository.folderName}
           </Text>
           {repository.isGitRepository && (
-            <View className="bg-green-100 dark:bg-green-900 px-2 py-1 rounded">
-              <Text className="text-green-700 dark:text-green-300 text-xs font-medium">Git</Text>
+            <View className="bg-primary px-2 py-1 rounded">
+              <Text className="text-primary-foreground text-xs font-medium font-mono">Git</Text>
             </View>
           )}
         </View>
-        <Text className="text-gray-500 dark:text-gray-400 text-sm" numberOfLines={1}>
+        <Text className="text-muted-foreground text-sm font-mono" numberOfLines={1}>
           {repository.path}
         </Text>
       </View>
@@ -44,7 +44,6 @@ const RepositoryItem = memo(({ repository, onPress, isCreating }: RepositoryItem
       {isCreating && (
         <View className="ml-3">
           <ActivityIndicator size="small" color="#528bff" />
-          {/* Using design token equivalent of text-primary */}
         </View>
       )}
     </Pressable>
@@ -81,15 +80,15 @@ export const RepositoryList = memo(
 
     const renderEmptyState = () => (
       <View className="flex-1 items-center justify-center p-8">
-        <Text className="text-gray-500 dark:text-gray-400 text-lg text-center mb-2">
+        <Text className="text-muted-foreground text-lg text-center mb-2 font-mono">
           No repositories found
         </Text>
-        <Text className="text-gray-400 dark:text-gray-500 text-center">
+        <Text className="text-muted-foreground/70 text-center font-mono">
           Make sure your repositories directory is configured
         </Text>
         {onRefresh && (
-          <Pressable onPress={onRefresh} className="mt-4 bg-blue-500 px-4 py-2 rounded-lg">
-            <Text className="text-white font-medium">Refresh</Text>
+          <Pressable onPress={onRefresh} className="mt-4 bg-primary px-4 py-2 rounded-lg">
+            <Text className="text-primary-foreground font-medium font-mono">Refresh</Text>
           </Pressable>
         )}
       </View>
@@ -97,13 +96,13 @@ export const RepositoryList = memo(
 
     const renderErrorState = () => (
       <View className="flex-1 items-center justify-center p-8">
-        <Text className="text-red-500 text-center text-lg mb-4">Failed to load repositories</Text>
-        <Text className="text-gray-500 dark:text-gray-400 text-center mb-4">
+        <Text className="text-destructive text-center text-lg mb-4 font-mono">Failed to load repositories</Text>
+        <Text className="text-muted-foreground text-center mb-4 font-mono">
           {error?.message || 'An unexpected error occurred'}
         </Text>
         {onRefresh && (
-          <Pressable onPress={onRefresh} className="bg-blue-500 px-4 py-2 rounded-lg">
-            <Text className="text-white font-medium">Try Again</Text>
+          <Pressable onPress={onRefresh} className="bg-primary px-4 py-2 rounded-lg">
+            <Text className="text-primary-foreground font-medium font-mono">Try Again</Text>
           </Pressable>
         )}
       </View>
@@ -117,8 +116,7 @@ export const RepositoryList = memo(
       return (
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator size="large" color="#528bff" />
-          {/* Using design token equivalent of text-primary */}
-          <Text className="text-gray-500 dark:text-gray-400 mt-4">Loading repositories...</Text>
+          <Text className="text-muted-foreground mt-4 font-mono">Loading repositories...</Text>
         </View>
       );
     }
@@ -128,12 +126,12 @@ export const RepositoryList = memo(
     }
 
     return (
-      <View className="flex-1">
+      <View className="flex-1 bg-background">
         <FlatList
           data={repositories}
           keyExtractor={(item) => item?.path || `repo-${Math.random()}`}
           renderItem={renderRepository}
-          ItemSeparatorComponent={() => <View className="h-px bg-gray-200 dark:bg-gray-700 ml-4" />}
+          ItemSeparatorComponent={() => <View className="h-px bg-border ml-4" />}
           showsVerticalScrollIndicator={false}
           refreshing={isLoading}
           onRefresh={onRefresh}

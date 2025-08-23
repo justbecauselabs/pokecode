@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useState } from 'react';
 import type { BrowseDirectoryResponse } from '@/api/client';
 import { apiClient } from '@/api/client';
@@ -8,9 +8,15 @@ interface DirectoryBrowserError {
   code?: string;
 }
 
+interface NavigationStackItem {
+  path: string | undefined;
+  data: BrowseDirectoryResponse;
+}
+
 export function useDirectoryBrowser(initialPath?: string) {
+  const [navigationStack, setNavigationStack] = useState<NavigationStackItem[]>([]);
   const [currentPath, setCurrentPath] = useState<string | undefined>(initialPath);
-  const [navigationHistory, setNavigationHistory] = useState<string[]>([]);
+  const queryClient = useQueryClient();
 
   const { data, isLoading, error, refetch } = useQuery<
     BrowseDirectoryResponse,
@@ -33,40 +39,65 @@ export function useDirectoryBrowser(initialPath?: string) {
 
   const navigateToDirectory = useCallback(
     (path: string) => {
-      if (data?.currentPath) {
-        setNavigationHistory((prev) => [...prev, data.currentPath]);
+      if (data) {
+        // Push current state to navigation stack
+        setNavigationStack((prev) => [...prev, { path: currentPath, data }]);
+        
+        // Pre-fetch the new directory to ensure smooth navigation
+        queryClient.prefetchQuery({
+          queryKey: ['directories', path],
+          queryFn: async () => {
+            return await apiClient.browseDirectory({ path });
+          },
+          staleTime: 30000,
+        });
       }
       setCurrentPath(path);
     },
-    [data?.currentPath]
+    [data, currentPath, queryClient]
   );
 
   const navigateBack = useCallback(() => {
-    const previousPath = navigationHistory[navigationHistory.length - 1];
-    if (previousPath) {
-      setNavigationHistory((prev) => prev.slice(0, -1));
-      setCurrentPath(previousPath);
+    const previousItem = navigationStack[navigationStack.length - 1];
+    if (previousItem) {
+      setNavigationStack((prev) => prev.slice(0, -1));
+      setCurrentPath(previousItem.path);
     } else if (data?.parentPath) {
       setCurrentPath(data.parentPath);
     }
-  }, [navigationHistory, data?.parentPath]);
+  }, [navigationStack, data?.parentPath]);
 
   const navigateToParent = useCallback(() => {
     if (data?.parentPath) {
-      if (data.currentPath) {
-        setNavigationHistory((prev) => [...prev, data.currentPath]);
-      }
+      // Push current state to navigation stack
+      setNavigationStack((prev) => [...prev, { path: currentPath, data }]);
+      
+      // Pre-fetch the parent directory
+      queryClient.prefetchQuery({
+        queryKey: ['directories', data.parentPath],
+        queryFn: async () => {
+          if (!data.parentPath) {
+            throw new Error('Parent path is not available');
+          }
+          return await apiClient.browseDirectory({ path: data.parentPath });
+        },
+        staleTime: 30000,
+      });
+      
       setCurrentPath(data.parentPath);
     }
-  }, [data?.currentPath, data?.parentPath]);
+  }, [data, currentPath, queryClient]);
 
-  const canGoBack = navigationHistory.length > 0 || data?.parentPath !== null;
+  const canGoBack = navigationStack.length > 0 || data?.parentPath !== null;
 
   return {
     // Data
     currentPath: data?.currentPath,
     parentPath: data?.parentPath,
-    directories: data?.items?.filter((item): item is typeof item & { type: 'directory' } => item.type === 'directory') || [],
+    directories:
+      data?.items?.filter(
+        (item): item is typeof item & { type: 'directory' } => item.type === 'directory'
+      ) || [],
 
     // State
     isLoading,
@@ -81,5 +112,6 @@ export function useDirectoryBrowser(initialPath?: string) {
     // Computed
     canGoBack,
     pathSegments: data?.currentPath?.split('/').filter(Boolean) || [],
+    navigationDepth: navigationStack.length,
   };
 }

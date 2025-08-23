@@ -1,12 +1,13 @@
-import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
+import { type BottomSheetModal, BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Stack, useRouter } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { Pressable, Text } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { ErrorBoundary } from '@/components/common';
+import { SessionOptionsBottomSheet } from '@/components/session/SessionOptionsBottomSheet';
 
 // @ts-expect-error - global.css is not a module
 import '../global.css';
@@ -24,15 +25,22 @@ const queryClient = new QueryClient({
 });
 
 function HeaderButtons() {
-  const router = useRouter();
+  const bottomSheetModalRef = useRef<BottomSheetModal>(null);
+
+  const handlePlusPress = () => {
+    bottomSheetModalRef.current?.present();
+  };
 
   return (
-    <Pressable
-      onPress={() => router.push('/repositories')}
-      className="w-10 h-10 items-center justify-center"
-    >
-      <Text className="text-foreground text-xl font-bold font-mono">+</Text>
-    </Pressable>
+    <>
+      <Pressable
+        onPress={handlePlusPress}
+        className="w-10 h-10 items-center justify-center"
+      >
+        <Text className="text-foreground text-xl font-bold font-mono">+</Text>
+      </Pressable>
+      <SessionOptionsBottomSheet ref={bottomSheetModalRef} />
+    </>
   );
 }
 

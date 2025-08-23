@@ -1,8 +1,10 @@
+import type { BottomSheetModal } from '@gorhom/bottom-sheet';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useRef } from 'react';
 import { ActivityIndicator, Alert, FlatList, Pressable, Text, View } from 'react-native';
 import type { Session } from '@/api/client';
 import { LoadingState, SafeAreaView } from '@/components/common';
+import { SessionOptionsBottomSheet } from '@/components/session/SessionOptionsBottomSheet';
 import { useDeleteSession, useSessions } from '@/hooks/useSessions';
 import { formatRelativeTime } from '@/utils/format';
 
@@ -10,6 +12,7 @@ export default function HomeScreen() {
   const { data: sessions = [], isLoading, error, refetch } = useSessions();
   const deleteSessionMutation = useDeleteSession();
   const router = useRouter();
+  const bottomSheetModalRef = useRef<BottomSheetModal>(null);
 
   const getStateColor = (state: Session['state']) => {
     switch (state) {
@@ -120,7 +123,7 @@ export default function HomeScreen() {
               Create your first session to get started
             </Text>
             <Pressable
-              onPress={() => router.push('/repositories')}
+              onPress={() => bottomSheetModalRef.current?.present()}
               className="bg-primary px-6 py-3 rounded-lg"
             >
               <Text className="text-primary-foreground font-medium font-mono text-center">
@@ -156,14 +159,6 @@ export default function HomeScreen() {
                         >
                           {truncatePath(item.projectPath)}
                         </Text>
-                        {item.context && (
-                          <Text
-                            className="text-sm text-muted-foreground font-mono mb-2"
-                            numberOfLines={2}
-                          >
-                            {item.context}
-                          </Text>
-                        )}
                         <Text className="text-xs text-muted-foreground font-mono mb-1">
                           {formatRelativeTime(item.lastAccessedAt)}
                         </Text>
@@ -193,6 +188,7 @@ export default function HomeScreen() {
           </>
         )}
       </View>
+      <SessionOptionsBottomSheet ref={bottomSheetModalRef} />
     </SafeAreaView>
   );
 }
