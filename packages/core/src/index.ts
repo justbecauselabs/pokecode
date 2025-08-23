@@ -35,5 +35,6 @@ export { sessionService } from './services/session.service';
 export * from './types';
 export { ApiError } from './types/errors';
 // Utils exports
+export * from './utils/file';
 export * from './utils/logger';
 export { createChildLogger, logger } from './utils/logger';

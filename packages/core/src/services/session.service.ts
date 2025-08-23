@@ -232,6 +232,7 @@ export class SessionService {
 
     return null; // No git root found
   }
+
 }
 
 export const sessionService = new SessionService();

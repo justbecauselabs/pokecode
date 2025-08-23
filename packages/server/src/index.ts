@@ -6,6 +6,7 @@ import {
   validatorCompiler,
   type ZodTypeProvider,
 } from 'fastify-type-provider-zod';
+import directoryRoutes from './directories';
 // Import routes
 import healthRoutes from './health';
 // Import plugins
@@ -14,6 +15,9 @@ import requestLoggerPlugin from './plugins/request-logger';
 import repositoryRoutes from './repositories';
 import sessionRoutes from './sessions';
 import type { ClaudeCodeSQLiteWorker } from './workers';
+
+// Export worker class for external usage
+export { ClaudeCodeSQLiteWorker } from './workers';
 
 // Global worker instance
 let globalWorker: ClaudeCodeSQLiteWorker | null = null;
@@ -37,6 +41,7 @@ export const createApp: FastifyPluginAsync = async (fastify) => {
   // Register routes
   await fastify.register(healthRoutes, { prefix: '/health' });
   await fastify.register(repositoryRoutes, { prefix: '/api/claude-code/repositories' });
+  await fastify.register(directoryRoutes, { prefix: '/api/claude-code/directories' });
   await fastify.register(sessionRoutes, { prefix: '/api/claude-code/sessions' });
 
   // Health check database connection (worker started separately by CLI)

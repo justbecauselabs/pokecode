@@ -39,14 +39,22 @@ type GetMessagesQuery = {
 };
 
 import {
+  // Directory schemas
+  type BrowseDirectoryQuery,
+  BrowseDirectoryQuerySchema,
+  type BrowseDirectoryResponse,
+  BrowseDirectoryResponseSchema,
+  // Agent schemas
   type ListAgentsQuery,
   ListAgentsQuerySchema,
   type ListAgentsResponse,
   ListAgentsResponseSchema,
+  // Command schemas
   type ListCommandsQuery,
   ListCommandsQuerySchema,
   type ListCommandsResponse,
   ListCommandsResponseSchema,
+  // Repository schemas
   type ListRepositoriesResponse,
   ListRepositoriesResponseSchema,
 } from '@pokecode/api';
@@ -311,6 +319,18 @@ class APIClient {
     });
   }
 
+  // Directory endpoints
+  async browseDirectory(query?: BrowseDirectoryQuery): Promise<BrowseDirectoryResponse> {
+    // Validate query params if provided
+    const validatedQuery = query ? BrowseDirectoryQuerySchema.parse(query) : undefined;
+
+    return this.request({
+      path: '/api/claude-code/directories/browse',
+      options: { query: validatedQuery },
+      responseSchema: BrowseDirectoryResponseSchema,
+    });
+  }
+
   // Session endpoints
   async getSessions(query?: ListSessionsQuery): Promise<ListSessionsResponse> {
     // Validate query params if provided
@@ -543,6 +563,9 @@ export type {
   // Command types
   ListCommandsQuery,
   ListCommandsResponse,
+  // Directory types
+  BrowseDirectoryQuery,
+  BrowseDirectoryResponse,
   // Other types
   HealthResponse,
   File,

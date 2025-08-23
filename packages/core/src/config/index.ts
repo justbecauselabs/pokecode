@@ -89,3 +89,11 @@ export function clearConfigOverrides(): void {
 export const isTest =
   typeof (globalThis as Record<string, unknown>).test !== 'undefined' ||
   process.argv.some((arg) => arg.includes('bun test') || arg.includes('test'));
+
+// Export constants for backward compatibility
+export const CONFIG_DIR = BASE_CONFIG_DIR;
+export const CONFIG_FILE = join(BASE_CONFIG_DIR, 'config.json');
+export const LOG_FILE = join(BASE_CONFIG_DIR, 'pokecode.log');
+export const DATABASE_PATH = join(BASE_CONFIG_DIR, 'pokecode.db');
+export const PID_FILE = join(BASE_CONFIG_DIR, 'pokecode.pid');
+export const DAEMON_FILE = join(BASE_CONFIG_DIR, 'daemon.json');

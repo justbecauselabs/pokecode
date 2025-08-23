@@ -20,9 +20,9 @@ export function useCreateSession() {
     mutationFn: async (params: CreateSessionParams) => {
       const { repository, context } = params;
 
-      // Create session using folderName (new approach from web)
+      // Create session using projectPath
       const sessionData = {
-        folderName: repository.folderName,
+        projectPath: repository.path,
         context: context?.trim() || undefined,
         metadata: {
           repository: repository.folderName,
