@@ -48,10 +48,9 @@ export function useCreateSession() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (params: { projectPath: string; context?: string }) => {
+    mutationFn: async (params: { projectPath: string }) => {
       return apiClient.createSession({
         projectPath: params.projectPath,
-        context: params.context,
       });
     },
     onSuccess: () => {

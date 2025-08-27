@@ -96,11 +96,6 @@ export const SessionCard = memo(({ session, onPress, onDelete }: SessionCardProp
             >
               {truncatePath(session.projectPath)}
             </Text>
-            {session.context && (
-              <Text className="text-sm text-muted-foreground mt-1 font-mono" numberOfLines={2}>
-                {session.context}
-              </Text>
-            )}
           </View>
 
           <View className={`px-2 py-1 rounded-full ${getStateColor(session.state)}`}>

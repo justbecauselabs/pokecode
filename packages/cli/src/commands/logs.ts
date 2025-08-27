@@ -3,11 +3,9 @@
  */
 
 import { spawn } from 'node:child_process';
-import { readFile } from 'node:fs/promises';
 import { platform } from 'node:os';
 import { getConfig } from '@pokecode/core';
 import chalk from 'chalk';
-import { DaemonManager } from '../utils/daemon';
 
 export interface LogsOptions {
   follow?: boolean;
@@ -20,6 +18,11 @@ export const logs = async (options: LogsOptions): Promise<void> => {
   try {
     const logFile = config.logFile;
     const numLines = parseInt(options.lines, 10);
+
+    // Validate parsed number
+    if (Number.isNaN(numLines) || numLines <= 0) {
+      throw new Error(`Invalid number of lines: ${options.lines}. Must be a positive integer.`);
+    }
 
     if (options.follow) {
       console.log(chalk.blue(`📝 Following logs from: ${logFile}\n`));
@@ -40,7 +43,14 @@ export const logs = async (options: LogsOptions): Promise<void> => {
 
 const showLogs = async (logFile: string, numLines: number): Promise<void> => {
   try {
-    const content = await readFile(logFile, 'utf-8');
+    const file = Bun.file(logFile);
+
+    if (!(await file.exists())) {
+      console.log(chalk.gray('Log file not found - server may not have started yet'));
+      return;
+    }
+
+    const content = await file.text();
     const lines = content.split('\n');
     const lastLines = lines.slice(-numLines).filter((line) => line.trim());
 
@@ -49,15 +59,12 @@ const showLogs = async (logFile: string, numLines: number): Promise<void> => {
       return;
     }
 
-    lastLines.forEach((line) => {
+    for (const line of lastLines) {
       console.log(formatLogLine(line));
-    });
-  } catch (error) {
-    if (error instanceof Error && 'code' in error && error.code === 'ENOENT') {
-      console.log(chalk.gray('Log file not found - server may not have started yet'));
-    } else {
-      throw error;
     }
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    throw new Error(`Failed to read log file: ${errorMessage}`);
   }
 };
 
@@ -87,8 +94,12 @@ const followLogs = async (logFile: string, numLines: number): Promise<void> => {
     });
   });
 
-  child.stderr?.on('data', (_data) => {
-    // Ignore stderr for now, as tail might output warnings
+  child.stderr?.on('data', (data) => {
+    // Only show stderr if it's not just warnings
+    const errorText = data.toString().trim();
+    if (errorText && !errorText.includes('warning')) {
+      console.error(chalk.red('⚠️  Tail error:'), errorText);
+    }
   });
 
   child.on('error', (error) => {
@@ -96,12 +107,24 @@ const followLogs = async (logFile: string, numLines: number): Promise<void> => {
     process.exit(1);
   });
 
-  // Handle graceful shutdown
-  process.on('SIGINT', () => {
-    child.kill();
-    console.log(chalk.yellow('\n📝 Stopped following logs'));
-    process.exit(0);
+  child.on('close', (code) => {
+    if (code !== 0) {
+      console.error(chalk.red(`❌ Tail process exited with code ${code}`));
+      process.exit(1);
+    }
   });
+
+  // Handle graceful shutdown
+  const handleShutdown = () => {
+    if (!child.killed) {
+      child.kill('SIGTERM');
+      console.log(chalk.yellow('\n📝 Stopped following logs'));
+    }
+    process.exit(0);
+  };
+
+  process.on('SIGINT', handleShutdown);
+  process.on('SIGTERM', handleShutdown);
 };
 
 const formatLogLine = (line: string): string => {

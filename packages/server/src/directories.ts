@@ -1,10 +1,10 @@
+import { resolve } from 'node:path';
 import {
   type BrowseDirectoryQuery,
   BrowseDirectoryQuerySchema,
   BrowseDirectoryResponseSchema,
 } from '@pokecode/api';
-import { getHomeDirectory, joinPath, getParentPath, validateGitRepository, listDirectory } from '@pokecode/core';
-import { resolve } from 'node:path';
+import { getHomeDirectory, getParentPath, joinPath, validateGitRepository } from '@pokecode/core';
 import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 
@@ -48,7 +48,7 @@ const directoryRoutes: FastifyPluginAsync = async (fastify) => {
           // Import fs functions and check if directory exists using stat
           const { readdir, stat } = await import('node:fs/promises');
           const stats = await stat(normalizedPath);
-          
+
           if (!stats.isDirectory()) {
             return reply.code(400).send({
               error: 'Path is not a directory',
@@ -100,7 +100,7 @@ const directoryRoutes: FastifyPluginAsync = async (fastify) => {
             items: entries,
           });
         } catch (readError) {
-          if (readError.code === 'ENOENT') {
+          if (readError instanceof Error && 'code' in readError && readError.code === 'ENOENT') {
             return reply.code(400).send({
               error: 'Directory does not exist',
               code: 'DIRECTORY_NOT_FOUND',
