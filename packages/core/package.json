@@ -40,7 +40,7 @@
     "build:types": "tsc --emitDeclarationOnly --outDir dist --skipLibCheck",
     "dev": "bun build src/index.ts --outdir dist --target bun --format esm --watch",
     "typecheck": "tsc --noEmit",
-    "test": "bun test",
+    "test": "NODE_ENV=test bun test",
     "lint": "bunx @biomejs/biome check .",
     "db:generate": "bunx drizzle-kit generate && bun scripts/generate-migration-module.ts",
     "db:push": "bunx drizzle-kit push",

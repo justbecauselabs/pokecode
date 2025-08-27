@@ -31,12 +31,16 @@ export interface Config {
 
 const BASE_CONFIG_DIR = join(homedir(), '.pokecode');
 
+// Check if we're in test environment
+// Set NODE_ENV=test when running tests to use in-memory database
+const isTestEnv = process.env.NODE_ENV === 'test';
+
 const defaultConfig: Config = {
   port: 3001,
   host: '0.0.0.0',
   logLevel: 'info',
   configDir: BASE_CONFIG_DIR,
-  databasePath: join(BASE_CONFIG_DIR, 'pokecode.db'),
+  databasePath: isTestEnv ? ':memory:' : join(BASE_CONFIG_DIR, 'pokecode.db'),
   databaseWAL: true,
   databaseCacheSize: 1000000, // 1GB
   claudeCodePath: undefined,
@@ -94,6 +98,6 @@ export const isTest =
 export const CONFIG_DIR = BASE_CONFIG_DIR;
 export const CONFIG_FILE = join(BASE_CONFIG_DIR, 'config.json');
 export const LOG_FILE = join(BASE_CONFIG_DIR, 'pokecode.log');
-export const DATABASE_PATH = join(BASE_CONFIG_DIR, 'pokecode.db');
+export const DATABASE_PATH = isTestEnv ? ':memory:' : join(BASE_CONFIG_DIR, 'pokecode.db');
 export const PID_FILE = join(BASE_CONFIG_DIR, 'pokecode.pid');
 export const DAEMON_FILE = join(BASE_CONFIG_DIR, 'daemon.json');

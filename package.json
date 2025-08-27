@@ -25,7 +25,7 @@
     "typecheck:mobile": "cd mobile && bun run type-check",
     "test": "bun run test:api && bun run test:core && bun run test:server && bun run test:cli && bun run test:mobile",
     "test:api": "cd packages/api && bun run test",
-    "test:core": "cd packages/core && bun run test",
+    "test:core": "cd packages/core && NODE_ENV=test bun test",
     "test:server": "cd packages/server && bun run test",
     "test:cli": "cd packages/cli && bun run test",
     "test:mobile": "cd mobile && bun run test",
