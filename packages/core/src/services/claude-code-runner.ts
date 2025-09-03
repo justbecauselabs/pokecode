@@ -3,13 +3,12 @@ import { type Options, type Query, query } from '@anthropic-ai/claude-code';
 import { getConfig } from '../config';
 import { directoryExists } from '../utils/file';
 import { createChildLogger } from '../utils/logger';
-import type { AgentRunner, RunnerExecuteParams, RunnerResult } from './agent-runner';
+import type { AgentRunner, RunnerExecuteParams, RunnerStreamItem } from './agent-runner';
 import type { MessageService } from './message.service';
 
 const logger = createChildLogger('claude-code-runner');
 
 export class ClaudeCodeRunner implements AgentRunner {
-  private startTime = 0;
   private sessionId: string;
   private isProcessing = false;
   private currentQuery: Query | null = null;
@@ -34,12 +33,11 @@ export class ClaudeCodeRunner implements AgentRunner {
     this.pathToClaudeCodeExecutable = config.claudeCodePath;
   }
 
-  async execute(params: RunnerExecuteParams): Promise<RunnerResult> {
+  async *execute(params: RunnerExecuteParams): AsyncIterable<RunnerStreamItem> {
     if (this.isProcessing) throw new Error('Already processing a prompt');
     await this.initialize();
 
     this.isProcessing = true;
-    this.startTime = Date.now();
     this.abortController = new AbortController();
 
     try {
@@ -53,7 +51,7 @@ export class ClaudeCodeRunner implements AgentRunner {
           { sessionId: this.sessionId, projectPath: this.options.projectPath },
           errorMessage,
         );
-        return { success: false, error: errorMessage, durationMs: Date.now() - this.startTime };
+        return; // end stream early
       }
 
       const sdkOptions: Options = {
@@ -76,46 +74,22 @@ export class ClaudeCodeRunner implements AgentRunner {
 
       this.currentQuery = query({ prompt: params.prompt, options: sdkOptions });
       for await (const message of this.currentQuery) {
-        await this.handleSDKMessage(message);
+        const transformed: SDKMessage =
+          message.type === 'result' ? { ...message, permission_denials: [] } : message;
+        yield {
+          provider: 'claude-code',
+          providerSessionId: message.session_id,
+          message: transformed,
+        } as const;
       }
-
-      const duration = Date.now() - this.startTime;
-      logger.info(
-        { sessionId: this.sessionId, duration },
-        'Claude Code query completed successfully',
-      );
-      return { success: true, durationMs: duration };
     } catch (error) {
-      const duration = Date.now() - this.startTime;
       const errorMessage = error instanceof Error ? error.message : String(error);
       logger.error({ sessionId: this.sessionId, error: errorMessage }, 'Claude Code query failed');
-      return { success: false, error: errorMessage, durationMs: duration };
+      return; // end stream with error; worker handles catch
     } finally {
       this.isProcessing = false;
       this.currentQuery = null;
       this.abortController = null;
-    }
-  }
-
-  private async handleSDKMessage(message: SDKMessage): Promise<void> {
-    try {
-      const transformed =
-        message.type === 'result' ? { ...message, permission_denials: [] } : message;
-      await this.options.messageService.saveSDKMessage({
-        sessionId: this.sessionId,
-        sdkMessage: transformed,
-        providerSessionId: message.session_id,
-      });
-    } catch (error) {
-      logger.error(
-        {
-          sessionId: this.sessionId,
-          messageType: message.type,
-          providerSessionId: message.session_id,
-          error: error instanceof Error ? error.message : String(error),
-        },
-        'Failed to save SDK message to database',
-      );
     }
   }
 

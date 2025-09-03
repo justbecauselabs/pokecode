@@ -91,16 +91,26 @@ export class AgentRunnerWorker {
       this.startCancellationChecker(jobId, promptId, sessionId, runner);
 
       const abortController = new AbortController();
-      const result = await runner.execute({
-        sessionId,
-        projectPath: data.projectPath,
-        prompt: data.prompt,
-        model,
-        abortController,
-      });
-
-      this.stopCancellationChecker(promptId);
-      this.activeSessions.delete(promptId);
+      const started = Date.now();
+      try {
+        for await (const item of runner.execute({
+          sessionId,
+          projectPath: data.projectPath,
+          prompt: data.prompt,
+          model,
+          abortController,
+        })) {
+          await messageService.saveSDKMessage({
+            sessionId,
+            sdkMessage: item.message,
+            providerSessionId: item.providerSessionId,
+            provider: item.provider,
+          });
+        }
+      } finally {
+        this.stopCancellationChecker(promptId);
+        this.activeSessions.delete(promptId);
+      }
 
       const stillHasActive = await this.hasActiveJobsForSession(sessionId);
       if (!stillHasActive) {
@@ -109,30 +119,26 @@ export class AgentRunnerWorker {
         return;
       }
 
-      if (result.success) {
-        await sqliteQueueService.markJobCompleted(jobId);
-        await db
-          .update(sessions)
-          .set({
-            isWorking: false,
-            currentJobId: null,
-            lastJobStatus: 'completed',
-            updatedAt: new Date(),
-          })
-          .where(eq(sessions.id, sessionId));
-        emitSessionDone(sessionId);
-        await sqliteQueueService.publishEvent(sessionId, promptId, {
-          type: 'complete',
-          summary: { duration: result.durationMs || 0, toolCallCount: 0 },
-          timestamp: new Date().toISOString(),
-        });
-        logger.info(
-          { jobId, promptId, durationMs: result.durationMs },
-          'Job completed successfully',
-        );
-      } else {
-        throw new Error(result.error || 'Unknown error');
-      }
+      await sqliteQueueService.markJobCompleted(jobId);
+      await db
+        .update(sessions)
+        .set({
+          isWorking: false,
+          currentJobId: null,
+          lastJobStatus: 'completed',
+          updatedAt: new Date(),
+        })
+        .where(eq(sessions.id, sessionId));
+      emitSessionDone(sessionId);
+      await sqliteQueueService.publishEvent(sessionId, promptId, {
+        type: 'complete',
+        summary: { duration: Date.now() - started, toolCallCount: 0 },
+        timestamp: new Date().toISOString(),
+      });
+      logger.info(
+        { jobId, promptId, durationMs: Date.now() - started },
+        'Job completed successfully',
+      );
     } catch (error) {
       this.stopCancellationChecker(promptId);
       this.activeSessions.delete(promptId);

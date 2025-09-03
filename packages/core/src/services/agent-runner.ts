@@ -1,3 +1,6 @@
+import type { SDKMessage } from '@anthropic-ai/claude-code';
+import type { Provider } from '@pokecode/types';
+
 // AgentRunner is the minimal interface implemented by concrete runners
 
 export interface RunnerExecuteParams {
@@ -8,12 +11,14 @@ export interface RunnerExecuteParams {
   abortController: AbortController;
 }
 
-export type RunnerResult =
-  | { success: true; durationMs: number }
-  | { success: false; error: string; durationMs: number };
+export type RunnerStreamItem = {
+  provider: Provider; // e.g., 'claude-code'
+  providerSessionId: string; // non-null provider-side session id
+  message: SDKMessage; // provider-typed message (Claude SDKMessage for 'claude-code')
+};
 
 export interface AgentRunner {
-  execute(params: RunnerExecuteParams): Promise<RunnerResult>;
+  execute(params: RunnerExecuteParams): AsyncIterable<RunnerStreamItem>;
   abort(): Promise<void>;
 }
 

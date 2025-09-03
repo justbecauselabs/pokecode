@@ -157,8 +157,9 @@ export class MessageService {
     sessionId: string;
     sdkMessage: SDKMessage;
     providerSessionId?: string;
+    provider?: 'claude-code' | 'codex-cli';
   }): Promise<void> {
-    const { sessionId, sdkMessage, providerSessionId } = params;
+    const { sessionId, sdkMessage, providerSessionId, provider } = params;
     // Determine message type for database - map all to user/assistant for compatibility
     let messageType: 'user' | 'assistant' = 'assistant';
 
@@ -182,12 +183,14 @@ export class MessageService {
         throw new Error('Session not found');
       }
 
+      const providerToUse = provider ?? sessionRow.provider;
+
       const [insertedMessage] = await tx
         .insert(sessionMessages)
         .values({
           id: createId(),
           sessionId,
-          provider: sessionRow.provider,
+          provider: providerToUse,
           type: messageType,
           contentData: JSON.stringify(sdkMessage), // Store raw SDK message
           providerSessionId: providerSessionId || null, // Store provider session ID for resumption
