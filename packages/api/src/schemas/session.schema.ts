@@ -6,10 +6,7 @@ const idSchema = z.string();
 
 // Create session schemas
 export const CreateSessionRequestSchema = z.object({
-  projectPath: z
-    .string()
-    .regex(/^[a-zA-Z0-9._/-]+$/)
-    .min(1),
+  projectPath: z.string().min(1),
   provider: ProviderSchema,
 });
 
