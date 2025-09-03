@@ -14,13 +14,13 @@ import errorHandlerPlugin from './plugins/error-handler';
 import requestLoggerPlugin from './plugins/request-logger';
 import repositoryRoutes from './repositories';
 import sessionRoutes from './sessions';
-import type { ClaudeCodeSQLiteWorker } from './workers';
+import type { AgentRunnerWorker } from './workers';
 
 // Export worker class for external usage
-export { ClaudeCodeSQLiteWorker } from './workers';
+export { AgentRunnerWorker } from './workers';
 
 // Global worker instance
-let globalWorker: ClaudeCodeSQLiteWorker | null = null;
+let globalWorker: AgentRunnerWorker | null = null;
 
 export const createApp: FastifyPluginAsync = async (fastify) => {
   // Set up Zod type provider
@@ -85,7 +85,7 @@ export const createApp: FastifyPluginAsync = async (fastify) => {
 export const getWorker = () => globalWorker;
 
 // Set the global worker instance
-export const setWorker = (worker: ClaudeCodeSQLiteWorker | null) => {
+export const setWorker = (worker: AgentRunnerWorker | null) => {
   globalWorker = worker;
 };
 

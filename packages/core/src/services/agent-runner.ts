@@ -1,4 +1,4 @@
-import type { Provider } from '@pokecode/types';
+// AgentRunner is the minimal interface implemented by concrete runners
 
 export interface RunnerExecuteParams {
   sessionId: string;
@@ -17,13 +17,4 @@ export interface AgentRunner {
   abort(): Promise<void>;
 }
 
-export interface RunnerFactoryOptions {
-  provider: Provider;
-  sessionId: string;
-  projectPath: string;
-  model?: string;
-}
-
-export interface RunnerFactory {
-  create(options: RunnerFactoryOptions): AgentRunner;
-}
+// No factory here; concrete runners (e.g., ClaudeCodeRunner) implement AgentRunner directly.

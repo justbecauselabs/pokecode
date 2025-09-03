@@ -16,8 +16,8 @@ export {
 export * from './services/agent.service';
 // Service instances
 export { agentService } from './services/agent.service';
-export * from './services/claude-code-sdk.service';
-export { ClaudeCodeSDKService } from './services/claude-code-sdk.service';
+export * from './services/claude-code-runner';
+export { ClaudeCodeRunner } from './services/claude-code-runner';
 export * from './services/command.service';
 export { commandService } from './services/command.service';
 export * from './services/event-bus.service';

@@ -1,8 +1,8 @@
 import { getConfig } from '@pokecode/core';
-import { ClaudeCodeSQLiteWorker, createServer, setWorker } from '@pokecode/server';
+import { AgentRunnerWorker, createServer, setWorker } from '@pokecode/server';
 
 // Store worker reference at module level for cleanup
-let worker: ClaudeCodeSQLiteWorker | null = null;
+let worker: AgentRunnerWorker | null = null;
 
 export async function startServer(): Promise<void> {
   const config = await getConfig();
@@ -97,7 +97,7 @@ export async function startServer(): Promise<void> {
   // Start worker after server is listening
   console.log('🔍 Starting worker after server startup...');
   try {
-    worker = new ClaudeCodeSQLiteWorker();
+    worker = new AgentRunnerWorker();
     await worker.start();
     // Store the worker globally so server components can access it
     setWorker(worker);

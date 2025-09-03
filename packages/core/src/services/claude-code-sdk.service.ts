@@ -10,7 +10,7 @@ export interface ClaudeCodeOptions {
   sessionId: string;
   projectPath: string;
   messageService: MessageService;
-  model?: string;
+  model?: string | undefined;
 }
 
 export type ClaudeCodeResult =

@@ -1,16 +1,16 @@
 import { createChildLogger, db } from '@pokecode/core';
 import { sql } from 'drizzle-orm';
-import { ClaudeCodeSQLiteWorker } from './claude-code-sqlite.worker';
+import { AgentRunnerWorker } from './agent-runner.worker';
 
 const logger = createChildLogger('worker-main');
 
 // Interface for worker with cleanup interval
-interface WorkerWithCleanup extends ClaudeCodeSQLiteWorker {
+interface WorkerWithCleanup extends AgentRunnerWorker {
   cleanupInterval?: ReturnType<typeof setInterval>;
 }
 
 // Export for testing
-export { ClaudeCodeSQLiteWorker };
+export { AgentRunnerWorker };
 
 /**
  * Verifies database connection and table existence before starting worker
@@ -22,7 +22,7 @@ async function verifyDatabaseConnection(): Promise<void> {
     logger.info('Database connection verified');
 
     // Verify required tables exist
-    const requiredTables = ['job_queue', 'claude_code_sessions', 'session_messages'];
+    const requiredTables = ['job_queue', 'sessions', 'session_messages'];
     const existingTables = db.all(
       sql`SELECT name FROM sqlite_master WHERE type='table' AND name IN (${sql.join(requiredTables, sql`, `)})`,
     ) as { name: string }[];
@@ -46,14 +46,14 @@ async function verifyDatabaseConnection(): Promise<void> {
 /**
  * Main worker startup function
  */
-async function startWorker(): Promise<ClaudeCodeSQLiteWorker> {
-  logger.info({ environment: process.env.NODE_ENV }, 'Starting Claude Code SQLite Worker...');
+async function startWorker(): Promise<AgentRunnerWorker> {
+  logger.info({ environment: process.env.NODE_ENV }, 'Starting Agent Runner Worker...');
 
   // Verify database connection
   await verifyDatabaseConnection();
 
   // Create and start worker
-  const worker = new ClaudeCodeSQLiteWorker();
+  const worker = new AgentRunnerWorker();
   await worker.start();
 
   const metrics = await worker.getMetrics();
@@ -63,7 +63,7 @@ async function startWorker(): Promise<ClaudeCodeSQLiteWorker> {
       concurrency: metrics.concurrency,
       status: 'Running',
     },
-    'Claude Code SQLite Worker started successfully',
+    'Agent Runner Worker started successfully',
   );
 
   // Setup cleanup job (run every hour)
@@ -87,7 +87,7 @@ async function startWorker(): Promise<ClaudeCodeSQLiteWorker> {
 /**
  * Graceful shutdown handler
  */
-async function handleShutdown(signal: string, worker: ClaudeCodeSQLiteWorker): Promise<void> {
+async function handleShutdown(signal: string, worker: AgentRunnerWorker): Promise<void> {
   logger.info({ signal }, 'Received signal, initiating graceful shutdown...');
 
   try {
@@ -108,7 +108,7 @@ async function handleShutdown(signal: string, worker: ClaudeCodeSQLiteWorker): P
 
 // Only start worker if this file is run directly
 if (import.meta.main) {
-  let worker: ClaudeCodeSQLiteWorker | null = null;
+  let worker: AgentRunnerWorker | null = null;
 
   // Start the worker
   startWorker()
