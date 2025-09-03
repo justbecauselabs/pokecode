@@ -10,7 +10,7 @@ Last updated: 2025-09-03
 - [x] API: require `provider` in CreateSessionRequest; add `provider` to Session schema (2025-09-03)
 - [x] Core DB: created provider enum values in schema; renamed table to `sessions`; added `provider` to sessions, session_messages, job_queue; updated migration (2025-09-03)
 - [x] Types package: introduced `@pokecode/types` with `PROVIDER_VALUES` + `ProviderSchema`; updated core and api to depend on it (2025-09-03)
-- [ ] Core: add AgentRunner interfaces file and skeletons
+- [x] Core: add AgentRunner interfaces file (packages/core/src/services/agent-runner.ts)
 - [ ] Server: switch to session-scoped routes and infer provider by `sessionId`
 - [ ] Worker: implement `AgentSQLiteWorker` dispatching by job.provider
 - [ ] CodexRunner: spawn CLI and persist raw JSONL (parsing TODO)

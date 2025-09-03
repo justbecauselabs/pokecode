@@ -31,6 +31,7 @@ export * from './services/repository.service';
 export { repositoryService } from './services/repository.service';
 export * from './services/session.service';
 export { sessionService } from './services/session.service';
+export * from './services/agent-runner';
 // Types exports
 export * from './types';
 export { ApiError } from './types/errors';
