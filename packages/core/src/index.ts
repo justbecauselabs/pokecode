@@ -16,6 +16,7 @@ export {
 export * from './services/agent.service';
 // Service instances
 export { agentService } from './services/agent.service';
+export * from './services/agent-runner';
 export * from './services/claude-code-runner';
 export { ClaudeCodeRunner } from './services/claude-code-runner';
 export * from './services/command.service';
@@ -31,7 +32,6 @@ export * from './services/repository.service';
 export { repositoryService } from './services/repository.service';
 export * from './services/session.service';
 export { sessionService } from './services/session.service';
-export * from './services/agent-runner';
 // Types exports
 export * from './types';
 export { ApiError } from './types/errors';

@@ -51,6 +51,7 @@ export function useCreateSession() {
     mutationFn: async (params: { projectPath: string }) => {
       return apiClient.createSession({
         projectPath: params.projectPath,
+        provider: 'claude-code',
       });
     },
     onSuccess: () => {

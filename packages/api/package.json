@@ -29,7 +29,8 @@
     "test": "bun test"
   },
   "dependencies": {
-    "zod": "^4.0.17"
+    "zod": "^4.0.17",
+    "@pokecode/types": "workspace:*"
   },
   "devDependencies": {},
   "peerDependencies": {

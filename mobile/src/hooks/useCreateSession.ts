@@ -20,16 +20,11 @@ export function useCreateSession() {
     mutationFn: async (params: CreateSessionParams) => {
       const { repository, context } = params;
 
-      // Create session using projectPath
-      const sessionData = {
+      // Create session using projectPath and provider (hardcoded to 'claude-code')
+      const response = await apiClient.createSession({
         projectPath: repository.path,
-        context: context?.trim() || undefined,
-        metadata: {
-          repository: repository.folderName,
-        },
-      };
-
-      const response = await apiClient.createSession(sessionData);
+        provider: 'claude-code',
+      });
       return response;
     },
     onSuccess: (response) => {
