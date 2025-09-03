@@ -24,11 +24,11 @@ Operational guidance for running `@pokecode/server` in development or on a singl
 
 ## Sessions & Messages
 
-- Create session: `POST /api/claude-code/sessions` (see API schemas in `@pokecode/api`)
-- Stream messages: `GET /api/claude-code/sessions/:sessionId/messages/stream`
-- List messages (cursor): `GET /api/claude-code/sessions/:sessionId/messages?after=<id>&limit=<n>`
-- Enqueue prompt: `POST /api/claude-code/sessions/:sessionId/messages` (body: `{ content, model? }`)
-- Cancel: `POST /api/claude-code/sessions/:sessionId/cancel`
+- Create session: `POST /api/sessions` (see API schemas in `@pokecode/api`)
+- Stream messages: `GET /api/sessions/:sessionId/messages/stream`
+- List messages (cursor): `GET /api/sessions/:sessionId/messages?after=<id>&limit=<n>`
+- Enqueue prompt: `POST /api/sessions/:sessionId/messages` (body: `{ content, model? }`)
+- Cancel: `POST /api/sessions/:sessionId/cancel`
 
 ## Worker
 
@@ -49,7 +49,7 @@ Operational guidance for running `@pokecode/server` in development or on a singl
 - Port in use:
   - Start on a different port: `pokecode serve --port 3002`
 - Stuck session / need to stop work:
-  - `POST /api/claude-code/sessions/:sessionId/cancel`
+  - `POST /api/sessions/:sessionId/cancel`
 - Long‑running jobs:
   - Lower `workerConcurrency` or raise it to parallelize; adjust based on CPU/IO
 - Empty SSE stream:

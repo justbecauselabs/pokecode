@@ -40,9 +40,9 @@ export const createApp: FastifyPluginAsync = async (fastify) => {
 
   // Register routes
   await fastify.register(healthRoutes, { prefix: '/health' });
-  await fastify.register(repositoryRoutes, { prefix: '/api/claude-code/repositories' });
-  await fastify.register(directoryRoutes, { prefix: '/api/claude-code/directories' });
-  await fastify.register(sessionRoutes, { prefix: '/api/claude-code/sessions' });
+  await fastify.register(repositoryRoutes, { prefix: '/api/repositories' });
+  await fastify.register(directoryRoutes, { prefix: '/api/directories' });
+  await fastify.register(sessionRoutes, { prefix: '/api/sessions' });
 
   // Health check database connection (worker started separately by CLI)
   fastify.addHook('onReady', async () => {

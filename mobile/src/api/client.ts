@@ -325,7 +325,7 @@ class APIClient {
     const validatedQuery = query ? BrowseDirectoryQuerySchema.parse(query) : undefined;
 
     return this.request({
-      path: '/api/claude-code/directories/browse',
+      path: '/api/directories/browse',
       options: { query: validatedQuery },
       responseSchema: BrowseDirectoryResponseSchema,
     });
@@ -337,7 +337,7 @@ class APIClient {
     const validatedQuery = query ? ListSessionsQuerySchema.parse(query) : undefined;
 
     return this.request({
-      path: '/api/claude-code/sessions/',
+      path: '/api/sessions/',
       options: { query: validatedQuery },
       responseSchema: ListSessionsResponseSchema,
     });
@@ -348,7 +348,7 @@ class APIClient {
     const validatedData = data ? CreateSessionRequestSchema.parse(data) : undefined;
 
     return this.request({
-      path: '/api/claude-code/sessions/',
+      path: '/api/sessions/',
       options: { method: 'POST', body: validatedData },
       responseSchema: SessionSchema,
     });
@@ -359,7 +359,7 @@ class APIClient {
     const validatedParams = SessionParamsSchema.parse(params);
 
     return this.request({
-      path: '/api/claude-code/sessions/{sessionId}',
+      path: '/api/sessions/{sessionId}',
       pathParams: validatedParams,
       responseSchema: SessionSchema,
     });
@@ -371,7 +371,7 @@ class APIClient {
     const validatedData = UpdateSessionRequestSchema.parse(params.data);
 
     return this.request({
-      path: '/api/claude-code/sessions/{sessionId}',
+      path: '/api/sessions/{sessionId}',
       pathParams: validatedParams,
       options: { method: 'PATCH', body: validatedData },
       responseSchema: SessionSchema,
@@ -382,7 +382,7 @@ class APIClient {
     const validatedParams = SessionParamsSchema.parse(params);
 
     return this.request({
-      path: '/api/claude-code/sessions/{sessionId}',
+      path: '/api/sessions/{sessionId}',
       pathParams: validatedParams,
       options: { method: 'DELETE' },
       responseSchema: DeleteResponseSchema,
@@ -398,7 +398,7 @@ class APIClient {
     const validatedQuery = params.query; // Direct assignment since schema isn't exported yet
 
     return this.request({
-      path: '/api/claude-code/sessions/{sessionId}/messages',
+      path: '/api/sessions/{sessionId}/messages',
       pathParams: validatedParams,
       options: { query: validatedQuery },
       responseSchema: GetMessagesResponseSchema,
@@ -413,7 +413,7 @@ class APIClient {
     const validatedData = CreateMessageBodySchema.parse(params.data);
 
     return this.request({
-      path: '/api/claude-code/sessions/{sessionId}/messages',
+      path: '/api/sessions/{sessionId}/messages',
       pathParams: validatedParams,
       options: { method: 'POST', body: validatedData },
       responseSchema: CreateMessageResponseSchema,
