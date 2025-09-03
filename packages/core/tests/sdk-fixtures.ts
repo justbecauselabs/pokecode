@@ -1,14 +1,14 @@
-import type { 
-  SDKMessage, 
-  SDKUserMessage, 
-  SDKAssistantMessage, 
-  SDKResultMessage 
+import type {
+  SDKAssistantMessage,
+  SDKMessage,
+  SDKResultMessage,
+  SDKUserMessage,
 } from '@anthropic-ai/claude-code';
 
 /**
  * Properly typed SDK message fixtures for testing
  * Based on real Claude Code SDK message formats
- * 
+ *
  * These fixtures provide type-safe test data for SDK message testing,
  * ensuring all tests use consistent and properly typed message structures.
  */

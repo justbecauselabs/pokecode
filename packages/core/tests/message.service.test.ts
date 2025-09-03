@@ -1,22 +1,16 @@
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
-import type { SDKMessage, SDKUserMessage, SDKAssistantMessage } from '@anthropic-ai/claude-code';
 import { eq } from 'drizzle-orm';
 import { db } from '../src/database';
 import { jobQueue, sessionMessages, sessions } from '../src/database/schema-sqlite';
 import { messageService } from '../src/services/message.service';
+import { assistantTextMessage, createAssistantMessage, createUserMessage } from './sdk-fixtures';
 import {
-  assistantTextMessage,
-  createAssistantMessage,
-  createUserMessage,
-  userMessage,
-} from './sdk-fixtures';
-import {
-  testEnvironment,
-  testData,
-  createTestSession,
-  createTestMessages,
-  assertUserMessage,
   assertJobExists,
+  assertUserMessage,
+  createTestMessages,
+  createTestSession,
+  testData,
+  testEnvironment,
 } from './test-setup';
 
 describe('MessageService Integration Tests', () => {
@@ -53,7 +47,7 @@ describe('MessageService Integration Tests', () => {
 
       const job = jobs[0];
       assertJobExists(job);
-      
+
       expect(job.data.prompt).toBe(prompt);
       expect(job.data.projectPath).toBe(testData.projectPaths.simple);
     });
@@ -67,7 +61,7 @@ describe('MessageService Integration Tests', () => {
       const jobs = await db.select().from(jobQueue).where(eq(jobQueue.sessionId, sessionId));
       const job = jobs[0];
       assertJobExists(job);
-      
+
       expect(job.data.model).toBe(model);
     });
 
@@ -213,7 +207,7 @@ describe('MessageService Integration Tests', () => {
       const page2 = await messageService.getMessages({
         sessionId,
         projectPath: testData.projectPaths.simple,
-        cursor: page1.pagination.nextCursor,
+        cursor: page1.pagination.nextCursor ?? undefined,
         limit: 2,
       });
 
@@ -232,7 +226,7 @@ describe('MessageService Integration Tests', () => {
 
       // Messages should be in the order they were created
       expect(result.messages).toHaveLength(3);
-      
+
       // Use the assertUserMessage helper for proper type checking
       assertUserMessage(result.messages[0], 'First message');
       assertUserMessage(result.messages[1], 'Second message');

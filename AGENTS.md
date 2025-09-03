@@ -1,25 +1,41 @@
-# Agent Development Guide
+## Bun
 
-## Build/Lint/Test Commands
-```bash
-bun test                    # Run all tests
-bun test <file>            # Run single test file
-bun run lint               # Check code with Biome
-bun run lint:fix           # Auto-fix linting issues
-bun run format             # Format code with Biome
-bun run type-check         # TypeScript type checking
-bun run dev:server         # Start dev server with hot reload
-bun run dev:worker         # Start worker with hot reload
-```
+Default to using Bun instead of Node.js.
 
-## Code Style Guidelines
-- **Runtime**: Use Bun APIs (Bun.file(), Bun.$, etc.) instead of Node.js equivalents
-- **Imports**: Use absolute imports with `@/` prefix for src files
-- **Types**: NEVER use `any` or `unknown`. Use strict TypeScript with all checks enabled
-- **Functions**: Use object params: `function foo(params: { name: string, age: number })`
-- **Formatting**: 2 spaces, single quotes, trailing commas, 100 char line width
-- **Naming**: camelCase for variables/functions, PascalCase for types/classes
-- **Errors**: Throw custom error classes (ValidationError, NotFoundError) from @/types
-- **Services**: Use singleton pattern with exported instances (e.g., `export const sessionService = new SessionService()`)
-- **Async**: Always use async/await, never callbacks or raw promises
-- **Validation**: Use TypeBox schemas for API validation, Zod for internal validation
+- Use `bun <file>` instead of `node <file>` or `ts-node <file>`
+- Use `bun test` instead of `jest` or `vitest`
+- Use `bun build <file.html|file.ts|file.css>` instead of `webpack` or `esbuild`
+- Use `bun install` instead of `npm install` or `yarn install` or `pnpm install`
+- Use `bun run <script>` instead of `npm run <script>` or `yarn run <script>` or `pnpm run <script>`
+- Bun automatically loads .env, so don't use dotenv.
+
+### APIs
+
+- `Bun.serve()` supports WebSockets, HTTPS, and routes. Don't use `express`.
+- `bun:sqlite` for SQLite. Don't use `better-sqlite3`.
+- `Bun.redis` for Redis. Don't use `ioredis`.
+- `Bun.sql` for Postgres. Don't use `pg` or `postgres.js`.
+- `WebSocket` is built-in. Don't use `ws`.
+- Bun.$`ls` instead of execa.
+
+### File System Operations
+
+- Use `Bun.file(path)` instead of `fs.readFile()` or `fs.writeFile()`
+- Use `Bun.Glob` for pattern matching instead of `fs.readdir()` with filtering
+- Use `file.exists()` instead of `fs.stat()` for existence checks
+- Use `file.text()` for reading text content
+- Use `file.arrayBuffer()` for binary content
+- Example: `const content = await Bun.file('./file.txt').text()`
+
+## Typescript
+
+### Best Practices
+
+- Always use the most strict tsconfig settings
+- **NEVER use `any`, `unknown`, or `as any` - EVER. This is forbidden.**
+- **NEVER use type assertions with `as` - types should be inferred or properly typed**
+- **If you find yourself needing `as any` or type assertions, the types are wrong and need to be fixed properly**
+- Use params: { name: type } for functions, ie `function add(params: { a: number, b: number }): number` over `function add(a: number, b: number): number` as it improves readability
+- Prefer type narrowing with type guards over type assertions
+- Use proper Zod schemas and inferred types instead of casting
+- If TypeScript is complaining, fix the types - don't silence it with assertions

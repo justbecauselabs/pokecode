@@ -114,6 +114,11 @@ bun run dev
 bun run typecheck
 ```
 
+## Docs
+
+- Commands: docs/commands.md
+- Daemon mode: docs/daemon.md
+
 ## Features
 
 - ✅ **Cross-platform**: Works on Windows, macOS, and Linux
