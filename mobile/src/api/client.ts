@@ -314,7 +314,7 @@ class APIClient {
   // Repository endpoints
   async getRepositories(): Promise<ListRepositoriesResponse> {
     return this.request({
-      path: '/api/claude-code/repositories/',
+      path: '/api/repositories/',
       responseSchema: ListRepositoriesResponseSchema,
     });
   }

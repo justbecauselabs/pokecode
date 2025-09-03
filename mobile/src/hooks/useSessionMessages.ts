@@ -56,7 +56,7 @@ export function useSessionMessages(sessionId: string) {
       }
 
       const baseUrl = apiClient.getCurrentBaseUrl();
-      const sseUrl = `${baseUrl}/api/claude-code/sessions/${sessionId}/messages/stream`;
+  const sseUrl = `${baseUrl}/api/sessions/${sessionId}/messages/stream`;
 
       console.log('[SSE] Connecting to:', sseUrl);
 
