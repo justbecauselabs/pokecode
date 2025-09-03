@@ -1,6 +1,10 @@
 import fs from 'node:fs';
 import { createId } from '@paralleldrive/cuid2';
-import type { CreateSessionRequest, ListSessionsQuery, UpdateSessionRequest } from '@pokecode/api';
+import type {
+  CreateSessionRequest,
+  ListSessionsQuery,
+  UpdateSessionRequest,
+} from '@pokecode/types';
 import { desc, eq, sql } from 'drizzle-orm';
 import { db } from '../database';
 import { sessions } from '../database/schema-sqlite';
@@ -35,6 +39,7 @@ export class SessionService {
       .insert(sessions)
       .values({
         id: sessionId,
+        provider: data.provider,
         projectPath: data.projectPath,
         name,
         claudeDirectoryPath,
@@ -169,6 +174,7 @@ export class SessionService {
   private formatSession(session: typeof sessions.$inferSelect) {
     return {
       id: session.id,
+      provider: session.provider,
       projectPath: session.projectPath,
       name: session.name,
       claudeDirectoryPath: session.claudeDirectoryPath,

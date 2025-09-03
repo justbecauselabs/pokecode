@@ -1,12 +1,14 @@
 import { createId } from '@paralleldrive/cuid2';
+import { PROVIDER_VALUES } from '@pokecode/types';
 import { index, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 
 export const sessions = sqliteTable(
-  'claude_code_sessions',
+  'sessions',
   {
     id: text('id')
       .primaryKey()
       .$defaultFn(() => createId()),
+    provider: text('provider', { enum: PROVIDER_VALUES }).notNull(),
     projectPath: text('project_path').notNull(),
     name: text('name').notNull(), // Name derived from the last path component of projectPath
     context: text('context'),
@@ -34,7 +36,7 @@ export const sessions = sqliteTable(
     messageCount: integer('message_count').default(0).notNull(),
     tokenCount: integer('token_count').default(0).notNull(),
     // Session state
-    state: text('state', { enum: ['active', 'inactive'] })
+    state: text('state', { enum: ['active', 'inactive'] as const })
       .default('active')
       .notNull(),
   },

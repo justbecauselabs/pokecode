@@ -34,6 +34,7 @@ export { sessionService } from './services/session.service';
 // Types exports
 export * from './types';
 export { ApiError } from './types/errors';
+export * from './types/provider';
 // Utils exports
 export * from './utils/file';
 export * from './utils/logger';

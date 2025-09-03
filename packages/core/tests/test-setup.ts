@@ -3,14 +3,14 @@
  * This maintains backwards compatibility while consolidating test utilities
  */
 export {
+  assertJobExists,
+  assertUserMessage,
   cleanDatabase,
-  verifyDatabaseConnection,
-  testData,
+  createTestMessages,
   createTestSession,
   createTestSessions,
-  createTestMessages,
-  assertUserMessage,
-  assertJobExists,
-  waitFor,
+  testData,
   testEnvironment,
+  verifyDatabaseConnection,
+  waitFor,
 } from './test-helpers';

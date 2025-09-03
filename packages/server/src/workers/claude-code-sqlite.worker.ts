@@ -354,7 +354,7 @@ export class ClaudeCodeSQLiteWorker {
       };
 
       // Save the message to database
-      await messageService.saveSDKMessage(sessionId, cancellationMessage);
+      await messageService.saveSDKMessage({ sessionId, sdkMessage: cancellationMessage });
 
       logger.info({ sessionId, message }, 'Worker saved cancellation message for user visibility');
     } catch (error) {

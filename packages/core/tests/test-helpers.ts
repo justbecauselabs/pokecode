@@ -3,7 +3,7 @@ import { db } from '../src/database';
 import { sessions, sessionMessages, jobQueue, type Job } from '../src/database/schema-sqlite';
 import { sessionService } from '../src/services/session.service';
 import { messageService } from '../src/services/message.service';
-import type { Message, UserMessage } from '@pokecode/api';
+import type { Message, UserMessage } from '@pokecode/types';
 import { sql } from 'drizzle-orm';
 
 /**

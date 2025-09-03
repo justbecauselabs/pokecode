@@ -1,4 +1,5 @@
 import { createId } from '@paralleldrive/cuid2';
+import { PROVIDER_VALUES } from '@pokecode/types';
 import { index, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 
 export const jobQueue = sqliteTable(
@@ -9,8 +10,9 @@ export const jobQueue = sqliteTable(
       .$defaultFn(() => createId()),
     sessionId: text('session_id').notNull(),
     promptId: text('prompt_id').notNull(),
+    provider: text('provider', { enum: PROVIDER_VALUES }).notNull(),
     status: text('status', {
-      enum: ['pending', 'processing', 'completed', 'failed', 'cancelled'],
+      enum: ['pending', 'processing', 'completed', 'failed', 'cancelled'] as const,
     })
       .notNull()
       .default('pending'),
@@ -38,6 +40,7 @@ export const jobQueue = sqliteTable(
     nextRetryIdx: index('idx_job_queue_next_retry').on(table.nextRetryAt),
     sessionIdIdx: index('idx_job_queue_session_id').on(table.sessionId),
     createdAtIdx: index('idx_job_queue_created_at').on(table.createdAt),
+    providerIdx: index('idx_job_queue_provider').on(table.provider),
   }),
 );
 

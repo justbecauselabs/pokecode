@@ -4,61 +4,71 @@
 
 export const migrations = [
   {
-    id: '0000_funny_cardiac',
-    sql: `CREATE TABLE \`job_queue\` (
-	\`id\` text PRIMARY KEY NOT NULL,
-	\`session_id\` text NOT NULL,
-	\`prompt_id\` text NOT NULL,
-	\`status\` text DEFAULT 'pending' NOT NULL,
-	\`data\` text NOT NULL,
-	\`attempts\` integer DEFAULT 0 NOT NULL,
-	\`max_attempts\` integer DEFAULT 3 NOT NULL,
-	\`created_at\` integer NOT NULL,
-	\`started_at\` integer,
-	\`completed_at\` integer,
-	\`error\` text,
-	\`next_retry_at\` integer
+    id: '0000_provider_schema',
+    sql: `CREATE TABLE \`sessions\` (
+\t\`id\` text PRIMARY KEY NOT NULL,
+\t\`provider\` text NOT NULL,
+\t\`project_path\` text NOT NULL,
+\t\`name\` text NOT NULL,
+\t\`context\` text,
+\t\`claude_directory_path\` text,
+\t\`metadata\` text,
+\t\`created_at\` integer NOT NULL,
+\t\`updated_at\` integer NOT NULL,
+\t\`last_accessed_at\` integer NOT NULL,
+\t\`is_working\` integer DEFAULT false NOT NULL,
+\t\`current_job_id\` text,
+\t\`last_job_status\` text,
+\t\`message_count\` integer DEFAULT 0 NOT NULL,
+\t\`token_count\` integer DEFAULT 0 NOT NULL,
+\t\`state\` text DEFAULT 'active' NOT NULL,
+\tCONSTRAINT \`chk_sessions_provider\` CHECK (\`provider\` IN ('claude-code','codex-cli')),
+\tCONSTRAINT \`chk_sessions_state\` CHECK (\`state\` IN ('active','inactive'))
 );
 --> statement-breakpoint
 CREATE TABLE \`session_messages\` (
-	\`id\` text PRIMARY KEY NOT NULL,
-	\`session_id\` text NOT NULL,
-	\`type\` text NOT NULL,
-	\`content_data\` text,
-	\`claude_code_session_id\` text,
-	\`token_count\` integer,
-	\`created_at\` integer NOT NULL,
-	FOREIGN KEY (\`session_id\`) REFERENCES \`claude_code_sessions\`(\`id\`) ON UPDATE no action ON DELETE cascade
+\t\`id\` text PRIMARY KEY NOT NULL,
+\t\`session_id\` text NOT NULL,
+\t\`provider\` text NOT NULL,
+\t\`type\` text NOT NULL,
+\t\`content_data\` text,
+\t\`provider_session_id\` text,
+\t\`token_count\` integer,
+\t\`created_at\` integer NOT NULL,
+\tFOREIGN KEY (\`session_id\`) REFERENCES \`sessions\`(\`id\`) ON UPDATE no action ON DELETE cascade,
+\tCONSTRAINT \`chk_session_messages_provider\` CHECK (\`provider\` IN ('claude-code','codex-cli'))
 );
 --> statement-breakpoint
-CREATE TABLE \`claude_code_sessions\` (
-	\`id\` text PRIMARY KEY NOT NULL,
-	\`project_path\` text NOT NULL,
-	\`name\` text NOT NULL,
-	\`context\` text,
-	\`claude_directory_path\` text,
-	\`metadata\` text,
-	\`created_at\` integer NOT NULL,
-	\`updated_at\` integer NOT NULL,
-	\`last_accessed_at\` integer NOT NULL,
-	\`is_working\` integer DEFAULT false NOT NULL,
-	\`current_job_id\` text,
-	\`last_job_status\` text,
-	\`message_count\` integer DEFAULT 0 NOT NULL,
-	\`token_count\` integer DEFAULT 0 NOT NULL,
-	\`state\` text DEFAULT 'active' NOT NULL
+CREATE TABLE \`job_queue\` (
+\t\`id\` text PRIMARY KEY NOT NULL,
+\t\`session_id\` text NOT NULL,
+\t\`prompt_id\` text NOT NULL,
+\t\`provider\` text NOT NULL,
+\t\`status\` text DEFAULT 'pending' NOT NULL,
+\t\`data\` text NOT NULL,
+\t\`attempts\` integer DEFAULT 0 NOT NULL,
+\t\`max_attempts\` integer DEFAULT 1 NOT NULL,
+\t\`created_at\` integer NOT NULL,
+\t\`started_at\` integer,
+\t\`completed_at\` integer,
+\t\`error\` text,
+\t\`next_retry_at\` integer,
+\tCONSTRAINT \`chk_job_queue_provider\` CHECK (\`provider\` IN ('claude-code','codex-cli')),
+\tCONSTRAINT \`chk_job_queue_status\` CHECK (\`status\` IN ('pending','processing','completed','failed','cancelled'))
 );
 --> statement-breakpoint
+CREATE INDEX \`idx_sessions_last_accessed\` ON \`sessions\` (\`last_accessed_at\`);--> statement-breakpoint
+CREATE INDEX \`idx_sessions_is_working\` ON \`sessions\` (\`is_working\`);--> statement-breakpoint
+CREATE INDEX \`idx_session_messages_session_id\` ON \`session_messages\` (\`session_id\`);--> statement-breakpoint
+CREATE INDEX \`idx_session_messages_type\` ON \`session_messages\` (\`type\`);--> statement-breakpoint
+CREATE INDEX \`idx_session_messages_created_at\` ON \`session_messages\` (\`created_at\`);--> statement-breakpoint
+CREATE INDEX \`idx_session_messages_provider\` ON \`session_messages\` (\`provider\`);--> statement-breakpoint
+CREATE INDEX \`idx_session_messages_provider_session_id\` ON \`session_messages\` (\`provider_session_id\`);--> statement-breakpoint
 CREATE INDEX \`idx_job_queue_status\` ON \`job_queue\` (\`status\`);--> statement-breakpoint
 CREATE INDEX \`idx_job_queue_next_retry\` ON \`job_queue\` (\`next_retry_at\`);--> statement-breakpoint
 CREATE INDEX \`idx_job_queue_session_id\` ON \`job_queue\` (\`session_id\`);--> statement-breakpoint
 CREATE INDEX \`idx_job_queue_created_at\` ON \`job_queue\` (\`created_at\`);--> statement-breakpoint
-CREATE INDEX \`idx_session_messages_session_id\` ON \`session_messages\` (\`session_id\`);--> statement-breakpoint
-CREATE INDEX \`idx_session_messages_type\` ON \`session_messages\` (\`type\`);--> statement-breakpoint
-CREATE INDEX \`idx_session_messages_created_at\` ON \`session_messages\` (\`created_at\`);--> statement-breakpoint
-CREATE INDEX \`idx_session_messages_claude_code_session_id\` ON \`session_messages\` (\`claude_code_session_id\`);--> statement-breakpoint
-CREATE INDEX \`idx_sessions_last_accessed\` ON \`claude_code_sessions\` (\`last_accessed_at\`);--> statement-breakpoint
-CREATE INDEX \`idx_sessions_is_working\` ON \`claude_code_sessions\` (\`is_working\`);`,
+CREATE INDEX \`idx_job_queue_provider\` ON \`job_queue\` (\`provider\`);`,
   },
 ] as const;
 

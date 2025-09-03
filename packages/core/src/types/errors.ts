@@ -69,7 +69,10 @@ export interface ErrorEvent {
 }
 
 // Queue Job Types
+import type { Provider } from '@pokecode/types';
+
 export interface PromptJobData {
+  provider: Provider;
   sessionId: string;
   promptId: string;
   prompt: string;

@@ -1,6 +1,6 @@
 import type { SDKMessage } from '@anthropic-ai/claude-code';
 import { createId } from '@paralleldrive/cuid2';
-import type { Message } from '@pokecode/api';
+import type { Message } from '@pokecode/types';
 import { and, asc, desc, eq, gt, isNotNull, or, sql } from 'drizzle-orm';
 
 import { db } from '../database';
@@ -67,7 +67,8 @@ export class MessageService {
       sessionId: string;
       type: 'user' | 'assistant' | 'system' | 'result' | 'error';
       contentData: string | null;
-      claudeCodeSessionId: string | null;
+      provider: 'claude-code' | 'codex-cli';
+      providerSessionId: string | null;
       tokenCount: number | null;
       createdAt: Date;
     }>;
@@ -152,11 +153,12 @@ export class MessageService {
   /**
    * Save SDK message directly to database and update session counters
    */
-  async saveSDKMessage(
-    sessionId: string,
-    sdkMessage: SDKMessage,
-    claudeCodeSessionId?: string,
-  ): Promise<void> {
+  async saveSDKMessage(params: {
+    sessionId: string;
+    sdkMessage: SDKMessage;
+    providerSessionId?: string;
+  }): Promise<void> {
+    const { sessionId, sdkMessage, providerSessionId } = params;
     // Determine message type for database - map all to user/assistant for compatibility
     let messageType: 'user' | 'assistant' = 'assistant';
 
@@ -171,14 +173,24 @@ export class MessageService {
     // Use a transaction to ensure consistency
     await db.transaction(async (tx) => {
       // Save message with SDK data as JSON string, including Claude session ID and token count
+      // Ensure session exists and read provider once
+      const sessionRow = await tx.query.sessions.findFirst({
+        where: eq(sessions.id, sessionId),
+        columns: { provider: true, projectPath: true },
+      });
+      if (!sessionRow) {
+        throw new Error('Session not found');
+      }
+
       const [insertedMessage] = await tx
         .insert(sessionMessages)
         .values({
           id: createId(),
           sessionId,
+          provider: sessionRow.provider,
           type: messageType,
           contentData: JSON.stringify(sdkMessage), // Store raw SDK message
-          claudeCodeSessionId: claudeCodeSessionId || null, // Store Claude SDK session ID for resumption
+          providerSessionId: providerSessionId || null, // Store provider session ID for resumption
           tokenCount: tokenCount > 0 ? tokenCount : null, // Store token count if available
         })
         .returning(); // Use returning() to get the inserted row
@@ -193,10 +205,7 @@ export class MessageService {
         .where(eq(sessions.id, sessionId));
 
       // Get project path for message parsing
-      const session = await tx.query.sessions.findFirst({
-        where: eq(sessions.id, sessionId),
-        columns: { projectPath: true },
-      });
+      const session = { projectPath: sessionRow.projectPath };
 
       // After DB commit, emit real-time event with full Message object
       if (insertedMessage && session) {
@@ -241,11 +250,21 @@ export class MessageService {
     // Use a transaction to ensure consistency
     await db.transaction(async (tx) => {
       // Save as user message
+      // Get provider for this session
+      const sessionRow = await tx.query.sessions.findFirst({
+        where: eq(sessions.id, sessionId),
+        columns: { provider: true, projectPath: true },
+      });
+      if (!sessionRow) {
+        throw new Error('Session not found');
+      }
+
       const [insertedMessage] = await tx
         .insert(sessionMessages)
         .values({
           id: createId(),
           sessionId,
+          provider: sessionRow.provider,
           type: 'user',
           contentData: JSON.stringify(userMessage),
           tokenCount: null, // User messages don't have token costs
@@ -261,10 +280,12 @@ export class MessageService {
         .where(eq(sessions.id, sessionId));
 
       // Get project path for message parsing
-      const session = await tx.query.sessions.findFirst({
-        where: eq(sessions.id, sessionId),
-        columns: { projectPath: true },
-      });
+      const session = sessionRow
+        ? { projectPath: sessionRow.projectPath }
+        : await tx.query.sessions.findFirst({
+            where: eq(sessions.id, sessionId),
+            columns: { projectPath: true },
+          });
 
       // After DB commit, emit real-time event with full Message object
       if (insertedMessage && session) {
@@ -294,20 +315,17 @@ export class MessageService {
   /**
    * Get the last Claude Code session ID for resumption
    */
-  async getLastClaudeCodeSessionId(sessionId: string): Promise<string | null> {
+  async getLastProviderSessionId(sessionId: string): Promise<string | null> {
     const result = await db
-      .select({ claudeCodeSessionId: sessionMessages.claudeCodeSessionId })
+      .select({ providerSessionId: sessionMessages.providerSessionId })
       .from(sessionMessages)
       .where(
-        and(
-          eq(sessionMessages.sessionId, sessionId),
-          isNotNull(sessionMessages.claudeCodeSessionId),
-        ),
+        and(eq(sessionMessages.sessionId, sessionId), isNotNull(sessionMessages.providerSessionId)),
       )
       .orderBy(desc(sessionMessages.createdAt))
       .limit(1);
 
-    return result[0]?.claudeCodeSessionId ?? null;
+    return result[0]?.providerSessionId ?? null;
   }
 
   /**
@@ -319,7 +337,7 @@ export class MessageService {
       sessionId: string;
       type: string;
       contentData: SDKMessage; // Parsed JSON object
-      claudeCodeSessionId: string | null;
+      providerSessionId: string | null;
       tokenCount: number | null;
       createdAt: Date;
     }>
@@ -337,7 +355,7 @@ export class MessageService {
       sessionId: msg.sessionId,
       type: msg.type,
       contentData: msg.contentData ? JSON.parse(msg.contentData) : null,
-      claudeCodeSessionId: msg.claudeCodeSessionId,
+      providerSessionId: msg.providerSessionId,
       tokenCount: msg.tokenCount,
       createdAt: msg.createdAt,
     }));

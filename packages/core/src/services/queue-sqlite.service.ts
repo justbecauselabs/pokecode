@@ -21,7 +21,7 @@ export class SQLiteQueueService {
   ) {
     // Get project path from session
     const session = await db
-      .select({ projectPath: sessions.projectPath })
+      .select({ projectPath: sessions.projectPath, provider: sessions.provider })
       .from(sessions)
       .where(eq(sessions.id, sessionId))
       .get();
@@ -36,6 +36,7 @@ export class SQLiteQueueService {
       id: jobId,
       sessionId,
       promptId,
+      provider: session.provider,
       status: 'pending',
       data: {
         prompt,
@@ -217,6 +218,7 @@ export class SQLiteQueueService {
   ): typeof jobQueue.$inferSelect & { data: PromptJobData } {
     // Convert the data to match PromptJobData interface
     const promptJobData: PromptJobData = {
+      provider: job.provider,
       sessionId: job.sessionId,
       promptId: job.promptId,
       prompt: job.data.prompt,
@@ -230,6 +232,7 @@ export class SQLiteQueueService {
       id: job.id,
       sessionId: job.sessionId,
       promptId: job.promptId,
+      provider: job.provider,
       status: job.status,
       attempts: job.attempts,
       maxAttempts: job.maxAttempts,
@@ -239,6 +242,7 @@ export class SQLiteQueueService {
       completedAt: job.completedAt,
       error: job.error,
       data: {
+        provider: promptJobData.provider,
         sessionId: promptJobData.sessionId,
         promptId: promptJobData.promptId,
         prompt: promptJobData.prompt,

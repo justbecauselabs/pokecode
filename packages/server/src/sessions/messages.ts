@@ -295,6 +295,7 @@ const messageRoutes: FastifyPluginAsync = async (fastify) => {
           messages,
           session: {
             id: session.id,
+            provider: session.provider,
             projectPath: session.projectPath,
             name: session.name,
             claudeDirectoryPath: session.claudeDirectoryPath,

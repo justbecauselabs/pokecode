@@ -1,5 +1,5 @@
 import { EventEmitter } from 'node:events';
-import type { Message, SSEEvent } from '@pokecode/api';
+import type { Message, SSEEvent } from '@pokecode/types';
 import { createChildLogger } from '../utils/logger';
 
 const logger = createChildLogger('event-bus');

@@ -26,7 +26,8 @@
     "paths": {
       "@pokecode/api": ["./packages/api/src/index.ts"],
       "@pokecode/core": ["./packages/core/src/index.ts"],
-      "@pokecode/server": ["./packages/server/src/index.ts"]
+      "@pokecode/server": ["./packages/server/src/index.ts"],
+      "@pokecode/types": ["./packages/types/src/index.ts"]
     },
   },
   "include": [

@@ -72,8 +72,8 @@ export class ClaudeCodeSDKService {
     this.abortController = new AbortController();
 
     try {
-      // Check for existing Claude session ID for resumption
-      const lastClaudeSessionId = await this.messageService.getLastClaudeCodeSessionId(
+      // Check for existing provider session ID for resumption
+      const lastClaudeSessionId = await this.messageService.getLastProviderSessionId(
         this.sessionId,
       );
 
@@ -173,11 +173,11 @@ export class ClaudeCodeSDKService {
       const transformedMessage =
         message.type === 'result' ? { ...message, permission_denials: [] } : message;
 
-      await this.messageService.saveSDKMessage(
-        this.sessionId,
-        transformedMessage,
-        message.session_id,
-      );
+      await this.messageService.saveSDKMessage({
+        sessionId: this.sessionId,
+        sdkMessage: transformedMessage,
+        providerSessionId: message.session_id,
+      });
     } catch (error) {
       logger.error(
         {

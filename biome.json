@@ -10,11 +10,7 @@
       "packages/*/src/**/*.ts",
       "packages/*/src/**/*.tsx",
       "packages/*/scripts/**/*.ts",
-      "packages/*/tests/**/*.ts",
-      "packages/*/tests/**/*.tsx",
-      "packages/*/drizzle.config.ts",
-      "mobile/**/*.ts",
-      "mobile/**/*.tsx"
+      "packages/*/drizzle.config.ts"
     ],
     "ignoreUnknown": false
   },
@@ -47,9 +43,7 @@
         "noExplicitAny": "error",
         "noConsole": {
           "level": "warn",
-          "options": {
-            "allow": ["error", "warn", "info"]
-          }
+          "options": { "allow": ["error", "warn", "info"] }
         }
       },
       "a11y": {
@@ -91,32 +85,9 @@
           "suspicious": {
             "noConsole": {
               "level": "warn",
-              "options": {
-                "allow": ["error", "warn", "info", "log"]
-              }
+              "options": { "allow": ["error", "warn", "info", "log"] }
             }
           }
-        }
-      }
-    },
-    {
-      "includes": ["mobile/**/*"],
-      "linter": {
-        "rules": {
-          "suspicious": {
-            "noConsole": {
-              "level": "warn",
-              "options": {
-                "allow": ["error", "warn", "info", "log"]
-              }
-            }
-          }
-        }
-      },
-      "javascript": {
-        "formatter": {
-          "jsxQuoteStyle": "double",
-          "trailingCommas": "es5"
         }
       }
     }

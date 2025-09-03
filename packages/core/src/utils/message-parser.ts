@@ -5,7 +5,7 @@ import type {
   ToolResultBlockParam,
   ToolUseBlockParam,
 } from '@anthropic-ai/sdk/resources/messages';
-import type { AssistantMessage, Message, UserMessage } from '@pokecode/api';
+import type { AssistantMessage, Message, UserMessage } from '@pokecode/types';
 import type { SessionMessage } from '../database/schema-sqlite/session_messages';
 import { logger } from './logger';
 
@@ -111,7 +111,9 @@ function parseUserMessage(
           data: {
             toolUseId: toolResultBlock.tool_use_id,
             content: toolResultBlock.content,
-            isError: toolResultBlock.is_error,
+            ...(toolResultBlock.is_error !== undefined && {
+              isError: toolResultBlock.is_error,
+            }),
           },
         },
         parentToolUseId: sdkMessage.parent_tool_use_id,
@@ -609,9 +611,13 @@ function parseAssistantMessage(
               pattern: grepData.pattern,
               path: grepData.path,
               outputMode: grepData.outputMode,
-              lineNumbers: grepData.lineNumbers,
-              headLimit: grepData.headLimit,
-              contextLines: grepData.contextLines,
+              ...(grepData.lineNumbers !== undefined && {
+                lineNumbers: grepData.lineNumbers,
+              }),
+              ...(grepData.headLimit !== undefined && { headLimit: grepData.headLimit }),
+              ...(grepData.contextLines !== undefined && {
+                contextLines: grepData.contextLines,
+              }),
             },
           },
         },
@@ -632,7 +638,7 @@ function parseAssistantMessage(
             toolId: globData.toolId,
             data: {
               pattern: globData.pattern,
-              path: globData.path,
+              ...(globData.path !== undefined && { path: globData.path }),
             },
           },
         },
@@ -673,8 +679,10 @@ function parseAssistantMessage(
             toolId: bashData.toolId,
             data: {
               command: bashData.command,
-              timeout: bashData.timeout,
-              description: bashData.description,
+              ...(bashData.timeout !== undefined && { timeout: bashData.timeout }),
+              ...(bashData.description !== undefined && {
+                description: bashData.description,
+              }),
             },
           },
         },

@@ -16,6 +16,7 @@ export interface Config {
   // Paths
   configDir: string; // Base config directory (~/.pokecode)
   claudeCodePath: string | undefined;
+  codexCliPath: string | undefined;
   repositories: string[];
   configFile: string;
   logFile: string;
@@ -44,6 +45,7 @@ const defaultConfig: Config = {
   databaseWAL: true,
   databaseCacheSize: 1000000, // 1GB
   claudeCodePath: undefined,
+  codexCliPath: undefined,
   repositories: [],
   configFile: join(BASE_CONFIG_DIR, 'config.json'),
   logFile: join(BASE_CONFIG_DIR, 'pokecode.log'),
@@ -58,6 +60,7 @@ const defaultConfig: Config = {
 const fileConfigSchema = z.object({
   repositories: z.array(z.string()),
   claudeCodePath: z.string(),
+  codexCliPath: z.string().optional(),
 });
 
 export type FileConfig = z.infer<typeof fileConfigSchema>;

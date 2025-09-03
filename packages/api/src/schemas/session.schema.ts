@@ -1,3 +1,4 @@
+import { ProviderSchema } from '@pokecode/types';
 import { z } from 'zod';
 
 // ID validation schema - accept any string format
@@ -9,10 +10,12 @@ export const CreateSessionRequestSchema = z.object({
     .string()
     .regex(/^[a-zA-Z0-9._/-]+$/)
     .min(1),
+  provider: ProviderSchema,
 });
 
 export const SessionSchema = z.object({
   id: idSchema,
+  provider: ProviderSchema,
   projectPath: z.string(),
   name: z.string(),
   claudeDirectoryPath: z.string().nullable(),

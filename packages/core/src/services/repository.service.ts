@@ -1,4 +1,4 @@
-import type { ListRepositoriesResponse, RepositoryResponse } from '@pokecode/api';
+import type { ListRepositoriesResponse, RepositoryResponse } from '@pokecode/types';
 import { getConfig } from '../config';
 import { directoryExists, validateGitRepository } from '../utils/file';
 
