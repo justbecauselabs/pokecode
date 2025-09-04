@@ -78,7 +78,7 @@ describe('MessageService Integration Tests', () => {
     it('should save user message from SDK format', async () => {
       const sdkMessage = createUserMessage('Hello Claude!', 'sdk-123');
 
-      await messageService.saveSDKMessage(sessionId, sdkMessage, 'sdk-123');
+      await messageService.saveSDKMessage({ sessionId, sdkMessage, providerSessionId: 'sdk-123' });
 
       // Verify message was saved
       const messages = await db
@@ -89,7 +89,7 @@ describe('MessageService Integration Tests', () => {
       expect(messages[0]).toMatchObject({
         sessionId,
         type: 'user',
-        claudeCodeSessionId: 'sdk-123',
+        providerSessionId: 'sdk-123',
       });
 
       // Verify content is stored as JSON
@@ -99,7 +99,7 @@ describe('MessageService Integration Tests', () => {
     });
 
     it('should save assistant message with token count', async () => {
-      await messageService.saveSDKMessage(sessionId, assistantTextMessage, 'sdk-123');
+      await messageService.saveSDKMessage({ sessionId, sdkMessage: assistantTextMessage, providerSessionId: 'sdk-123' });
 
       const messages = await db
         .select()
@@ -112,14 +112,14 @@ describe('MessageService Integration Tests', () => {
     it('should update session message and token counts', async () => {
       const sdkMessage = createAssistantMessage('Response text', { input: 100, output: 200 });
 
-      await messageService.saveSDKMessage(sessionId, sdkMessage);
+      await messageService.saveSDKMessage({ sessionId, sdkMessage });
 
       const session = await db.select().from(sessions).where(eq(sessions.id, sessionId)).get();
       expect(session?.messageCount).toBe(1);
       expect(session?.tokenCount).toBe(300);
 
       // Save another message
-      await messageService.saveSDKMessage(sessionId, sdkMessage);
+      await messageService.saveSDKMessage({ sessionId, sdkMessage });
 
       const updatedSession = await db
         .select()
@@ -234,11 +234,11 @@ describe('MessageService Integration Tests', () => {
     });
   });
 
-  describe('getLastClaudeCodeSessionId', () => {
+  describe('getLastProviderSessionId', () => {
     it('should return null when no messages have Claude session ID', async () => {
       await messageService.saveUserMessage(sessionId, 'Test');
 
-      const claudeSessionId = await messageService.getLastClaudeCodeSessionId(sessionId);
+      const claudeSessionId = await messageService.getLastProviderSessionId(sessionId);
       expect(claudeSessionId).toBeNull();
     });
 
@@ -247,14 +247,14 @@ describe('MessageService Integration Tests', () => {
       const msg1 = createUserMessage('First message', 'claude-session-1');
       const msg2 = createUserMessage('Second message', 'claude-session-2');
 
-      await messageService.saveSDKMessage(sessionId, msg1, 'claude-session-1');
+      await messageService.saveSDKMessage({ sessionId, sdkMessage: msg1, providerSessionId: 'claude-session-1' });
 
       // Wait longer to ensure different timestamp in milliseconds
       await new Promise((resolve) => setTimeout(resolve, 50));
 
-      await messageService.saveSDKMessage(sessionId, msg2, 'claude-session-2');
+      await messageService.saveSDKMessage({ sessionId, sdkMessage: msg2, providerSessionId: 'claude-session-2' });
 
-      const claudeSessionId = await messageService.getLastClaudeCodeSessionId(sessionId);
+      const claudeSessionId = await messageService.getLastProviderSessionId(sessionId);
       expect(claudeSessionId).toBe('claude-session-2');
     });
   });
@@ -263,7 +263,7 @@ describe('MessageService Integration Tests', () => {
     it('should return messages with parsed SDK content', async () => {
       const sdkMessage = createUserMessage('Test message', 'test-session');
 
-      await messageService.saveSDKMessage(sessionId, sdkMessage, 'test-session');
+      await messageService.saveSDKMessage({ sessionId, sdkMessage, providerSessionId: 'test-session' });
 
       const rawMessages = await messageService.getRawMessages(sessionId);
       expect(rawMessages).toHaveLength(1);
@@ -271,7 +271,7 @@ describe('MessageService Integration Tests', () => {
         type: 'user',
         message: { role: 'user', content: 'Test message' },
       });
-      expect(rawMessages[0]?.claudeCodeSessionId).toBe('test-session');
+      expect(rawMessages[0]?.providerSessionId).toBe('test-session');
     });
   });
 

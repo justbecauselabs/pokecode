@@ -1,19 +1,30 @@
 import type { Message } from '@pokecode/types';
 import {
+  CodexAgentMessageSchema,
+  CodexAgentReasoningSchema,
+  CodexAgentReasoningSectionBreakSchema,
+  CodexExecCommandBeginSchema,
+  CodexExecCommandEndSchema,
+  CodexExecCommandOutputDeltaSchema,
   CodexFunctionCallOutputSchema,
   CodexFunctionCallSchema,
   CodexHeaderSchema,
   CodexMessageSchema,
+  CodexPatchApplyBeginSchema,
+  CodexPatchApplyEndSchema,
   CodexSDKMessageSchema,
   CodexShellCallArgumentsSchema,
   CodexStateSchema,
+  CodexTaskStartedSchema,
+  CodexTokenCountSchema,
+  CodexTurnDiffSchema,
   unwrapCodexSDKMessage,
 } from '@pokecode/types';
 import { z } from 'zod';
 import type { SessionMessage } from '../database/schema-sqlite/session_messages';
 import { logger } from './logger';
 
-// Update plan call arguments (observed in codex-messages.jsonl)
+// Update plan call arguments (legacy function_call helper)
 const UpdatePlanArgumentsSchema = z.object({
   explanation: z.string().optional(),
   plan: z
@@ -26,7 +37,7 @@ const UpdatePlanArgumentsSchema = z.object({
     .optional(),
 });
 
-// Generic shape we have seen embedded inside function_call_output.output JSON strings
+// Generic shape embedded inside legacy function_call_output.output JSON strings
 const FunctionCallOutputPayloadSchema = z.object({
   output: z.string().optional(),
   stdout: z.string().optional(),
@@ -42,16 +53,6 @@ const FunctionCallOutputPayloadSchema = z.object({
     })
     .optional(),
 });
-
-function _relativizePath(params: { filePath: string; projectPath?: string }): string {
-  const { filePath, projectPath } = params;
-  if (!projectPath) return filePath;
-  if (filePath.startsWith(projectPath)) {
-    const relative = filePath.slice(projectPath.length);
-    return relative.startsWith('/') ? relative.slice(1) : relative;
-  }
-  return filePath;
-}
 
 function joinBlocksText(params: {
   blocks: ReadonlyArray<{ type: 'input_text' | 'output_text'; text: string }>;
@@ -70,7 +71,6 @@ function mapFunctionCallToToolUse(params: {
 }): Message | null {
   const { call } = params;
 
-  // shell -> bash
   if (call.name === 'shell') {
     try {
       const args = CodexShellCallArgumentsSchema.parse(JSON.parse(call.arguments));
@@ -116,23 +116,18 @@ function mapFunctionCallToToolUse(params: {
     }
   }
 
-  // update_plan -> task (encode explanation and plan as prompt)
   if (call.name === 'update_plan') {
     let prompt = call.arguments;
     try {
       const parsed = UpdatePlanArgumentsSchema.parse(JSON.parse(call.arguments));
       const lines: Array<string> = [];
       if (parsed.explanation) lines.push(parsed.explanation);
-      if (parsed.plan) {
-        for (const item of parsed.plan) {
-          lines.push(`- [${item.status}] ${item.step}`);
-        }
-      }
+      if (parsed.plan)
+        for (const item of parsed.plan) lines.push(`- [${item.status}] ${item.step}`);
       if (lines.length > 0) prompt = lines.join('\n');
-    } catch (_error) {
+    } catch {
       // keep raw prompt
     }
-
     return {
       id: '',
       type: 'assistant',
@@ -141,18 +136,13 @@ function mapFunctionCallToToolUse(params: {
         data: {
           type: 'task',
           toolId: call.call_id,
-          data: {
-            subagentType: 'update_plan',
-            description: 'Update plan',
-            prompt,
-          },
+          data: { subagentType: 'update_plan', description: 'Update plan', prompt },
         },
       },
       parentToolUseId: null,
     };
   }
 
-  // Fallback: unknown tool -> task
   return {
     id: '',
     type: 'assistant',
@@ -176,7 +166,6 @@ function mapFunctionCallOutputToToolResult(params: {
   output: z.infer<typeof CodexFunctionCallOutputSchema>;
 }): Message {
   const { output } = params;
-
   let content = output.output;
   let isError: boolean | undefined;
   try {
@@ -194,17 +183,12 @@ function mapFunctionCallOutputToToolResult(params: {
         '';
       if (pick.length > 0) content = pick;
       const exit = o.exit_code ?? o.metadata?.exit_code;
-      if (typeof exit === 'number' && exit > 0) {
-        isError = true;
-      }
-      if (o.error && o.error.trim().length > 0) {
-        isError = true;
-      }
+      if (typeof exit === 'number' && exit > 0) isError = true;
+      if (o.error && o.error.trim().length > 0) isError = true;
     }
   } catch {
     // keep raw string
   }
-
   return {
     id: '',
     type: 'assistant',
@@ -216,52 +200,120 @@ function mapFunctionCallOutputToToolResult(params: {
   };
 }
 
-/**
- * Parse a provider-specific DB message containing Codex JSONL content into a normalized Message.
- * Returns null for non-display records (headers, heartbeats, reasoning summaries).
- */
+function mapExecCommandBeginToToolUse(params: {
+  e: z.infer<typeof CodexExecCommandBeginSchema>;
+}): Message {
+  const { e } = params;
+  const c = e.command;
+  const cmd =
+    c.length >= 3 && c[0] === 'bash' && c[1] === '-lc' ? (c[2] ?? c.join(' ')) : c.join(' ');
+  return {
+    id: '',
+    type: 'assistant',
+    data: { type: 'tool_use', data: { type: 'bash', toolId: e.call_id, data: { command: cmd } } },
+    parentToolUseId: null,
+  };
+}
+
+function mapExecCommandEndToToolResult(params: {
+  e: z.infer<typeof CodexExecCommandEndSchema>;
+}): Message {
+  const { e } = params;
+  const content =
+    (e.formatted_output && e.formatted_output.length > 0 && e.formatted_output) ||
+    (e.aggregated_output && e.aggregated_output.length > 0 && e.aggregated_output) ||
+    (e.stdout && e.stdout.length > 0 && e.stdout) ||
+    (e.stderr && e.stderr.length > 0 && e.stderr) ||
+    '';
+  const isError = e.exit_code !== 0 || (e.stderr && e.stderr.trim().length > 0);
+  return {
+    id: '',
+    type: 'assistant',
+    data: {
+      type: 'tool_result',
+      data: { toolUseId: e.call_id, content, ...(isError ? { isError } : {}) },
+    },
+    parentToolUseId: e.call_id,
+  };
+}
+
+function relativizePath(filePath: string, projectPath?: string): string {
+  if (!projectPath) return filePath;
+  return filePath.startsWith(projectPath)
+    ? filePath.slice(projectPath.length).replace(/^\/+/, '')
+    : filePath;
+}
+
+function mapPatchApplyBeginToToolUse(params: {
+  e: z.infer<typeof CodexPatchApplyBeginSchema>;
+  projectPath?: string;
+}): Message {
+  const { e, projectPath } = params;
+  const files = Object.keys(e.changes);
+  const first = files[0] ?? '';
+  const filePath = relativizePath(first, projectPath);
+  return {
+    id: '',
+    type: 'assistant',
+    data: {
+      type: 'tool_use',
+      data: {
+        type: 'edit',
+        toolId: e.call_id,
+        data: { filePath, oldString: '', newString: '' },
+      },
+    },
+    parentToolUseId: null,
+  };
+}
+
+function mapPatchApplyEndToToolResult(params: {
+  e: z.infer<typeof CodexPatchApplyEndSchema>;
+}): Message {
+  const { e } = params;
+  const content = e.stdout && e.stdout.length > 0 ? e.stdout : e.stderr;
+  const isError = !e.success || (e.stderr && e.stderr.trim().length > 0);
+  return {
+    id: '',
+    type: 'assistant',
+    data: {
+      type: 'tool_result',
+      data: { toolUseId: e.call_id, content, ...(isError ? { isError } : {}) },
+    },
+    parentToolUseId: e.call_id,
+  };
+}
+
 export function parseCodexDbMessage(
   dbMessage: SessionMessage,
   _projectPath?: string,
 ): Message | null {
   if (!dbMessage.contentData) return null;
-
   try {
-    // Validate against the top-level union
-    const line = CodexSDKMessageSchema.safeParse(JSON.parse(dbMessage.contentData));
-    if (!line.success) {
-      logger.warn({ issues: line.error.issues }, 'Unrecognized Codex JSONL line');
+    const parsedLine = CodexSDKMessageSchema.safeParse(JSON.parse(dbMessage.contentData));
+    if (!parsedLine.success) {
+      logger.warn({ issues: parsedLine.error.issues }, 'Unrecognized Codex JSONL line');
       return null;
     }
 
-    const v = unwrapCodexSDKMessage(line.data);
+    const v = unwrapCodexSDKMessage(parsedLine.data);
 
-    // Ignore non-message records
+    // Ignore non-display records
     if (CodexHeaderSchema.safeParse(v).success) return null;
     if (CodexStateSchema.safeParse(v).success) return null;
-    // Reasoning records are not normalized; persist raw separately
-    // Use duck-typing via discriminant instead of importing the schema again
-    if (
-      typeof (v as { type?: string }).type === 'string' &&
-      (v as { type: string }).type === 'reasoning'
-    ) {
-      return null;
-    }
+    if (CodexTaskStartedSchema.safeParse(v).success) return null;
+    if (CodexAgentReasoningSectionBreakSchema.safeParse(v).success) return null;
+    if (CodexTokenCountSchema.safeParse(v).success) return null;
+    if (CodexExecCommandOutputDeltaSchema.safeParse(v).success) return null;
 
-    // Messages
+    // Legacy messages
     if (CodexMessageSchema.safeParse(v).success) {
       const m = CodexMessageSchema.parse(v);
       if (m.role === 'user') {
         const text = joinBlocksText({ blocks: m.content, kind: 'input_text' });
         if (text === null) return null;
-        return {
-          id: dbMessage.id,
-          type: 'user',
-          data: { content: text },
-          parentToolUseId: null,
-        };
+        return { id: dbMessage.id, type: 'user', data: { content: text }, parentToolUseId: null };
       }
-
       if (m.role === 'assistant') {
         const text = joinBlocksText({ blocks: m.content, kind: 'output_text' });
         if (text === null) return null;
@@ -272,29 +324,79 @@ export function parseCodexDbMessage(
           parentToolUseId: null,
         };
       }
-
-      // system
       const text =
         joinBlocksText({ blocks: m.content, kind: 'input_text' }) ??
         joinBlocksText({ blocks: m.content, kind: 'output_text' });
       if (text === null) return null;
+      return { id: dbMessage.id, type: 'system', data: { content: text }, parentToolUseId: null };
+    }
+
+    // COI agent message
+    if (CodexAgentMessageSchema.safeParse(v).success) {
+      const e = CodexAgentMessageSchema.parse(v);
       return {
         id: dbMessage.id,
-        type: 'system',
-        data: { content: text },
+        type: 'assistant',
+        data: { type: 'message', data: { content: e.message } },
         parentToolUseId: null,
       };
     }
 
-    // Tool calls
+    // COI agent reasoning — map to assistant message
+    if (CodexAgentReasoningSchema.safeParse(v).success) {
+      const e = CodexAgentReasoningSchema.parse(v);
+      return {
+        id: dbMessage.id,
+        type: 'assistant',
+        data: { type: 'message', data: { content: e.text } },
+        parentToolUseId: null,
+      };
+    }
+
+    // COI diffs
+    if (CodexTurnDiffSchema.safeParse(v).success) {
+      const e = CodexTurnDiffSchema.parse(v);
+      return {
+        id: dbMessage.id,
+        type: 'assistant',
+        data: { type: 'message', data: { content: e.unified_diff } },
+        parentToolUseId: null,
+      };
+    }
+
+    // COI exec commands
+    if (CodexExecCommandBeginSchema.safeParse(v).success) {
+      const e = CodexExecCommandBeginSchema.parse(v);
+      const msg = mapExecCommandBeginToToolUse({ e });
+      return { ...msg, id: dbMessage.id };
+    }
+    if (CodexExecCommandEndSchema.safeParse(v).success) {
+      const e = CodexExecCommandEndSchema.parse(v);
+      const msg = mapExecCommandEndToToolResult({ e });
+      return { ...msg, id: dbMessage.id };
+    }
+
+    // COI patch apply
+    if (CodexPatchApplyBeginSchema.safeParse(v).success) {
+      const e = CodexPatchApplyBeginSchema.parse(v);
+      const msg = mapPatchApplyBeginToToolUse(
+        _projectPath !== undefined ? { e, projectPath: _projectPath } : { e },
+      );
+      return { ...msg, id: dbMessage.id };
+    }
+    if (CodexPatchApplyEndSchema.safeParse(v).success) {
+      const e = CodexPatchApplyEndSchema.parse(v);
+      const msg = mapPatchApplyEndToToolResult({ e });
+      return { ...msg, id: dbMessage.id };
+    }
+
+    // Legacy tools
     if (CodexFunctionCallSchema.safeParse(v).success) {
       const call = CodexFunctionCallSchema.parse(v);
       const msg = mapFunctionCallToToolUse({ call });
       if (msg === null) return null;
       return { ...msg, id: dbMessage.id };
     }
-
-    // Tool results
     if (CodexFunctionCallOutputSchema.safeParse(v).success) {
       const out = CodexFunctionCallOutputSchema.parse(v);
       const msg = mapFunctionCallOutputToToolResult({ output: out });

@@ -22,7 +22,7 @@ describe('SessionService Integration Tests', () => {
     it('should create a new session with generated ID', async () => {
       const projectPath = testData.projectPaths.simple;
       
-      const session = await sessionService.createSession({ projectPath });
+      const session = await sessionService.createSession({ projectPath, provider: 'claude-code' });
 
       expect(session).toMatchObject({
         projectPath,
@@ -46,7 +46,7 @@ describe('SessionService Integration Tests', () => {
       ];
 
       for (const { path: projectPath, expectedName } of testCases) {
-        const session = await sessionService.createSession({ projectPath });
+        const session = await sessionService.createSession({ projectPath, provider: 'claude-code' });
         expect(session.name).toBe(expectedName);
       }
     });
@@ -57,18 +57,18 @@ describe('SessionService Integration Tests', () => {
       const gitPath = path.join(tempDir, '.git');
       const nestedPath = path.join(tempDir, 'src', 'components');
       
-      // Use Bun's file system API instead of Node.js fs
-      const tempDirFile = Bun.file(tempDir);
+      // Use Bun to create directories and placeholder files
+      await Bun.$`mkdir -p ${gitPath} ${nestedPath}`;
       await Bun.write(path.join(gitPath, '.gitkeep'), '');
       await Bun.write(path.join(nestedPath, '.gitkeep'), '');
 
       try {
         // Test git root
-        const rootSession = await sessionService.createSession({ projectPath: tempDir });
+        const rootSession = await sessionService.createSession({ projectPath: tempDir, provider: 'claude-code' });
         expect(rootSession.name).toBe(path.basename(tempDir));
 
         // Test nested path within git repo
-        const nestedSession = await sessionService.createSession({ projectPath: nestedPath });
+        const nestedSession = await sessionService.createSession({ projectPath: nestedPath, provider: 'claude-code' });
         expect(nestedSession.name).toBe(`${path.basename(tempDir)}/src/components`);
       } finally {
         // Cleanup using async operation
@@ -79,8 +79,8 @@ describe('SessionService Integration Tests', () => {
     it('should generate unique session IDs', async () => {
       const projectPath = testData.projectPaths.simple;
       
-      const session1 = await sessionService.createSession({ projectPath });
-      const session2 = await sessionService.createSession({ projectPath });
+      const session1 = await sessionService.createSession({ projectPath, provider: 'claude-code' });
+      const session2 = await sessionService.createSession({ projectPath, provider: 'claude-code' });
       
       expect(session1.id).not.toBe(session2.id);
       expect(session1.claudeDirectoryPath).not.toBe(session2.claudeDirectoryPath);
@@ -89,7 +89,7 @@ describe('SessionService Integration Tests', () => {
     it('should create proper Claude directory path', async () => {
       const projectPath = '/Users/test/my-project/src';
       
-      const session = await sessionService.createSession({ projectPath });
+      const session = await sessionService.createSession({ projectPath, provider: 'claude-code' });
       
       expect(session.claudeDirectoryPath).toMatch(/\.claude\/projects\/-Users-test-my-project-src\/[a-z0-9]+$/);
     });
@@ -98,7 +98,7 @@ describe('SessionService Integration Tests', () => {
   describe('getSession', () => {
     it('should retrieve an existing session', async () => {
       const projectPath = testData.projectPaths.simple;
-      const created = await sessionService.createSession({ projectPath });
+      const created = await sessionService.createSession({ projectPath, provider: 'claude-code' });
       
       const retrieved = await sessionService.getSession(created.id);
       
@@ -184,7 +184,7 @@ describe('SessionService Integration Tests', () => {
     let sessionId: string;
 
     beforeEach(async () => {
-      const session = await sessionService.createSession({ projectPath: testData.projectPaths.simple });
+      const session = await sessionService.createSession({ projectPath: testData.projectPaths.simple, provider: 'claude-code' });
       sessionId = session.id;
     });
 
@@ -231,7 +231,7 @@ describe('SessionService Integration Tests', () => {
     let sessionId: string;
 
     beforeEach(async () => {
-      const session = await sessionService.createSession({ projectPath: testData.projectPaths.simple });
+      const session = await sessionService.createSession({ projectPath: testData.projectPaths.simple, provider: 'claude-code' });
       sessionId = session.id;
     });
 

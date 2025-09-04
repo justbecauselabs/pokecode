@@ -1,5 +1,4 @@
-import { appendFile } from 'node:fs/promises';
-import { join } from 'node:path';
+import { type CodexSDKMessage, CodexSDKMessageSchema } from '@pokecode/types';
 import type { Subprocess } from 'bun';
 import { getConfig } from '../config';
 import { createChildLogger } from '../utils/logger';
@@ -131,25 +130,30 @@ export class CodexRunner implements AgentRunner {
         logger.error({ sessionId: this.options.sessionId }, 'No codex stdout');
         return; // nothing to stream
       }
-      const capturePath = join(this.options.projectPath, 'codex-messages.jsonl');
       let count = 0;
       for await (const line of readLines(proc.stdout)) {
         try {
-          const obj = JSON.parse(line);
-          await appendFile(capturePath, `${JSON.stringify(obj)}\n`, 'utf8');
-          logger.info({ obj }, `Codex message emitted to ${capturePath}`);
+          const parsed = JSON.parse(line) as unknown;
+          const ok = CodexSDKMessageSchema.safeParse(parsed);
+          if (!ok.success) {
+            logger.debug({ issues: ok.error.issues }, 'Ignoring non-SDK Codex line');
+            continue;
+          }
+          const message: CodexSDKMessage = ok.data;
           count++;
+          yield {
+            provider: 'codex-cli',
+            providerSessionId: null,
+            message,
+          };
         } catch (e) {
           logger.warn(
-            { error: e instanceof Error ? e.message : String(e), line },
-            'Codex emit parse/append failure',
+            { error: e instanceof Error ? e.message : String(e) },
+            'Codex JSONL parse failure',
           );
         }
       }
-      logger.info(
-        { sessionId: this.options.sessionId, count, capturePath },
-        'Codex capture complete',
-      );
+      logger.info({ sessionId: this.options.sessionId, count }, 'Codex stream complete');
     } finally {
       params.abortController.signal.removeEventListener('abort', onAbort);
       this.isProcessing = false;

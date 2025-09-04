@@ -1,4 +1,4 @@
-import { CodexSDKMessageSchema } from './codex';
+import { CodexSDKOrEnvelopeSchema } from './codex';
 
 // Simple JSON parser with unknown output for Zod validation
 function parseJson(input: string): unknown {
@@ -36,13 +36,13 @@ async function main(): Promise<void> {
       Bun.exit(1);
       return;
     }
-    const result = CodexSDKMessageSchema.safeParse(obj);
+    const result = CodexSDKOrEnvelopeSchema.safeParse(obj);
     if (!result.success) {
       console.error(`[FAIL] Line ${i + 1}: schema validation failed`);
       console.error(JSON.stringify(result.error.issues, null, 2));
       console.error('Object:');
       console.error(JSON.stringify(obj, null, 2));
-      Bun.exit(1);
+      process.exit(1);
       return;
     }
     parsed++;
@@ -52,4 +52,3 @@ async function main(): Promise<void> {
 }
 
 await main();
-

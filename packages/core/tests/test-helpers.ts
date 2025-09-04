@@ -40,7 +40,8 @@ export async function createTestSession(params: {
 } = {}) {
   const defaultPath = '/Users/test/projects/myapp';
   const session = await sessionService.createSession({ 
-    projectPath: params.projectPath ?? defaultPath 
+    projectPath: params.projectPath ?? defaultPath,
+    provider: 'claude-code',
   });
   
   if (params.context || params.metadata) {

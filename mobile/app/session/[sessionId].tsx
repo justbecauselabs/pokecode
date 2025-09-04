@@ -4,7 +4,7 @@ import { CLAUDE_MODELS, type ClaudeModel } from '@pokecode/api';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useRef, useState } from 'react';
 import { Keyboard, KeyboardAvoidingView, Platform, Text, View } from 'react-native';
-import { PanGestureHandler } from 'react-native-gesture-handler';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated from 'react-native-reanimated';
 import { SafeAreaView } from '../../src/components/common';
 import { AgentSelectionBottomSheet } from '../../src/components/session/AgentSelectionBottomSheet';
@@ -178,17 +178,12 @@ export default function SessionDetailScreen() {
     taskBottomSheetRef.current?.present();
   };
 
-  // Gesture handler for swipe to dismiss keyboard
-  const handleSwipeGesture = (event: {
-    nativeEvent: { velocityY: number; translationY: number };
-  }) => {
-    const { velocityY, translationY } = event.nativeEvent;
-
-    // Dismiss keyboard on downward swipe (positive velocity and translation)
+  // Gesture to dismiss keyboard on downward swipe
+  const swipeGesture = Gesture.Pan().onUpdate(({ velocityY, translationY }) => {
     if (velocityY > 500 && translationY > 50) {
       Keyboard.dismiss();
     }
-  };
+  });
 
   if (!sessionId) {
     return (
@@ -218,7 +213,7 @@ export default function SessionDetailScreen() {
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
         >
-          <PanGestureHandler onGestureEvent={handleSwipeGesture}>
+          <GestureDetector gesture={swipeGesture}>
             <Animated.View className="flex-1 bg-background">
               <View className="flex-1">
                 <MessageList
@@ -248,7 +243,7 @@ export default function SessionDetailScreen() {
                 disabled={isLoading}
               />
             </Animated.View>
-          </PanGestureHandler>
+          </GestureDetector>
         </KeyboardAvoidingView>
 
         {/* Slash Commands Bottom Sheet */}

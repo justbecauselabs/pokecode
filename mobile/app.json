@@ -27,11 +27,11 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#282c34"
       },
-      "package": "com.claudecode.mobile",
-      "statusBar": {
-        "barStyle": "light-content",
-        "backgroundColor": "#282c34"
-      }
+      "package": "com.claudecode.mobile"
+    },
+    "androidStatusBar": {
+      "barStyle": "light-content",
+      "backgroundColor": "#282c34"
     },
     "web": {
       "bundler": "metro",
