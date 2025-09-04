@@ -2,52 +2,50 @@ import { Database } from 'bun:sqlite';
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { type BunSQLiteDatabase, drizzle } from 'drizzle-orm/bun-sqlite';
+import { migrate } from 'drizzle-orm/bun-sqlite/migrator';
 import { DATABASE_PATH } from '../config';
-import { DatabaseMigrator } from './migrator';
 import * as schema from './schema-sqlite';
 
 // Single database instance
 let sqlite: Database;
 let db: BunSQLiteDatabase<typeof schema>;
 
-function initializeDatabase() {
-  if (db) return; // Already initialized
-
-  // Ensure directory exists
-  try {
-    mkdirSync(path.dirname(DATABASE_PATH), { recursive: true });
-  } catch (_error) {
-    // Directory might already exist
-  }
-
-  // Create SQLite connection
-  sqlite = new Database(DATABASE_PATH);
-
-  // Configure SQLite with sensible defaults
-  sqlite.exec('PRAGMA journal_mode = WAL;');
-  sqlite.exec('PRAGMA synchronous = NORMAL;');
-  sqlite.exec('PRAGMA cache_size = 1000000;'); // 1GB
-  sqlite.exec('PRAGMA foreign_keys = ON;');
-  sqlite.exec('PRAGMA temp_store = MEMORY;');
-
-  // Create Drizzle instance
-  db = drizzle(sqlite, { schema });
-
-  // Run migrations
-  const migrator = new DatabaseMigrator(sqlite);
-  migrator.migrate().catch((error) => {
-    console.error('Failed to run database migrations:', error);
-    throw error; // Propagate error instead of swallowing it
-  });
+// Resolve migrations folder next to this module (works in dev and with embedded assets)
+function resolveMigrationsFolder(): string {
+  const url = new URL('./migrations', import.meta.url);
+  return url.pathname;
 }
 
-// Export initialization function for explicit control
-export { initializeDatabase };
+export async function initDatabase(params: { runMigrations?: boolean } = {}): Promise<
+  BunSQLiteDatabase<typeof schema>
+> {
+  if (!db) {
+    try {
+      mkdirSync(path.dirname(DATABASE_PATH), { recursive: true });
+    } catch (_error) {}
+
+    sqlite = new Database(DATABASE_PATH);
+    sqlite.exec('PRAGMA journal_mode = WAL;');
+    sqlite.exec('PRAGMA synchronous = NORMAL;');
+    sqlite.exec('PRAGMA cache_size = 1000000;');
+    sqlite.exec('PRAGMA foreign_keys = ON;');
+    sqlite.exec('PRAGMA temp_store = MEMORY;');
+    db = drizzle(sqlite, { schema });
+  }
+
+  if (params.runMigrations) {
+    const migrationsFolder = resolveMigrationsFolder();
+    await migrate(db, { migrationsFolder });
+  }
+
+  return db;
+}
 
 // Initialize on first access to allow config overrides
 function ensureInitialized() {
   if (!db) {
-    initializeDatabase();
+    // Initialize without running migrations; caller should run them explicitly
+    void initDatabase({ runMigrations: false });
   }
 }
 
@@ -63,16 +61,11 @@ export function getSqlite(): Database {
   return sqlite;
 }
 
-// Initialize immediately to maintain backward compatibility
-initializeDatabase();
-
 // Export the instances
 export { db, sqlite };
 
 // Export schema and utilities
 export { schema };
-export { migrations } from './migrations';
-export { DatabaseMigrator } from './migrator';
 export * from './schema-sqlite';
 
 // Simple health check

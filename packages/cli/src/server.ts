@@ -1,4 +1,4 @@
-import { getConfig } from '@pokecode/core';
+import { getConfig, initDatabase } from '@pokecode/core';
 import { AgentRunnerWorker, createServer, setWorker } from '@pokecode/server';
 
 // Store worker reference at module level for cleanup
@@ -6,6 +6,8 @@ let worker: AgentRunnerWorker | null = null;
 
 export async function startServer(): Promise<void> {
   const config = await getConfig();
+  // Ensure database is initialized and migrations are applied before server startup
+  await initDatabase({ runMigrations: true });
   const server = await createServer();
 
   // Signal handling for graceful shutdown

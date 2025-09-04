@@ -6,3 +6,7 @@
 "@pokecode/server" = "./packages/server/src/index.ts"
 "@pokecode/server/*" = "./packages/server/src/*"
 
+# Ensure SQL migrations are embedded for compiled binaries
+assets = [
+  "packages/core/src/database/migrations/**/*.sql"
+]

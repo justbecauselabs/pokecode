@@ -4,8 +4,9 @@ This is the authoritative reference for PokéCode’s SQLite schema in `@pokecod
 
 ## Tables
 
-- `claude_code_sessions`
+- `sessions`
   - `id` (text, pk)
+  - `provider` (text enum: `claude-code | codex-cli`)
   - `project_path` (text, not null)
   - `name` (text, not null)
   - `context` (text, nullable)
@@ -27,13 +28,14 @@ This is the authoritative reference for PokéCode’s SQLite schema in `@pokecod
 
 - `session_messages`
   - `id` (text, pk)
-  - `session_id` (text, fk → `claude_code_sessions.id` on delete cascade)
+  - `session_id` (text, fk → `sessions.id` on delete cascade)
+  - `provider` (text enum: `claude-code | codex-cli`)
   - `type` (text enum: `user | assistant | system | result | error`)
-  - `content_data` (text, raw Claude SDK message JSON)
-  - `claude_code_session_id` (text, optional resume token)
+  - `content_data` (text, raw provider message JSON)
+  - `provider_session_id` (text, optional resume token)
   - `token_count` (integer, optional per‑message tokens)
   - `created_at` (timestamp)
-  - Indexes: `idx_session_messages_session_id`, `idx_session_messages_type`, `idx_session_messages_created_at`, `idx_session_messages_claude_code_session_id`
+  - Indexes: `idx_session_messages_session_id`, `idx_session_messages_type`, `idx_session_messages_created_at`, `idx_session_messages_provider`, `idx_session_messages_provider_session_id`
 
 - `job_queue`
   - `id` (text, pk)
@@ -59,9 +61,10 @@ This is the authoritative reference for PokéCode’s SQLite schema in `@pokecod
 
 ## Migrations
 
-- Source DDL: Drizzle table definitions in `src/database/schema-sqlite/*`
-- Bundled SQL: `src/database/migrations/index.ts` (generated)
-- Migrator: `src/database/migrator.ts` executes bundled SQL and records rows in `__drizzle_migrations`.
+- Source of truth: Drizzle table definitions in `src/database/schema-sqlite/*`.
+- Generated SQL: versioned files under `src/database/migrations/*.sql` (via `drizzle-kit generate`).
+- Runner: Drizzle ORM migrator (`drizzle-orm/bun-sqlite/migrator`) invoked by `initDatabase({ runMigrations: true })`.
+- Packaging: `.sql` files are embedded via `bunfig.toml` assets for compiled CLI builds.
 
 ## Common Tasks
 

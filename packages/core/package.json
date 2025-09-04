@@ -20,11 +20,6 @@
       "types": "./dist/database/index.d.ts",
       "default": "./dist/database/index.js"
     },
-    "./database/migrations": {
-      "bun": "./src/database/migrations/index.ts",
-      "types": "./dist/database/migrations/index.d.ts",
-      "default": "./dist/database/migrations/index.js"
-    },
     "./services/*": {
       "bun": "./src/services/*.ts",
       "types": "./dist/services/*.d.ts",
@@ -42,10 +37,9 @@
     "typecheck": "tsc --noEmit",
     "test": "NODE_ENV=test bun test",
     "lint": "bunx @biomejs/biome check .",
-    "db:generate": "bunx drizzle-kit generate && bun scripts/generate-migration-module.ts",
+    "db:generate": "bunx drizzle-kit generate",
     "db:push": "bunx drizzle-kit push",
-    "db:studio": "bunx drizzle-kit studio",
-    "generate-migration-module": "bun scripts/generate-migration-module.ts"
+    "db:studio": "bunx drizzle-kit studio"
   },
   "dependencies": {
     "@anthropic-ai/claude-code": "^1.0.72",

@@ -12,6 +12,7 @@ export {
   sessions,
   sqlite,
 } from './database';
+export { initDatabase } from './database';
 // Service exports
 export * from './services/agent.service';
 // Service instances

@@ -1,5 +1,5 @@
 import { expect } from 'bun:test';
-import { db } from '../src/database';
+import { db, initDatabase } from '../src/database';
 import { sessions, sessionMessages, jobQueue, type Job } from '../src/database/schema-sqlite';
 import { sessionService } from '../src/services/session.service';
 import { messageService } from '../src/services/message.service';
@@ -177,6 +177,7 @@ export const testData = {
  */
 export const testEnvironment = {
   async setup(): Promise<void> {
+    await initDatabase({ runMigrations: true });
     await cleanDatabase();
   },
   
