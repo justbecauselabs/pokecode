@@ -41,7 +41,7 @@ export function safeRenderArray(items: unknown[]): ReactNode[] {
 export function useSafeConditionalRender(
   condition: boolean,
   truthyContent: ReactNode,
-  falsyContent?: ReactNode
+  falsyContent?: ReactNode,
 ): ReactNode {
   const content = condition ? truthyContent : falsyContent;
   return safeRender(content);
@@ -75,7 +75,7 @@ export function validateNoRawText(content: ReactNode, componentName: string): vo
   if (__DEV__ && isTextContent(content)) {
     console.error(
       `⚠️  Raw text detected in ${componentName}: "${content}". ` +
-        'Wrap strings in <Text> components to prevent React Native rendering errors.'
+        'Wrap strings in <Text> components to prevent React Native rendering errors.',
     );
   }
 }

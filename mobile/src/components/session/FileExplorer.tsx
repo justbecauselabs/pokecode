@@ -2,8 +2,8 @@ import type { DirectoryItem } from '@pokecode/api';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { memo, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Pressable, Text, View } from 'react-native';
-import { useDirectoryBrowser } from '@/hooks/useDirectoryBrowser';
 import { Row } from '@/components/common/Row';
+import { useDirectoryBrowser } from '@/hooks/useDirectoryBrowser';
 
 interface FileExplorerProps {
   initialPath?: string;
@@ -70,14 +70,8 @@ export const FileExplorer = memo(({ initialPath, onSelectPath }: FileExplorerPro
     return value === '1' || value === 'true';
   };
   const [showHidden, setShowHidden] = useState<boolean>(parseBoolParam(params.showHidden));
-  const {
-    currentPath,
-    parentPath,
-    directories,
-    isLoading,
-    error,
-    refetch,
-  } = useDirectoryBrowser(initialPath);
+  const { currentPath, parentPath, directories, isLoading, error, refetch } =
+    useDirectoryBrowser(initialPath);
 
   const visibleDirectories = useMemo(() => {
     return directories.filter((dir) => (showHidden ? true : !dir.name.startsWith('.')));
@@ -87,7 +81,7 @@ export const FileExplorer = memo(({ initialPath, onSelectPath }: FileExplorerPro
     // Push a new FileExplorer screen with the selected path
     router.push({
       pathname: '/file-explorer',
-      params: { path, showHidden: showHidden ? '1' : '0' }
+      params: { path, showHidden: showHidden ? '1' : '0' },
     });
   };
 
@@ -111,10 +105,12 @@ export const FileExplorer = memo(({ initialPath, onSelectPath }: FileExplorerPro
       {/* Parent Directory Option */}
       {parentPath && (
         <Pressable
-          onPress={() => router.push({
-            pathname: '/file-explorer',
-            params: { path: parentPath, showHidden: showHidden ? '1' : '0' }
-          })}
+          onPress={() =>
+            router.push({
+              pathname: '/file-explorer',
+              params: { path: parentPath, showHidden: showHidden ? '1' : '0' },
+            })
+          }
           className="flex-row items-center py-4 px-4 active:opacity-80 border-b border-border"
         >
           <Text className="text-base text-muted-foreground font-mono mr-2">📁 ..</Text>
@@ -159,7 +155,9 @@ export const FileExplorer = memo(({ initialPath, onSelectPath }: FileExplorerPro
 
   const renderErrorState = () => (
     <View className="flex-1 items-center justify-center p-8">
-      <Text className="text-destructive text-center text-lg mb-4 font-mono">Unable to access directory</Text>
+      <Text className="text-destructive text-center text-lg mb-4 font-mono">
+        Unable to access directory
+      </Text>
       <Text className="text-muted-foreground text-center mb-4 font-mono">
         {error?.message || 'Permission denied or directory not found'}
       </Text>
@@ -178,9 +176,11 @@ export const FileExplorer = memo(({ initialPath, onSelectPath }: FileExplorerPro
           currentPath ? 'bg-primary active:opacity-80' : 'bg-muted opacity-50'
         }`}
       >
-        <Text className={`font-mono font-medium ${
-          currentPath ? 'text-primary-foreground' : 'text-muted-foreground'
-        }`}>
+        <Text
+          className={`font-mono font-medium ${
+            currentPath ? 'text-primary-foreground' : 'text-muted-foreground'
+          }`}
+        >
           Select Directory
         </Text>
       </Pressable>

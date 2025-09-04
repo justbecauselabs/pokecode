@@ -66,7 +66,7 @@ export const MessageTaskBottomSheet = forwardRef<BottomSheetModal, MessageTaskBo
         </View>
       </CustomBottomSheet>
     );
-  }
+  },
 );
 
 MessageTaskBottomSheet.displayName = 'MessageTaskBottomSheet';

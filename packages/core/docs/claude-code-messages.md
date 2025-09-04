@@ -23,7 +23,7 @@ This document explains how PokéCode ingests, stores, parses, and streams Claude
   - `content_data`: JSON string of the raw `SDKMessage`
   - `claude_code_session_id`: the Claude SDK session id used for resume
   - `token_count`: extracted sum of input+output tokens when available
-- Helper: `extractTokenCount(...)` in `src/utils/message-parser.ts`
+- Helper: `extractTokenCount(...)` in `src/utils/claude-code-message-parser.ts`
 - Session counters updated transactionally in `message.service.ts`:
   - `messageCount` and `tokenCount` on the parent `sessions` row
 
@@ -70,7 +70,6 @@ This document explains how PokéCode ingests, stores, parses, and streams Claude
 
 - `src/services/claude-code-sdk.service.ts`
 - `src/services/message.service.ts`
-- `src/utils/message-parser.ts`
+- `src/utils/claude-code-message-parser.ts`
 - `src/types/claude-messages.ts`
 - `src/database/schema-sqlite/session_messages.ts`
-

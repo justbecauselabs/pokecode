@@ -45,7 +45,7 @@ export const ToolResultBottomSheet = forwardRef<BottomSheetModalType, ToolResult
         </View>
       </CustomBottomSheet>
     );
-  }
+  },
 );
 
 ToolResultBottomSheet.displayName = 'ToolResultBottomSheet';

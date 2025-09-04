@@ -56,14 +56,14 @@ export const Button: React.FC<ButtonProps> = ({
     cnSafe(buttonSizes, size),
     fullWidth && 'w-full',
     disabled && 'opacity-60',
-    className
+    className,
   );
 
   const textClasses = cn(
     'font-semibold text-center',
     textVariantClasses[variant],
     textSizeClasses[size],
-    icon && 'ml-2'
+    icon && 'ml-2',
   );
 
   // Use design tokens for ActivityIndicator colors

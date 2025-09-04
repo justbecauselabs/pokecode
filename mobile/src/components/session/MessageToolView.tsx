@@ -181,5 +181,5 @@ export const MessageToolView: React.FC<MessageToolViewProps> = memo(
     };
 
     return <View>{renderToolByType()}</View>;
-  }
+  },
 );

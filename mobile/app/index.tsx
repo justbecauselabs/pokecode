@@ -1,8 +1,8 @@
 import type { BottomSheetModal } from '@gorhom/bottom-sheet';
+import type { Session } from '@pokecode/api';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useMemo, useRef } from 'react';
 import { ActivityIndicator, Alert, FlatList, Pressable, Text, View } from 'react-native';
-import type { Session } from '@pokecode/api';
 import { LoadingState, SafeAreaView } from '@/components/common';
 import { SessionOptionsBottomSheet } from '@/components/session/SessionOptionsBottomSheet';
 import { useDeleteSession, useSessions } from '@/hooks/useSessions';
@@ -47,7 +47,7 @@ export default function HomeScreen() {
   useFocusEffect(
     useCallback(() => {
       refetch();
-    }, [refetch])
+    }, [refetch]),
   );
 
   // Filter to only show active sessions
@@ -88,7 +88,7 @@ export default function HomeScreen() {
             }
           },
         },
-      ]
+      ],
     );
   };
 

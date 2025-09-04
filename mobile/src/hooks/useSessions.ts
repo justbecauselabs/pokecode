@@ -2,8 +2,8 @@
  * React Query hook for session data fetching and management
  */
 
+import type { CreateSessionRequest, Session } from '@pokecode/api';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { Session, CreateSessionRequest } from '@pokecode/api';
 import { apiClient } from '@/api/client';
 
 export const SESSIONS_QUERY_KEY = ['sessions'] as const;
@@ -18,7 +18,7 @@ export function useSessions() {
       const response = await apiClient.getSessions();
       // Extract sessions array from response and sort by lastAccessedAt descending (most recent first)
       return response.sessions.sort(
-        (a, b) => new Date(b.lastAccessedAt).getTime() - new Date(a.lastAccessedAt).getTime()
+        (a, b) => new Date(b.lastAccessedAt).getTime() - new Date(a.lastAccessedAt).getTime(),
       );
     },
     staleTime: 30 * 1000, // Consider data fresh for 30 seconds

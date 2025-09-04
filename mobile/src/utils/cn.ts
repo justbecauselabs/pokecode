@@ -12,14 +12,14 @@ export function cn(...inputs: ClassValue[]): string {
     // Warn about potential hardcoded colors (should use TailwindCSS tokens)
     if (result.includes('#')) {
       console.warn(
-        `⚠️  Potential hardcoded color in className: "${result}". Consider using TailwindCSS color tokens instead.`
+        `⚠️  Potential hardcoded color in className: "${result}". Consider using TailwindCSS color tokens instead.`,
       );
     }
 
     // Warn about potential inline styling patterns
     if (result.includes('style') || result.includes('Style')) {
       console.warn(
-        `⚠️  Potential style prop usage in className: "${result}". Use pure TailwindCSS classes instead.`
+        `⚠️  Potential style prop usage in className: "${result}". Use pure TailwindCSS classes instead.`,
       );
     }
   }

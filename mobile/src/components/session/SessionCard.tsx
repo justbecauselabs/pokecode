@@ -2,9 +2,9 @@
  * SessionCard component for displaying individual session information
  */
 
+import type { Session } from '@pokecode/api';
 import { memo } from 'react';
 import { Alert, Pressable, Text, View } from 'react-native';
-import type { Session } from '@pokecode/api';
 import { formatRelativeTime } from '@/utils/format';
 
 interface SessionCardProps {
@@ -76,7 +76,7 @@ export const SessionCard = memo(({ session, onPress, onDelete }: SessionCardProp
           style: 'destructive',
           onPress: () => onDelete(session.id),
         },
-      ]
+      ],
     );
   };
 

@@ -17,6 +17,10 @@ class EventQueue {
   private queue: Array<SSEEvent> = [];
   private resolvers: Array<(value: SSEEvent | null) => void> = [];
   private aborted = false;
+  constructor(
+    private sessionId: string,
+    private max: number = 200,
+  ) {}
 
   push(event: SSEEvent) {
     if (this.aborted) return;
@@ -26,6 +30,14 @@ class EventQueue {
       resolver(event);
     } else {
       this.queue.push(event);
+      if (this.queue.length > this.max) {
+        // Drop oldest to prevent unbounded memory
+        this.queue.shift();
+        logger.warn(
+          { sessionId: this.sessionId, max: this.max },
+          'SSE queue overflow: dropped oldest event',
+        );
+      }
     }
   }
 
@@ -90,7 +102,7 @@ const messageRoutes: FastifyPluginAsync = async (fastify) => {
         }
         return reply.sse(
           (async function* () {
-            const eventQueue = new EventQueue();
+            const eventQueue = new EventQueue(sessionId);
 
             // Set up event listener for SSE events
             const onSSEEvent = (data: { sessionId: string; event: SSEEvent }) => {
@@ -125,25 +137,31 @@ const messageRoutes: FastifyPluginAsync = async (fastify) => {
             );
 
             // Clean up on client disconnect
-            const cleanup = () => {
-              logger.info({ sessionId }, 'SSE connection closed');
+            let cleaned = false;
+            const cleanup = (why?: string) => {
+              if (cleaned) return;
+              cleaned = true;
+              logger.info({ sessionId, why }, 'SSE connection closed');
               messageEvents.off('sse-event', onSSEEvent);
               eventQueue.abort();
             };
 
-            // Original socket listeners
-            request.socket.on('close', cleanup);
-            request.socket.on('error', cleanup);
+            // Prefer reply/request lifecycle events only
+            reply.raw.once('close', () => cleanup('reply.close'));
+            reply.raw.once('error', () => cleanup('reply.error'));
+            (request.raw as { once?: (ev: string, cb: () => void) => void }).once?.('aborted', () =>
+              cleanup('request.aborted'),
+            );
 
             try {
-              // Send heartbeat every 30 seconds to keep connection alive
+              // Send heartbeat every 25 seconds to keep connection alive
               const heartbeatInterval = setInterval(() => {
                 const heartbeatEvent: SSEEvent = {
                   type: 'heartbeat',
                   data: {},
                 };
                 eventQueue.push(heartbeatEvent);
-              }, 30000);
+              }, 25000);
 
               // Process events from the queue
               while (true) {

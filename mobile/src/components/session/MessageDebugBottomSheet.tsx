@@ -46,7 +46,7 @@ export const MessageDebugBottomSheet = forwardRef<BottomSheetModal, MessageDebug
         </View>
       </CustomBottomSheet>
     );
-  }
+  },
 );
 
 MessageDebugBottomSheet.displayName = 'MessageDebugBottomSheet';

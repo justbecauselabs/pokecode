@@ -73,5 +73,4 @@ This is the authoritative reference for PokéCode’s SQLite schema in `@pokecod
 
 - WAL, cache size, and foreign keys are configured in `src/database/index.ts`.
 - In tests (`NODE_ENV=test`), DB path defaults to `:memory:`.
-- Message `content_data` stores the full Claude SDK event; API‑friendly shape is derived via `src/utils/message-parser.ts`.
-
+- Message `content_data` stores the full provider event; API‑friendly shape is derived via `src/utils/provider-message-parser.ts`.

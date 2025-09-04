@@ -32,8 +32,8 @@ export const useSettingsStore = create<SettingsStore>()(
     {
       name: 'app-settings',
       storage: createJSONStorage(() => AsyncStorage),
-    }
-  )
+    },
+  ),
 );
 
 /**

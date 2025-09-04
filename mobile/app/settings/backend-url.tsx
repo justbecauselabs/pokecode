@@ -53,7 +53,7 @@ export default function BackendUrlSettingsScreen() {
             Alert.alert('API Settings Reset', 'API settings have been reset to default values.');
           },
         },
-      ]
+      ],
     );
   };
 

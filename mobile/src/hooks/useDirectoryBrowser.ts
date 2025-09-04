@@ -1,6 +1,6 @@
+import type { BrowseDirectoryResponse } from '@pokecode/api';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useState } from 'react';
-import type { BrowseDirectoryResponse } from '@pokecode/api';
 import { apiClient } from '@/api/client';
 
 interface DirectoryBrowserError {
@@ -42,7 +42,7 @@ export function useDirectoryBrowser(initialPath?: string) {
       if (data) {
         // Push current state to navigation stack
         setNavigationStack((prev) => [...prev, { path: currentPath, data }]);
-        
+
         // Pre-fetch the new directory to ensure smooth navigation
         queryClient.prefetchQuery({
           queryKey: ['directories', path],
@@ -54,7 +54,7 @@ export function useDirectoryBrowser(initialPath?: string) {
       }
       setCurrentPath(path);
     },
-    [data, currentPath, queryClient]
+    [data, currentPath, queryClient],
   );
 
   const navigateBack = useCallback(() => {
@@ -71,7 +71,7 @@ export function useDirectoryBrowser(initialPath?: string) {
     if (data?.parentPath) {
       // Push current state to navigation stack
       setNavigationStack((prev) => [...prev, { path: currentPath, data }]);
-      
+
       // Pre-fetch the parent directory
       queryClient.prefetchQuery({
         queryKey: ['directories', data.parentPath],
@@ -83,7 +83,7 @@ export function useDirectoryBrowser(initialPath?: string) {
         },
         staleTime: 30000,
       });
-      
+
       setCurrentPath(data.parentPath);
     }
   }, [data, currentPath, queryClient]);
@@ -96,7 +96,7 @@ export function useDirectoryBrowser(initialPath?: string) {
     parentPath: data?.parentPath,
     directories:
       data?.items?.filter(
-        (item): item is typeof item & { type: 'directory' } => item.type === 'directory'
+        (item): item is typeof item & { type: 'directory' } => item.type === 'directory',
       ) || [],
 
     // State

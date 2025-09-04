@@ -48,5 +48,5 @@ export const MessageGenericToolView: React.FC<MessageGenericToolViewProps> = mem
         </View>
       </View>
     );
-  }
+  },
 );

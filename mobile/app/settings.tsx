@@ -25,7 +25,7 @@ export default function SettingsScreen() {
             Alert.alert('Settings Reset', 'All settings have been reset to default values.');
           },
         },
-      ]
+      ],
     );
   };
 

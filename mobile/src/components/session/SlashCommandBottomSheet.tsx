@@ -142,7 +142,7 @@ export const SlashCommandBottomSheet = forwardRef<BottomSheetModal, SlashCommand
         </View>
       </CustomBottomSheet>
     );
-  }
+  },
 );
 
 SlashCommandBottomSheet.displayName = 'SlashCommandBottomSheet';

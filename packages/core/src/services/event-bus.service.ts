@@ -31,6 +31,8 @@ class TypedEventEmitter extends EventEmitter {
 
 // Global event bus for real-time updates
 export const messageEvents = new TypedEventEmitter();
+// Allow many concurrent SSE listeners during development without warnings
+messageEvents.setMaxListeners(100);
 
 // Helper functions to emit SSE events
 export function emitNewMessage(sessionId: string, message: Message) {

@@ -11,6 +11,7 @@ import {
   UpdateSessionRequestSchema,
 } from '@pokecode/api';
 import { sessionService } from '@pokecode/core';
+import { ProviderInputSchema } from '@pokecode/types';
 import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 
@@ -39,7 +40,12 @@ const sessionRoutes: FastifyPluginAsync = async (fastify) => {
     },
     async (request, reply) => {
       try {
-        const session = await sessionService.createSession(request.body);
+        // Normalize provider to canonical value before passing to core
+        const canonical = {
+          projectPath: request.body.projectPath,
+          provider: ProviderInputSchema.parse(request.body.provider),
+        };
+        const session = await sessionService.createSession(canonical);
         return reply.code(201).send(session);
       } catch (error) {
         if (isApiError(error) && error.name === 'ValidationError') {

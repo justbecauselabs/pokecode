@@ -15,8 +15,8 @@ export function useSessionMessages(sessionId: string) {
   const [error, setError] = useState<Error | null>(null);
   const eventSourceRef = useRef<EventSource | null>(null);
   const queryClient = useQueryClient();
-  const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [reconnectAttempt, setReconnectAttempt] = useState(0);
+  const connectRef = useRef<() => void>(() => {});
+  const DEBUG_SSE = __DEV__;
 
   useEffect(() => {
     if (!sessionId) {
@@ -24,7 +24,9 @@ export function useSessionMessages(sessionId: string) {
     }
 
     let isActive = true;
-    
+    if (DEBUG_SSE) {
+      console.log('[SSE] Effect start', { sessionId });
+    }
 
     // Initial data fetch
     const loadInitialData = async () => {
@@ -58,9 +60,11 @@ export function useSessionMessages(sessionId: string) {
       }
 
       const baseUrl = apiClient.getCurrentBaseUrl();
-  const sseUrl = `${baseUrl}/api/sessions/${sessionId}/messages/stream`;
+      const sseUrl = `${baseUrl}/api/sessions/${sessionId}/messages/stream`;
 
-      console.log('[SSE] Connecting to:', sseUrl);
+      if (DEBUG_SSE) {
+        console.log('[SSE] Connecting to:', sseUrl);
+      }
 
       const eventSource = new EventSource(sseUrl, {
         headers: {
@@ -70,16 +74,18 @@ export function useSessionMessages(sessionId: string) {
       });
 
       eventSourceRef.current = eventSource;
-      
+      // expose reconnect for external calls
+      connectRef.current = connectSSE;
 
       eventSource.addEventListener('open', () => {
         if (!isActive) {
           return;
         }
-        console.log('[SSE] Connection opened for session:', sessionId);
+        if (DEBUG_SSE) {
+          console.log('[SSE] Connection opened for session:', sessionId);
+        }
         setIsConnected(true);
         setError(null);
-        setReconnectAttempt(0);
       });
 
       eventSource.addEventListener('message', (event: MessageEvent) => {
@@ -115,10 +121,14 @@ export function useSessionMessages(sessionId: string) {
             }
           } else if (sseEvent.type === 'heartbeat') {
             // Handle heartbeat events (keep connection alive, no action needed)
-            console.log('[SSE] Received heartbeat for session:', sessionId);
+            if (DEBUG_SSE) {
+              console.log('[SSE] Received heartbeat for session:', sessionId);
+            }
           }
         } catch (err) {
-          console.error('[SSE] Failed to parse SSE event:', err, event.data);
+          if (DEBUG_SSE) {
+            console.error('[SSE] Failed to parse SSE event:', err, event.data);
+          }
         }
       });
 
@@ -126,25 +136,17 @@ export function useSessionMessages(sessionId: string) {
         if (!isActive) {
           return;
         }
-        // Attempt to reconnect with exponential backoff
-        const attempt = reconnectAttempt + 1;
-        const delay = Math.min(1000 * 2 ** (attempt - 1), 30000); // Max 30s
-
-        console.log(`[SSE] Reconnecting in ${delay}ms (attempt ${attempt})`);
-        setReconnectAttempt(attempt);
-
-        reconnectTimeoutRef.current = setTimeout(() => {
-          if (isActive && attempt <= 5) {
-            // Max 5 attempts
-            connectSSE();
-          } else {
-            setError(new Error('SSE connection failed after multiple attempts'));
-          }
-        }, delay);
+        // Rely on EventSource auto-retry (server sets retry: 3000)
+        if (DEBUG_SSE) {
+          console.warn('[SSE] Error event; EventSource will auto-retry');
+        }
+        setIsConnected(false);
       });
 
       eventSource.addEventListener('close', () => {
-        console.log('[SSE] Connection closed for session:', sessionId);
+        if (DEBUG_SSE) {
+          console.log('[SSE] Connection closed for session:', sessionId);
+        }
         if (isActive) {
           setIsConnected(false);
         }
@@ -153,7 +155,9 @@ export function useSessionMessages(sessionId: string) {
 
     // Start the connection process
     loadInitialData().then(() => {
-      console.log('[SSE] Loading initial data for session:', sessionId, isActive);
+      if (DEBUG_SSE) {
+        console.log('[SSE] Loading initial data for session:', sessionId, isActive);
+      }
       if (isActive) {
         connectSSE();
       }
@@ -167,14 +171,9 @@ export function useSessionMessages(sessionId: string) {
         eventSourceRef.current = null;
       }
 
-      if (reconnectTimeoutRef.current) {
-        clearTimeout(reconnectTimeoutRef.current);
-        reconnectTimeoutRef.current = null;
-      }
-
       setIsConnected(false);
     };
-  }, [sessionId, reconnectAttempt]);
+  }, [sessionId, DEBUG_SSE]);
 
   const sendMessageMutation = useMutation({
     mutationFn: async (params: { content: string }) => {
@@ -228,12 +227,12 @@ export function useSessionMessages(sessionId: string) {
     isLoading: !isConnected && messages.length === 0,
     error,
     refetch: () => {
-      // For SSE, refetch means reconnecting
+      // For SSE, refetch means reconnecting once
       if (eventSourceRef.current) {
         eventSourceRef.current.close();
         eventSourceRef.current = null;
       }
-      setReconnectAttempt((prev) => prev + 1);
+      connectRef.current();
     },
     sendMessage: (params: { content: string }) => sendMessageMutation.mutateAsync(params),
     cancelSession: () => cancelSessionMutation.mutateAsync(),
@@ -241,6 +240,6 @@ export function useSessionMessages(sessionId: string) {
     isCancelling: cancelSessionMutation.isPending,
     isWorking,
     isConnected,
-    reconnectAttempt,
+    reconnectAttempt: 0,
   };
 }

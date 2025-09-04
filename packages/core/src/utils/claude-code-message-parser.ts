@@ -776,7 +776,10 @@ function parseAssistantMessage(
 /**
  * Parse DB message to new Message format
  */
-export function parseDbMessage(dbMessage: SessionMessage, projectPath?: string): Message | null {
+export function parseClaudeDbMessage(
+  dbMessage: SessionMessage,
+  projectPath?: string,
+): Message | null {
   try {
     // Parse the contentData JSON string to get the SDK message
     if (!dbMessage.contentData) {

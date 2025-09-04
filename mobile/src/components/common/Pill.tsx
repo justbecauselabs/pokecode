@@ -35,7 +35,7 @@ export const Pill: React.FC<PillProps> = ({
     variantClasses[variant],
     sizeClasses[size],
     disabled && 'opacity-60',
-    className
+    className,
   );
 
   return (

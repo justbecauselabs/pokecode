@@ -1,4 +1,4 @@
-import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { FileExplorer } from '@/components/session/FileExplorer';
 import { useCreateSession } from '@/hooks/useCreateSession';
 
@@ -32,14 +32,10 @@ export default function FileExplorerScreen() {
     }
   };
 
-
   return (
     <>
       <Stack.Screen options={{ title: path ? 'Browse Directory' : 'Find Project' }} />
-      <FileExplorer
-        initialPath={path}
-        onSelectPath={handleSelectPath}
-      />
+      <FileExplorer initialPath={path} onSelectPath={handleSelectPath} />
     </>
   );
 }

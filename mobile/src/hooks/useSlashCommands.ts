@@ -1,5 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
 import type { ListCommandsResponse } from '@pokecode/api';
+import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/api/client';
 
 interface UseSlashCommandsParams {

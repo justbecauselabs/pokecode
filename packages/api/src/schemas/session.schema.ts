@@ -1,4 +1,9 @@
-import { ProviderInputSchema, ProviderSchema } from '@pokecode/types';
+import {
+  type Provider,
+  type ProviderInput,
+  ProviderInputSchema,
+  ProviderSchema,
+} from '@pokecode/types';
 import { z } from 'zod';
 
 // ID validation schema - accept any string format
@@ -56,9 +61,28 @@ export const SessionParamsSchema = z.object({
 });
 
 // Type exports
-export type CreateSessionRequest = z.infer<typeof CreateSessionRequestSchema>;
-export type Session = z.infer<typeof SessionSchema>;
+// Explicit TS types to ensure stable .d.ts output across package boundaries
+export type CreateSessionRequest = { projectPath: string; provider: ProviderInput };
+export type Session = {
+  id: string;
+  provider: Provider;
+  projectPath: string;
+  name: string;
+  claudeDirectoryPath: string | null;
+  state: 'active' | 'inactive';
+  createdAt: string; // ISO timestamp
+  updatedAt: string; // ISO timestamp
+  lastAccessedAt: string; // ISO timestamp
+  isWorking: boolean;
+  currentJobId: string | null;
+  lastJobStatus: string | null;
+  messageCount: number;
+  tokenCount: number;
+};
 export type ListSessionsQuery = z.infer<typeof ListSessionsQuerySchema>;
 export type ListSessionsResponse = z.infer<typeof ListSessionsResponseSchema>;
 export type UpdateSessionRequest = z.infer<typeof UpdateSessionRequestSchema>;
 export type SessionParams = z.infer<typeof SessionParamsSchema>;
+
+// Sanity export to verify declaration emitter honors explicit aliases
+export type __SessionSchemaHasProvider = typeof SessionSchema extends z.ZodTypeAny ? true : false;

@@ -23,8 +23,8 @@ export const useUIStore = create<UIStore>()(
     {
       name: 'ui-storage',
       storage: createJSONStorage(() => AsyncStorage),
-    }
-  )
+    },
+  ),
 );
 
 /**

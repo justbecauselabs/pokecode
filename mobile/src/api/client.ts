@@ -240,7 +240,7 @@ class APIClient {
       errorLog(`API Failed URL: ${url}`);
       errorLog(`API Request Config:`, config);
       throw new Error(
-        `Network Error: ${fetchError instanceof Error ? fetchError.message : String(fetchError)}`
+        `Network Error: ${fetchError instanceof Error ? fetchError.message : String(fetchError)}`,
       );
     }
 
@@ -294,11 +294,11 @@ class APIClient {
       if (parseError instanceof z.ZodError) {
         errorLog(`API Validation Issues:`, parseError.issues);
         throw new Error(
-          `Response validation failed: ${parseError.issues.map((i) => i.message).join(', ')}`
+          `Response validation failed: ${parseError.issues.map((i) => i.message).join(', ')}`,
         );
       }
       throw new Error(
-        `Invalid response: ${parseError instanceof Error ? parseError.message : String(parseError)}`
+        `Invalid response: ${parseError instanceof Error ? parseError.message : String(parseError)}`,
       );
     }
   }

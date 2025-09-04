@@ -121,9 +121,9 @@ export const MessageView: React.FC<MessageViewProps> = memo(
           !isAssistant &&
           !isError &&
           renderGenericMessage(
-            typeof message.data === 'string' ? message.data : JSON.stringify(message.data)
+            typeof message.data === 'string' ? message.data : JSON.stringify(message.data),
           )}
       </View>
     );
-  }
+  },
 );

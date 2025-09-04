@@ -96,7 +96,9 @@ export const RepositoryList = memo(
 
     const renderErrorState = () => (
       <View className="flex-1 items-center justify-center p-8">
-        <Text className="text-destructive text-center text-lg mb-4 font-mono">Failed to load repositories</Text>
+        <Text className="text-destructive text-center text-lg mb-4 font-mono">
+          Failed to load repositories
+        </Text>
         <Text className="text-muted-foreground text-center mb-4 font-mono">
           {error?.message || 'An unexpected error occurred'}
         </Text>
@@ -139,5 +141,5 @@ export const RepositoryList = memo(
         />
       </View>
     );
-  }
+  },
 );

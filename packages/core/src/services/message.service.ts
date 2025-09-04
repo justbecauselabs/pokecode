@@ -6,8 +6,9 @@ import { and, asc, desc, eq, gt, isNotNull, or, sql } from 'drizzle-orm';
 import { db } from '../database';
 import { sessions } from '../database/schema-sqlite';
 import { sessionMessages } from '../database/schema-sqlite/session_messages';
+import { extractTokenCount } from '../utils/claude-code-message-parser';
 import { createChildLogger } from '../utils/logger';
-import { extractTokenCount, parseDbMessage } from '../utils/message-parser';
+import { parseDbMessageByProvider } from '../utils/provider-message-parser';
 import { emitNewMessage, emitSessionDone } from './event-bus.service';
 import { sqliteQueueService } from './queue-sqlite.service';
 
@@ -128,7 +129,7 @@ export class MessageService {
     // Transform messages
     const messages: Message[] = [];
     for (const dbMsg of dbMessages) {
-      const parsedMessage = parseDbMessage(dbMsg, projectPath);
+      const parsedMessage = parseDbMessageByProvider(dbMsg, projectPath);
       if (parsedMessage) {
         messages.push(parsedMessage);
       }
@@ -212,7 +213,7 @@ export class MessageService {
 
       // After DB commit, emit real-time event with full Message object
       if (insertedMessage && session) {
-        const parsedMessage = parseDbMessage(insertedMessage, session.projectPath);
+        const parsedMessage = parseDbMessageByProvider(insertedMessage, session.projectPath);
         if (parsedMessage) {
           emitNewMessage(sessionId, parsedMessage);
         } else {
@@ -292,7 +293,7 @@ export class MessageService {
 
       // After DB commit, emit real-time event with full Message object
       if (insertedMessage && session) {
-        const parsedMessage = parseDbMessage(insertedMessage, session.projectPath);
+        const parsedMessage = parseDbMessageByProvider(insertedMessage, session.projectPath);
         if (parsedMessage) {
           emitNewMessage(sessionId, parsedMessage);
         } else {

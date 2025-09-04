@@ -14,7 +14,7 @@ Core domain logic shared by the server and CLI. It provides database access, typ
   - `queue-sqlite.service.ts` — simple SQLite-backed job queue APIs
   - `event-bus.service.ts` — typed EventEmitter powering SSE updates
   - `repository.service.ts`, `command.service.ts`, `agent.service.ts`
-- Message parsing: `src/utils/message-parser.ts` maps raw SDK messages to API `Message`
+- Message parsing: `src/utils/provider-message-parser.ts` dispatches by provider; Claude-specific logic lives in `src/utils/claude-code-message-parser.ts`.
 - Types & schemas: `src/types/*` (e.g., `claude-messages.ts`)
 - Config: `src/config/index.ts` (single source of truth for ports, paths, worker settings)
 - Tests: `packages/core/tests/*`

@@ -64,14 +64,14 @@
       "@types/*": ["./src/types/*"],
       "@api/*": ["./src/api/*"],
       "@constants/*": ["./src/constants/*"],
-      // Prefer source from workspace packages over prebuilt dist
+      // Prefer source from workspace packages to keep types fresh during development
       "@pokecode/api": ["../packages/api/src/index.ts"],
       "@pokecode/api/*": ["../packages/api/src/*"],
       "@pokecode/types": ["../packages/types/src/index.ts"],
       "@pokecode/types/*": ["../packages/types/src/*"]
     },
     // ROOT DIRECTORIES
-    "rootDir": ".",
+    // Omit rootDir so TypeScript can include referenced workspace sources
     "baseUrl": "."
   },
   "include": [

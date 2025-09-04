@@ -97,10 +97,7 @@
       }
     },
     {
-      "includes": [
-        "mobile/app/**/*",
-        "mobile/src/**/*"
-      ],
+      "includes": ["mobile/app/**/*", "mobile/src/**/*"],
       "linter": {
         "rules": {
           "suspicious": {

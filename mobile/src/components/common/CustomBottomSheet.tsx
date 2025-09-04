@@ -14,7 +14,7 @@ interface CustomBottomSheetProps {
 export const CustomBottomSheet = forwardRef<BottomSheetModal, CustomBottomSheetProps>(
   (
     { children, onClose, onDismiss, snapPoints: customSnapPoints, enablePanDownToClose = true },
-    ref
+    ref,
   ) => {
     // Bottom sheet snap points
     const snapPoints = useMemo(() => customSnapPoints || ['50%', '90%'], [customSnapPoints]);
@@ -51,7 +51,7 @@ export const CustomBottomSheet = forwardRef<BottomSheetModal, CustomBottomSheetP
         {children}
       </BottomSheetModal>
     );
-  }
+  },
 );
 
 CustomBottomSheet.displayName = 'CustomBottomSheet';

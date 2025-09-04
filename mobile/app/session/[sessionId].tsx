@@ -68,7 +68,7 @@ export default function SessionDetailScreen() {
         }
         return acc;
       },
-      {} as Record<string, string>
+      {} as Record<string, string>,
     ) || {};
 
   // Bottom sheet refs and state

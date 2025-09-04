@@ -33,10 +33,7 @@ function HeaderButtons() {
 
   return (
     <>
-      <Pressable
-        onPress={handlePlusPress}
-        className="w-10 h-10 items-center justify-center"
-      >
+      <Pressable onPress={handlePlusPress} className="w-10 h-10 items-center justify-center">
         <Text className="text-foreground text-xl font-bold font-mono">+</Text>
       </Pressable>
       <SessionOptionsBottomSheet ref={bottomSheetModalRef} />

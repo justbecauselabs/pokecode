@@ -4,10 +4,10 @@ import type {
   AssistantMessage,
   AssistantMessageMessage,
   ErrorMessage,
+  GetMessagesResponse,
   Message,
   UserMessage,
 } from '@pokecode/api';
-import type { GetMessagesResponse } from '@pokecode/api';
 
 // Re-export from schemas for compatibility
 export type { Message, Session as SessionInfo } from '@pokecode/api';
@@ -54,7 +54,7 @@ export const extractMessageText = (message: Message): string => {
 
 // Helper function to get message role for styling
 export const getMessageRole = (
-  message: Message
+  message: Message,
 ): 'user' | 'assistant' | 'system' | 'result' | 'error' => {
   if (!message?.type) {
     console.warn('getMessageRole: message.type is undefined', message);
