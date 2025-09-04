@@ -4,6 +4,7 @@ import path from 'node:path';
 import { type BunSQLiteDatabase, drizzle } from 'drizzle-orm/bun-sqlite';
 import { migrate } from 'drizzle-orm/bun-sqlite/migrator';
 import { DATABASE_PATH } from '../config';
+import { createChildLogger } from '../utils/logger';
 import * as schema from './schema-sqlite';
 
 // Single database instance
@@ -35,7 +36,10 @@ export async function initDatabase(params: { runMigrations?: boolean } = {}): Pr
 
   if (params.runMigrations) {
     const migrationsFolder = resolveMigrationsFolder();
+    const log = createChildLogger('db');
+    log.info({ migrationsFolder }, 'Applying database migrations');
     await migrate(db, { migrationsFolder });
+    log.info('Database migrations applied');
   }
 
   return db;
