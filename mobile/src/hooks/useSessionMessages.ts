@@ -14,9 +14,9 @@ export function useSessionMessages(sessionId: string) {
   const [isWorking, setIsWorking] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const eventSourceRef = useRef<EventSource | null>(null);
+  const queryClient = useQueryClient();
   const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [reconnectAttempt, setReconnectAttempt] = useState(0);
-  const queryClient = useQueryClient();
 
   useEffect(() => {
     if (!sessionId) {
@@ -24,6 +24,7 @@ export function useSessionMessages(sessionId: string) {
     }
 
     let isActive = true;
+    
 
     // Initial data fetch
     const loadInitialData = async () => {
@@ -53,6 +54,7 @@ export function useSessionMessages(sessionId: string) {
       // Clean up existing connection
       if (eventSourceRef.current) {
         eventSourceRef.current.close();
+        eventSourceRef.current = null;
       }
 
       const baseUrl = apiClient.getCurrentBaseUrl();
@@ -68,6 +70,7 @@ export function useSessionMessages(sessionId: string) {
       });
 
       eventSourceRef.current = eventSource;
+      
 
       eventSource.addEventListener('open', () => {
         if (!isActive) {
@@ -119,14 +122,10 @@ export function useSessionMessages(sessionId: string) {
         }
       });
 
-      eventSource.addEventListener('error', (event: { error?: Error } | { type: string }) => {
+      eventSource.addEventListener('error', () => {
         if (!isActive) {
           return;
         }
-
-        console.error('[SSE] Connection error:', event);
-        setIsConnected(false);
-
         // Attempt to reconnect with exponential backoff
         const attempt = reconnectAttempt + 1;
         const delay = Math.min(1000 * 2 ** (attempt - 1), 30000); // Max 30s
@@ -163,8 +162,6 @@ export function useSessionMessages(sessionId: string) {
     // Cleanup function
     return () => {
       isActive = false;
-      console.log('[SSE] Cleaning up connection for session:', sessionId);
-
       if (eventSourceRef.current) {
         eventSourceRef.current.close();
         eventSourceRef.current = null;

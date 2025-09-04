@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { apiClient } from '@/api/client';
+import type { CreateSessionRequest } from '@pokecode/api';
 import type { Repository } from './useRepositories';
 
 interface CreateSessionParams {
@@ -18,13 +19,14 @@ export function useCreateSession() {
 
   return useMutation({
     mutationFn: async (params: CreateSessionParams) => {
-      const { repository, context } = params;
+      const { repository } = params;
 
       // Create session using projectPath and provider (hardcoded to 'claude-code')
-      const response = await apiClient.createSession({
+      const payload: CreateSessionRequest = {
         projectPath: repository.path,
         provider: 'claude-code',
-      });
+      };
+      const response = await apiClient.createSession(payload);
       return response;
     },
     onSuccess: (response) => {

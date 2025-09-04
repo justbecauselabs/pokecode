@@ -9,7 +9,7 @@ bun add -D eslint @react-native/eslint-config eslint-plugin-react-native husky
 # Setup husky hooks
 echo "🪝 Setting up Git hooks..."
 bunx husky install
-bunx husky add .husky/pre-commit "cd mobile && bun run lint:rn && bun run type-check"
+bunx husky add .husky/pre-commit "cd mobile && bun run lint:rn && bun run typecheck"
 
 # Make scripts executable
 chmod +x scripts/custom-react-native-linter.js

@@ -3,7 +3,7 @@ import type { BottomSheetModal } from '@gorhom/bottom-sheet';
 import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { forwardRef, useMemo } from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
-import type { Agent } from '../../types/agents';
+import type { Agent } from '@pokecode/api';
 import { CustomBottomSheet } from '../common';
 
 interface AgentSelectionBottomSheetProps {

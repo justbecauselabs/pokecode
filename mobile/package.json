@@ -17,7 +17,7 @@
     "format:fix": "bunx biome format --write .",
     "check": "bunx biome check . && bunx eslint . --ext .tsx,.ts",
     "check:fix": "bunx biome check --write . && bunx eslint . --ext .tsx,.ts --fix",
-    "type-check": "bunx tsc --noEmit",
+    "typecheck": "bunx tsc --noEmit",
     "prebuild": "bunx expo prebuild",
     "eas:build:preview": "bunx eas build --profile preview",
     "eas:build:production": "bunx eas build --profile production"

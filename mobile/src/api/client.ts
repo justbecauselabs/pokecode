@@ -424,7 +424,7 @@ class APIClient {
     const validatedParams = SessionIdParamsSchema.parse(params);
 
     return this.request({
-      path: '/api/claude-code/sessions/{sessionId}/cancel',
+      path: '/api/sessions/{sessionId}/cancel',
       pathParams: validatedParams,
       options: { method: 'POST' },
       responseSchema: z.object({ success: z.boolean() }),
@@ -439,7 +439,7 @@ class APIClient {
     const validatedParams = SessionIdParamsSchema.parse({ sessionId: params.sessionId });
 
     return this.request({
-      path: '/api/claude-code/sessions/{sessionId}/files/',
+      path: '/api/sessions/{sessionId}/files/',
       pathParams: validatedParams,
       options: { query: params.query },
       responseSchema: FilesResponseSchema,
@@ -450,7 +450,7 @@ class APIClient {
     const validatedParams = SessionIdParamsSchema.parse({ sessionId: params.sessionId });
 
     return this.request({
-      path: '/api/claude-code/sessions/{sessionId}/files/{*}',
+      path: '/api/sessions/{sessionId}/files/{*}',
       pathParams: { ...validatedParams, '*': params.filePath },
       responseSchema: FileContentSchema,
     });
@@ -465,7 +465,7 @@ class APIClient {
     const validatedParams = SessionIdParamsSchema.parse({ sessionId: params.sessionId });
 
     return this.request({
-      path: '/api/claude-code/sessions/{sessionId}/files/{*}',
+      path: '/api/sessions/{sessionId}/files/{*}',
       pathParams: { ...validatedParams, '*': params.filePath },
       options: {
         method: 'POST',
@@ -484,7 +484,7 @@ class APIClient {
     const validatedParams = SessionIdParamsSchema.parse({ sessionId: params.sessionId });
 
     return this.request({
-      path: '/api/claude-code/sessions/{sessionId}/files/{*}',
+      path: '/api/sessions/{sessionId}/files/{*}',
       pathParams: { ...validatedParams, '*': params.filePath },
       options: {
         method: 'PUT',
@@ -501,7 +501,7 @@ class APIClient {
     const validatedParams = SessionIdParamsSchema.parse({ sessionId: params.sessionId });
 
     return this.request({
-      path: '/api/claude-code/sessions/{sessionId}/files/{*}',
+      path: '/api/sessions/{sessionId}/files/{*}',
       pathParams: { ...validatedParams, '*': params.filePath },
       options: { method: 'DELETE' },
       responseSchema: FileOperationResponseSchema,
@@ -517,7 +517,7 @@ class APIClient {
     const validatedQuery = params.query ? ListAgentsQuerySchema.parse(params.query) : undefined;
 
     return this.request({
-      path: '/api/claude-code/sessions/{sessionId}/agents/',
+      path: '/api/sessions/{sessionId}/agents/',
       pathParams: validatedParams,
       options: { query: validatedQuery },
       responseSchema: ListAgentsResponseSchema,
@@ -533,7 +533,7 @@ class APIClient {
     const validatedQuery = params.query ? ListCommandsQuerySchema.parse(params.query) : undefined;
 
     return this.request({
-      path: '/api/claude-code/sessions/{sessionId}/commands/',
+      path: '/api/sessions/{sessionId}/commands/',
       pathParams: validatedParams,
       options: { query: validatedQuery },
       responseSchema: ListCommandsResponseSchema,

@@ -83,8 +83,12 @@ const messageRoutes: FastifyPluginAsync = async (fastify) => {
           });
         }
 
-        // Set up SSE stream
-        reply.sse(
+        // Set up SSE stream via async generator
+        // Fastify v5: ensure the reply is not auto-closed
+        if (!reply.sent) {
+          reply.hijack();
+        }
+        return reply.sse(
           (async function* () {
             const eventQueue = new EventQueue();
 
@@ -127,6 +131,7 @@ const messageRoutes: FastifyPluginAsync = async (fastify) => {
               eventQueue.abort();
             };
 
+            // Original socket listeners
             request.socket.on('close', cleanup);
             request.socket.on('error', cleanup);
 

@@ -1,4 +1,4 @@
-import { ProviderSchema } from '@pokecode/types';
+import { ProviderInputSchema, ProviderSchema } from '@pokecode/types';
 import { z } from 'zod';
 
 // ID validation schema - accept any string format
@@ -7,7 +7,8 @@ const idSchema = z.string();
 // Create session schemas
 export const CreateSessionRequestSchema = z.object({
   projectPath: z.string().min(1),
-  provider: ProviderSchema,
+  // Accept legacy aliases (e.g., 'claude', 'codex') but normalize to canonical Provider
+  provider: ProviderInputSchema,
 });
 
 export const SessionSchema = z.object({

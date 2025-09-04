@@ -1,5 +1,5 @@
-// Re-export all API types from the new Zod-based client
-export * from '@/api/client';
+// Re-export all types from the shared API package
+export * from '@pokecode/api';
 
 // API error interface
 export interface ApiError {

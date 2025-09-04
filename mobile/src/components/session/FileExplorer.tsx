@@ -1,8 +1,9 @@
 import type { DirectoryItem } from '@pokecode/api';
-import { useRouter } from 'expo-router';
-import { memo } from 'react';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { memo, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Pressable, Text, View } from 'react-native';
 import { useDirectoryBrowser } from '@/hooks/useDirectoryBrowser';
+import { Row } from '@/components/common/Row';
 
 interface FileExplorerProps {
   initialPath?: string;
@@ -40,7 +41,9 @@ const DirectoryItemComponent = memo(({ item, onPress }: DirectoryItemProps) => {
 });
 
 const BreadcrumbPath = memo(({ path }: { path?: string }) => {
-  if (!path) return null;
+  if (!path) {
+    return null;
+  }
 
   // Show last 2-3 path segments to keep it readable
   const segments = path.split('/').filter(Boolean);
@@ -59,6 +62,14 @@ const BreadcrumbPath = memo(({ path }: { path?: string }) => {
 
 export const FileExplorer = memo(({ initialPath, onSelectPath }: FileExplorerProps) => {
   const router = useRouter();
+  const params = useLocalSearchParams<{ path?: string; showHidden?: string | string[] }>();
+  const parseBoolParam = (value: string | string[] | undefined): boolean => {
+    if (Array.isArray(value)) {
+      return value.length > 0 && (value[0] === '1' || value[0] === 'true');
+    }
+    return value === '1' || value === 'true';
+  };
+  const [showHidden, setShowHidden] = useState<boolean>(parseBoolParam(params.showHidden));
   const {
     currentPath,
     parentPath,
@@ -68,11 +79,15 @@ export const FileExplorer = memo(({ initialPath, onSelectPath }: FileExplorerPro
     refetch,
   } = useDirectoryBrowser(initialPath);
 
+  const visibleDirectories = useMemo(() => {
+    return directories.filter((dir) => (showHidden ? true : !dir.name.startsWith('.')));
+  }, [directories, showHidden]);
+
   const handleDirectoryPress = (path: string) => {
     // Push a new FileExplorer screen with the selected path
     router.push({
       pathname: '/file-explorer',
-      params: { path }
+      params: { path, showHidden: showHidden ? '1' : '0' }
     });
   };
 
@@ -98,7 +113,7 @@ export const FileExplorer = memo(({ initialPath, onSelectPath }: FileExplorerPro
         <Pressable
           onPress={() => router.push({
             pathname: '/file-explorer',
-            params: { path: parentPath }
+            params: { path: parentPath, showHidden: showHidden ? '1' : '0' }
           })}
           className="flex-row items-center py-4 px-4 active:opacity-80 border-b border-border"
         >
@@ -108,16 +123,33 @@ export const FileExplorer = memo(({ initialPath, onSelectPath }: FileExplorerPro
           <Text className="text-muted-foreground text-lg font-mono">›</Text>
         </Pressable>
       )}
+
+      {/* Hidden files toggle */}
+      <Row
+        title="Show hidden items"
+        className="border-b border-border"
+        leading={{ type: 'icon', library: 'Feather', name: 'eye-off', color: '#666' }}
+        trailing={{
+          type: 'switch',
+          value: showHidden,
+          onValueChange: (value: boolean) => {
+            setShowHidden(value);
+            router.setParams({ showHidden: value ? '1' : '0' });
+          },
+        }}
+      />
     </>
   );
 
   const renderEmptyState = () => (
     <View className="flex-1 items-center justify-center p-8">
       <Text className="text-muted-foreground text-lg text-center mb-2 font-mono">
-        No directories found
+        {showHidden ? 'No directories found' : 'No visible directories'}
       </Text>
       <Text className="text-muted-foreground/70 text-center mb-4 font-mono">
-        This directory doesn't contain any subdirectories
+        {showHidden
+          ? "This directory doesn't contain any subdirectories"
+          : 'Hidden folders are currently hidden. Toggle “Show hidden files” above.'}
       </Text>
       <Pressable onPress={handleUseCurrentPath} className="bg-primary px-6 py-3 rounded-lg">
         <Text className="text-primary-foreground font-medium font-mono">Use This Directory</Text>
@@ -181,7 +213,7 @@ export const FileExplorer = memo(({ initialPath, onSelectPath }: FileExplorerPro
   return (
     <View className="flex-1 bg-background">
       <FlatList
-        data={directories}
+        data={visibleDirectories}
         keyExtractor={(item) => item.path}
         renderItem={renderDirectory}
         ListHeaderComponent={renderHeader}

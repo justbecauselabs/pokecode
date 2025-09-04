@@ -2,7 +2,7 @@ import type { BottomSheetModal } from '@gorhom/bottom-sheet';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useMemo, useRef } from 'react';
 import { ActivityIndicator, Alert, FlatList, Pressable, Text, View } from 'react-native';
-import type { Session } from '@/api/client';
+import type { Session } from '@pokecode/api';
 import { LoadingState, SafeAreaView } from '@/components/common';
 import { SessionOptionsBottomSheet } from '@/components/session/SessionOptionsBottomSheet';
 import { useDeleteSession, useSessions } from '@/hooks/useSessions';

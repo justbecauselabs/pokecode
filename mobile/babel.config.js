@@ -9,6 +9,9 @@ module.exports = (api) => {
           root: ['./'],
           alias: {
             '@': './src',
+            // Prefer source from workspace packages over prebuilt dist
+            '@pokecode/api': '../packages/api/src',
+            '@pokecode/types': '../packages/types/src',
           },
         },
       ],

@@ -81,7 +81,7 @@ bun test
 
 ### Type Checking
 ```bash
-bun type-check
+bun typecheck
 ```
 
 ### Linting

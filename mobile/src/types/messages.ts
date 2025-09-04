@@ -7,7 +7,7 @@ import type {
   Message,
   UserMessage,
 } from '@pokecode/api';
-import type { GetMessagesResponse } from '../api/client';
+import type { GetMessagesResponse } from '@pokecode/api';
 
 // Re-export from schemas for compatibility
 export type { Message, Session as SessionInfo } from '@pokecode/api';

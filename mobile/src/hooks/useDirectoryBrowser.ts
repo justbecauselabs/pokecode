@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useState } from 'react';
-import type { BrowseDirectoryResponse } from '@/api/client';
+import type { BrowseDirectoryResponse } from '@pokecode/api';
 import { apiClient } from '@/api/client';
 
 interface DirectoryBrowserError {

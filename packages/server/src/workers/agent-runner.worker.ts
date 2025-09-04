@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import type { AgentRunner } from '@pokecode/core';
 import {
   ClaudeCodeRunner,
@@ -223,6 +224,7 @@ export class AgentRunnerWorker {
         },
         parent_tool_use_id: null,
         session_id: sessionId,
+        uuid: randomUUID(),
       };
       await messageService.saveSDKMessage({ sessionId, sdkMessage: cancellationMessage });
     } catch (error) {

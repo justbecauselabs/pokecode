@@ -4,7 +4,7 @@
 
 import { memo } from 'react';
 import { Alert, Pressable, Text, View } from 'react-native';
-import type { Session } from '@/api/client';
+import type { Session } from '@pokecode/api';
 import { formatRelativeTime } from '@/utils/format';
 
 interface SessionCardProps {

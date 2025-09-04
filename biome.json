@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.2.0/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.2.2/schema.json",
   "vcs": {
     "enabled": true,
     "clientKind": "git",
@@ -10,7 +10,12 @@
       "packages/*/src/**/*.ts",
       "packages/*/src/**/*.tsx",
       "packages/*/scripts/**/*.ts",
-      "packages/*/drizzle.config.ts"
+      "packages/*/drizzle.config.ts",
+      "mobile/app/**/*.ts",
+      "mobile/app/**/*.tsx",
+      "mobile/src/**/*.ts",
+      "mobile/src/**/*.tsx",
+      "mobile/scripts/**/*.ts"
     ],
     "ignoreUnknown": false
   },
@@ -80,6 +85,22 @@
   "overrides": [
     {
       "includes": ["packages/cli/**/*"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noConsole": {
+              "level": "warn",
+              "options": { "allow": ["error", "warn", "info", "log"] }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": [
+        "mobile/app/**/*",
+        "mobile/src/**/*"
+      ],
       "linter": {
         "rules": {
           "suspicious": {

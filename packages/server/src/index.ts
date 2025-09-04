@@ -102,7 +102,12 @@ export async function createServer() {
           ignore: 'pid,hostname',
         },
       },
+      // We emit request logs ourselves (with sanitized bodies)
+      // to avoid duplicate lines and to include parsed body safely.
     },
+    // Disable Fastify's built-in request logging so we can replace it
+    // with our sanitized version in the request-logger plugin.
+    disableRequestLogging: true,
   }).withTypeProvider<ZodTypeProvider>();
 
   await fastify.register(createApp);

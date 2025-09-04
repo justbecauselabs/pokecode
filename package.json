@@ -22,7 +22,7 @@
     "typecheck:core": "cd packages/core && bun run typecheck",
     "typecheck:server": "cd packages/server && bun run typecheck",
     "typecheck:cli": "cd packages/cli && bun run typecheck",
-    "typecheck:mobile": "cd mobile && bun run type-check",
+    "typecheck:mobile": "cd mobile && bun run typecheck",
     "test": "bun run test:api && bun run test:core && bun run test:server && bun run test:cli && bun run test:mobile",
     "test:api": "cd packages/api && bun run test",
     "test:core": "cd packages/core && NODE_ENV=test bun test",

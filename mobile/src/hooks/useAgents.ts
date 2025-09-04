@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import type { ListAgentsQuery, ListAgentsResponse } from '../api/client';
+import type { ListAgentsQuery, ListAgentsResponse } from '@pokecode/api';
 import { apiClient } from '../api/client';
 
 /**

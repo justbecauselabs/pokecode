@@ -3,7 +3,7 @@
  */
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { Session } from '@/api/client';
+import type { Session, CreateSessionRequest } from '@pokecode/api';
 import { apiClient } from '@/api/client';
 
 export const SESSIONS_QUERY_KEY = ['sessions'] as const;
@@ -49,10 +49,11 @@ export function useCreateSession() {
 
   return useMutation({
     mutationFn: async (params: { projectPath: string }) => {
-      return apiClient.createSession({
+      const payload: CreateSessionRequest = {
         projectPath: params.projectPath,
         provider: 'claude-code',
-      });
+      };
+      return apiClient.createSession(payload);
     },
     onSuccess: () => {
       // Invalidate sessions query to refetch updated list
