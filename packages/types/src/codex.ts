@@ -89,15 +89,45 @@ export const CodexShellCallArgumentsSchema = z.object({
 });
 export type CodexShellCallArguments = z.infer<typeof CodexShellCallArgumentsSchema>;
 
-// Canonical union of all known Codex JSONL line shapes
-export const CodexSDKMessageSchema = z.union([
+// Additional Codex event shapes observed in the wild
+export const CodexAgentMessageSchema = z.object({
+  type: z.literal('agent_message'),
+  message: z.string(),
+});
+export type CodexAgentMessage = z.infer<typeof CodexAgentMessageSchema>;
+
+export const CodexTokenCountSchema = z.object({
+  type: z.literal('token_count'),
+  input_tokens: z.number().int().nonnegative(),
+  cached_input_tokens: z.number().int().nonnegative().optional().default(0),
+  output_tokens: z.number().int().nonnegative().optional().default(0),
+  reasoning_output_tokens: z.number().int().nonnegative().optional().default(0),
+  total_tokens: z.number().int().nonnegative(),
+});
+export type CodexTokenCount = z.infer<typeof CodexTokenCountSchema>;
+
+// Base event union (no outer wrapper)
+export const CodexEventSchema = z.union([
   CodexHeaderSchema, // header line (no `type` field)
   CodexStateSchema,
   CodexReasoningSchema,
   CodexMessageSchema,
   CodexFunctionCallSchema,
   CodexFunctionCallOutputSchema,
+  CodexAgentMessageSchema,
+  CodexTokenCountSchema,
 ]);
+export type CodexEvent = z.infer<typeof CodexEventSchema>;
+
+// Optional outer wrapper used by some emitters: { id, msg }
+export const CodexWrappedMessageSchema = z.object({
+  id: z.union([z.string(), z.number()]).transform((v) => String(v)),
+  msg: CodexEventSchema,
+});
+export type CodexWrappedMessage = z.infer<typeof CodexWrappedMessageSchema>;
+
+// Canonical union of all known Codex JSONL line shapes (raw or wrapped)
+export const CodexSDKMessageSchema = z.union([CodexEventSchema, CodexWrappedMessageSchema]);
 export type CodexSDKMessage = z.infer<typeof CodexSDKMessageSchema>;
 
 // Narrow helpers
@@ -112,3 +142,13 @@ export const isCodexReasoning = (v: unknown): v is CodexReasoning =>
 export const isCodexState = (v: unknown): v is CodexState => CodexStateSchema.safeParse(v).success;
 export const isCodexHeader = (v: unknown): v is CodexHeader =>
   CodexHeaderSchema.safeParse(v).success;
+
+export const isCodexWrapped = (v: unknown): v is CodexWrappedMessage =>
+  CodexWrappedMessageSchema.safeParse(v).success;
+
+// Unwrap helper to always return the inner event
+export function unwrapCodexSDKMessage(msg: CodexSDKMessage): CodexEvent {
+  const wrapped = CodexWrappedMessageSchema.safeParse(msg);
+  if (wrapped.success) return wrapped.data.msg;
+  return CodexEventSchema.parse(msg);
+}

@@ -39,6 +39,8 @@ export const status = async (_options: StatusOptions): Promise<void> => {
     console.log(`🔢 PID: ${chalk.gray(info.pid)}`);
     console.log(`⏰ Started: ${chalk.gray(info.startTime)}`);
     console.log(`📝 Log file: ${chalk.gray(config.logFile)}`);
+    console.log(`🔍 Claude Code path: ${chalk.gray(config.claudeCodePath ?? 'not configured')}`);
+    console.log(`🤖 Codex CLI path: ${chalk.gray(config.codexCliPath ?? 'not configured')}`);
 
     // Calculate uptime
     const startTime = new Date(info.startTime);

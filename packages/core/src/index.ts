@@ -19,6 +19,8 @@ export { agentService } from './services/agent.service';
 export * from './services/agent-runner';
 export * from './services/claude-code-runner';
 export { ClaudeCodeRunner } from './services/claude-code-runner';
+export * from './services/codex-runner';
+export { CodexRunner } from './services/codex-runner';
 export * from './services/command.service';
 export { commandService } from './services/command.service';
 export * from './services/event-bus.service';

@@ -1,6 +1,6 @@
-import type { SDKMessage } from '@anthropic-ai/claude-code';
+import type { SDKMessage as ClaudeSDKMessage } from '@anthropic-ai/claude-code';
 import { createId } from '@paralleldrive/cuid2';
-import type { Message } from '@pokecode/types';
+import type { CodexSDKMessage, Message } from '@pokecode/types';
 import { and, asc, desc, eq, gt, isNotNull, or, sql } from 'drizzle-orm';
 
 import { db } from '../database';
@@ -156,21 +156,20 @@ export class MessageService {
    */
   async saveSDKMessage(params: {
     sessionId: string;
-    sdkMessage: SDKMessage;
+    sdkMessage: ClaudeSDKMessage | CodexSDKMessage;
     providerSessionId?: string;
     provider?: 'claude-code' | 'codex-cli';
   }): Promise<void> {
     const { sessionId, sdkMessage, providerSessionId, provider } = params;
     // Determine message type for database - map all to user/assistant for compatibility
     let messageType: 'user' | 'assistant' = 'assistant';
-
-    if (sdkMessage.type === 'user') {
+    if ('type' in sdkMessage && sdkMessage.type === 'user') {
       messageType = 'user';
     }
     // system and result messages stored as assistant type with type preserved in JSON
 
     // Extract token count from the SDK message
-    const tokenCount = extractTokenCount(sdkMessage);
+    const tokenCount = 'type' in sdkMessage ? extractTokenCount(sdkMessage as ClaudeSDKMessage) : 0;
 
     // Use a transaction to ensure consistency
     await db.transaction(async (tx) => {
@@ -241,7 +240,7 @@ export class MessageService {
    */
   async saveUserMessage(sessionId: string, content: string): Promise<void> {
     // Create user message in Claude SDK format
-    const userMessage: SDKMessage & { type: 'user' } = {
+    const userMessage: ClaudeSDKMessage & { type: 'user' } = {
       type: 'user',
       message: {
         role: 'user',
@@ -340,7 +339,7 @@ export class MessageService {
       id: string;
       sessionId: string;
       type: string;
-      contentData: SDKMessage; // Parsed JSON object
+      contentData: ClaudeSDKMessage | CodexSDKMessage | null; // Parsed JSON object
       providerSessionId: string | null;
       tokenCount: number | null;
       createdAt: Date;

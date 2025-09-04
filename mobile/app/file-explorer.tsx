@@ -1,4 +1,5 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import { Alert } from 'react-native';
 import { FileExplorer } from '@/components/session/FileExplorer';
 import { useCreateSession } from '@/hooks/useCreateSession';
 
@@ -23,7 +24,17 @@ export default function FileExplorerScreen() {
         isGitRepo: false, // Add compatibility field
       };
 
-      await createSessionMutation.mutateAsync({ repository: tempRepository });
+      const chooseProvider = async (): Promise<'claude-code' | 'codex-cli'> =>
+        new Promise((resolve) => {
+          Alert.alert('Choose Agent', 'Which provider do you want to use?', [
+            { text: 'Claude Code', onPress: () => resolve('claude-code') },
+            { text: 'Codex CLI', onPress: () => resolve('codex-cli') },
+            { text: 'Cancel', style: 'cancel', onPress: () => resolve('claude-code') },
+          ]);
+        });
+
+      const provider = await chooseProvider();
+      await createSessionMutation.mutateAsync({ repository: tempRepository, provider });
 
       // Navigate back to the main screen
       router.replace('/');

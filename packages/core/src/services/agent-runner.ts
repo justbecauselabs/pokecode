@@ -1,5 +1,5 @@
-import type { SDKMessage } from '@anthropic-ai/claude-code';
-import type { Provider } from '@pokecode/types';
+import type { SDKMessage as ClaudeSDKMessage } from '@anthropic-ai/claude-code';
+import type { CodexSDKMessage, Provider } from '@pokecode/types';
 
 // AgentRunner is the minimal interface implemented by concrete runners
 
@@ -13,8 +13,8 @@ export interface RunnerExecuteParams {
 
 export type RunnerStreamItem = {
   provider: Provider; // e.g., 'claude-code'
-  providerSessionId: string; // non-null provider-side session id
-  message: SDKMessage; // provider-typed message (Claude SDKMessage for 'claude-code')
+  providerSessionId: string | null; // provider-side session id if available
+  message: ClaudeSDKMessage | CodexSDKMessage; // provider-typed message
 };
 
 export interface AgentRunner {

@@ -1,8 +1,8 @@
 # Codex CLI Integration Spec (PokéCode)
 
-Status: Draft (v0.3)
+Status: Draft (v0.4)
 Owners: Core/Server/CLI
-Last updated: 2025-09-03
+Last updated: 2025-09-04
 
 ## Progress
 - [x] Add `codexCliPath` to core config (2025-09-03)
@@ -10,14 +10,19 @@ Last updated: 2025-09-03
 - [x] API: require `provider` in CreateSessionRequest; add `provider` to Session schema (2025-09-03)
 - [x] Core DB: created provider enum values in schema; renamed table to `sessions`; added `provider` to sessions, session_messages, job_queue; updated migration (2025-09-03)
 - [x] Types package: introduced `@pokecode/types` with `PROVIDER_VALUES` + `ProviderSchema`; updated core and api to depend on it (2025-09-03)
-- [x] Core: add AgentRunner interfaces file (packages/core/src/services/agent-runner.ts)
-- [ ] Server: switch to session-scoped routes and infer provider by `sessionId`
-- [ ] Worker: implement `AgentSQLiteWorker` dispatching by job.provider
-- [ ] CodexRunner: spawn CLI and persist raw JSONL (parsing TODO)
+- [x] Core: add AgentRunner interfaces file (packages/core/src/services/agent-runner.ts) (2025-09-03)
+- [x] Types: Codex JSONL Zod schemas (packages/types/src/codex.ts) (2025-09-04)
+- [x] Core: Codex → API message parser (packages/core/src/utils/codex-message-parser.ts) (2025-09-04)
+- [x] Core: Provider dispatcher (packages/core/src/utils/provider-message-parser.ts) (2025-09-04)
+- [x] Core: Rename Claude parser to `claude-code-message-parser.ts`; updated imports (2025-09-04)
+- [x] Server: normalize provider aliases via `ProviderInputSchema` at createSession (2025-09-04)
+- [ ] Worker: provider-aware dispatch (add Codex)
+- [ ] CodexRunner: spawn CLI and persist raw JSONL (phase 1)
 - [ ] CLI: setup prompts/validates `codexCliPath`; print in status/startup
 - [ ] Mobile: model picker remains for Claude; Codex uses fixed model
 
-Milestone 1 complete — API provider types + CreateSession provider. Stopping here for review before proceeding to server/core wiring.
+Milestone 1 complete — API provider types + CreateSession provider.
+Milestone 2 in progress — provider-aware parsing wired; Codex schemas and parser added; CodexRunner integration next.
 
 ## Goals
 - Support Codex CLI as a first-class coding agent alongside Claude Code.
@@ -127,9 +132,9 @@ const proc = Bun.spawn({
 ```
 
 ### Streaming parse
-- Read `proc.stdout` as JSONL; parse each line via Zod into strict types.
-- Map each event to a provider-specific message type, then to our normalized `Message` using a Codex parser.
-- Persist with `messageService.saveSDKMessage(sessionId, providerMessage, providerSessionId)`.
+- Read `proc.stdout` as JSONL; parse each line via Zod (see `@pokecode/types/src/codex.ts`).
+- Persist raw provider JSON per line using `messageService.saveSDKMessage(...)` with `provider = 'codex-cli'`.
+- Normalization to API `Message` happens on read via `parseDbMessageByProvider(...)` which delegates to `parseCodexDbMessage(...)`.
 
 ```ts
 for await (const line of readLines(proc.stdout)) {
@@ -151,32 +156,30 @@ for await (const line of readLines(proc.stdout)) {
 ---
 
 ## Message Parsing
-Split parsers by provider and dispatch:
+Split parsers by provider and dispatch (implemented):
 
 ```ts
-export type ProviderMessage = CodexMessage | ClaudeSdkMessage;
-
-export function parseDbMessageByProvider(provider: Provider, raw: ProviderMessage, projectPath?: string): Message | null {
-  return provider === 'codex-cli'
-    ? parseCodexMessage(raw, projectPath)
-    : parseClaudeMessage(raw, projectPath);
+export function parseDbMessageByProvider(dbRow: SessionMessage, projectPath?: string): Message | null {
+  return dbRow.provider === 'codex-cli'
+    ? parseCodexDbMessage(dbRow, projectPath)
+    : parseClaudeDbMessage(dbRow, projectPath);
 }
 ```
 
-- `parseClaudeMessage` remains as-is (extracted from current `message-parser`).
-- `parseCodexMessage` implements analogous mapping:
-  - text → assistant `message`
-  - tool use/results → assistant `tool_use` / `tool_result`
-  - user input → user `message`
-  - keep previews and file-path relativization logic.
+- `parseClaudeDbMessage` remains as-is; file renamed.
+- `parseCodexDbMessage` implements analogous mapping from Codex JSONL:
+  - user message: input_text blocks → `user` message.
+  - assistant text: output_text blocks → assistant `message`.
+  - function_call → assistant `tool_use` (name→tool mapping, e.g., shell→bash).
+  - function_call_output → assistant `tool_result` (content extraction, isError inference).
 
 Note: if Codex CLI’s event schema differs, implement a small adapter `toProviderMessage(evt)` to reconcile fields.
 
 ---
 
 ## Worker Changes
-- Replace `ClaudeCodeSQLiteWorker` with `AgentSQLiteWorker`.
-- Dispatch by job provider using `RunnerFactory`.
+- AgentRunner worker exists (`packages/server/src/workers/agent-runner.worker.ts`).
+- Dispatch by job.provider (Claude supported; Codex addition pending).
 - Keep concurrency, polling, cancellation checker, and SSE emissions unchanged.
 
 Pseudocode:
@@ -212,10 +215,10 @@ Provider is required only at session creation. All other endpoints infer provide
   - `GET /api/sessions/:sessionId/agents`
 
 ### Request schemas
-- CreateSessionRequest
+- CreateSessionRequest (accepts aliases; normalized server-side)
 ```ts
 projectPath: string;
-provider: Provider; // required only at session creation
+provider: 'claude-code' | 'codex-cli' | 'claude' | 'codex';
 ```
 
 - CreateMessageBodySchema (no provider; server validates `model` using the session's provider)
@@ -378,7 +381,7 @@ interface Config {
 - Codex CLI: use `codex --dangerously-bypass-approvals-and-sandbox -c 'model_reasoning_effort=high' --search -m gpt-5 exec --json <query>`; emits JSONL; we must support cancellation.
 - Agents/commands: Codex has none; return empty arrays.
 - API surface: provider is required only at session creation; all other endpoints infer provider by `sessionId`.
-- Database: reset schema; create enums for provider; table `claude_code_sessions` is now `sessions`; add `provider` to `sessions`, `session_messages`, and `job_queue`; `session_messages.provider_session_id` replaces Claude-specific field.
+- Database: reset schema; create enums for provider; table `claude_code_sessions` is now `sessions`; add `provider` to `sessions`, `session_messages`, and `job_queue`; `session_messages.provider_session_id` replaces Claude-specific field. Token extraction remains Claude-only for now.
 - Models: Codex exposes a single model `gpt-5` for now; no user-facing model selection.
 - Concurrency: single shared worker across providers.
 
@@ -536,6 +539,6 @@ export class DefaultRunnerFactory implements RunnerFactory {
 ---
 
 ## Next Steps
-- Implement `AgentRunner` + factory and wire a new `AgentSQLiteWorker`.
-- Implement Canonical provider routes and provider-aware request schemas.
-- Add DB columns (`provider`, `provider_session_id`) and backfill.
+- Add CodexRunner (spawn CLI, JSONL streaming, cancellation) and wire worker dispatch for `codex-cli`.
+- CLI `setup`: prompt/validate `codexCliPath`; show in status.
+- Optional: token accounting for Codex once available.

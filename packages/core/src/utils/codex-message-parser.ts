@@ -7,6 +7,7 @@ import {
   CodexSDKMessageSchema,
   CodexShellCallArgumentsSchema,
   CodexStateSchema,
+  unwrapCodexSDKMessage,
 } from '@pokecode/types';
 import { z } from 'zod';
 import type { SessionMessage } from '../database/schema-sqlite/session_messages';
@@ -233,7 +234,7 @@ export function parseCodexDbMessage(
       return null;
     }
 
-    const v = line.data;
+    const v = unwrapCodexSDKMessage(line.data);
 
     // Ignore non-message records
     if (CodexHeaderSchema.safeParse(v).success) return null;

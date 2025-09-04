@@ -13,6 +13,8 @@ export function useSessionMessages(sessionId: string) {
   const [isConnected, setIsConnected] = useState(false);
   const [isWorking, setIsWorking] = useState(false);
   const [error, setError] = useState<Error | null>(null);
+  // Track only the initial fetch loading state. SSE connectivity should not block UI.
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
   const eventSourceRef = useRef<EventSource | null>(null);
   const queryClient = useQueryClient();
   const connectRef = useRef<() => void>(() => {});
@@ -24,6 +26,8 @@ export function useSessionMessages(sessionId: string) {
     }
 
     let isActive = true;
+    // Reset initial loading state when session changes
+    setIsInitialLoading(true);
     if (DEBUG_SSE) {
       console.log('[SSE] Effect start', { sessionId });
     }
@@ -44,6 +48,11 @@ export function useSessionMessages(sessionId: string) {
         console.error('[SSE] Failed to load initial messages:', err);
         if (isActive) {
           setError(err instanceof Error ? err : new Error('Unknown error'));
+        }
+      } finally {
+        // Regardless of success or error, initial loading is finished.
+        if (isActive) {
+          setIsInitialLoading(false);
         }
       }
     };
@@ -224,7 +233,8 @@ export function useSessionMessages(sessionId: string) {
   return {
     messages,
     session,
-    isLoading: !isConnected && messages.length === 0,
+    // Loading should reflect only the initial fetch; empty arrays are a valid, ready state.
+    isLoading: isInitialLoading,
     error,
     refetch: () => {
       // For SSE, refetch means reconnecting once

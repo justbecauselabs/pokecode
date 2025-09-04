@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import type { AgentRunner } from '@pokecode/core';
 import {
   ClaudeCodeRunner,
+  CodexRunner,
   createChildLogger,
   db,
   emitSessionDone,
@@ -84,6 +85,12 @@ export class AgentRunnerWorker {
           messageService,
           model,
         });
+      } else if (job.provider === 'codex-cli') {
+        runner = new CodexRunner({
+          sessionId,
+          projectPath: data.projectPath,
+          model,
+        });
       } else {
         throw new Error(`Unsupported provider: ${job.provider}`);
       }
@@ -104,7 +111,7 @@ export class AgentRunnerWorker {
           await messageService.saveSDKMessage({
             sessionId,
             sdkMessage: item.message,
-            providerSessionId: item.providerSessionId,
+            ...(item.providerSessionId ? { providerSessionId: item.providerSessionId } : {}),
             provider: item.provider,
           });
         }

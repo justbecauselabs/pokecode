@@ -44,14 +44,15 @@ export function useSession(sessionId: string) {
 /**
  * Creates a new session
  */
+type ProviderValue = 'claude-code' | 'codex-cli';
 export function useCreateSession() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (params: { projectPath: string }) => {
+    mutationFn: async (params: { projectPath: string; provider: ProviderValue }) => {
       const payload: CreateSessionRequest = {
         projectPath: params.projectPath,
-        provider: 'claude-code',
+        provider: params.provider,
       };
       return apiClient.createSession(payload);
     },

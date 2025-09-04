@@ -14,6 +14,7 @@ export interface ServeOptions {
   host: string;
   daemon?: boolean;
   logLevel: string;
+  codexCli?: string;
 }
 
 // Security validation functions
@@ -78,6 +79,15 @@ export const serve = async (options: ServeOptions): Promise<void> => {
     host,
     logLevel: logLevel as 'fatal' | 'error' | 'warn' | 'info' | 'debug' | 'trace',
   });
+
+  // Optional overrides for Codex CLI path
+  const envCodexPath = process.env.CODEX_CLI_PATH;
+  const optCodexPath = options.codexCli;
+  if (optCodexPath) {
+    overrideConfig({ codexCliPath: optCodexPath });
+  } else if (envCodexPath) {
+    overrideConfig({ codexCliPath: envCodexPath });
+  }
 
   // Check if daemon is already running
   if (await daemonManager.isRunning()) {
@@ -175,6 +185,14 @@ const startEmbedded = async (): Promise<void> => {
     console.log(`📝 Logs: ${chalk.gray(config.logFile)}`);
     console.log(`📊 Log level: ${chalk.gray(config.logLevel)}`);
     console.log(`🔍 Claude Code path: ${chalk.gray(config.claudeCodePath)}`);
+    console.log(`🤖 Codex CLI path: ${chalk.gray(config.codexCliPath ?? 'not configured')}`);
+    if (!config.codexCliPath) {
+      console.log(
+        chalk.yellow(
+          '⚠️  Codex CLI not configured. Codex jobs will fail. Run `pokecode setup` to add it.',
+        ),
+      );
+    }
     console.log(chalk.yellow('\nPress Ctrl+C to stop the server'));
   } catch (error) {
     spinner.fail(chalk.red('❌ Failed to start PokéCode server'));

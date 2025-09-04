@@ -4,8 +4,10 @@ import { useRouter } from 'expo-router';
 import { apiClient } from '@/api/client';
 import type { Repository } from './useRepositories';
 
+type ProviderValue = 'claude-code' | 'codex-cli';
 interface CreateSessionParams {
   repository: Repository;
+  provider: ProviderValue;
   context?: string;
 }
 
@@ -19,12 +21,11 @@ export function useCreateSession() {
 
   return useMutation({
     mutationFn: async (params: CreateSessionParams) => {
-      const { repository } = params;
+      const { repository, provider } = params;
 
-      // Create session using projectPath and provider (hardcoded to 'claude-code')
       const payload: CreateSessionRequest = {
         projectPath: repository.path,
-        provider: 'claude-code',
+        provider,
       };
       const response = await apiClient.createSession(payload);
       return response;
