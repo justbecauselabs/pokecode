@@ -1,13 +1,13 @@
 import type { DirectoryItem } from '@pokecode/api';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { memo, useMemo, useState } from 'react';
+import { useRouter } from 'expo-router';
+import { memo, useMemo } from 'react';
 import { ActivityIndicator, Alert, FlatList, Pressable, Text, View } from 'react-native';
-import { Row } from '@/components/common/Row';
 import { useDirectoryBrowser } from '@/hooks/useDirectoryBrowser';
 
 interface FileExplorerProps {
   initialPath?: string;
   onSelectPath: (path: string) => void;
+  showHidden: boolean;
 }
 
 interface DirectoryItemProps {
@@ -52,25 +52,17 @@ const BreadcrumbPath = memo(({ path }: { path?: string }) => {
   const displayPath = `/${displaySegments.join('/')}`;
 
   return (
-    <View className="px-4 py-2 bg-background border-b border-border">
-      <Text className="text-sm text-muted-foreground font-mono" numberOfLines={1}>
+    <View className="px-4 py-2 bg-secondary border-b border-border">
+      <Text className="text-sm text-secondary-foreground font-mono" numberOfLines={1}>
         📁 {displayPath}
       </Text>
     </View>
   );
 });
 
-export const FileExplorer = memo(({ initialPath, onSelectPath }: FileExplorerProps) => {
+export const FileExplorer = memo(({ initialPath, onSelectPath, showHidden }: FileExplorerProps) => {
   const router = useRouter();
-  const params = useLocalSearchParams<{ path?: string; showHidden?: string | string[] }>();
-  const parseBoolParam = (value: string | string[] | undefined): boolean => {
-    if (Array.isArray(value)) {
-      return value.length > 0 && (value[0] === '1' || value[0] === 'true');
-    }
-    return value === '1' || value === 'true';
-  };
-  const [showHidden, setShowHidden] = useState<boolean>(parseBoolParam(params.showHidden));
-  const { currentPath, parentPath, directories, isLoading, error, refetch } =
+  const { currentPath, directories, isLoading, error, refetch } =
     useDirectoryBrowser(initialPath);
 
   const visibleDirectories = useMemo(() => {
@@ -101,39 +93,6 @@ export const FileExplorer = memo(({ initialPath, onSelectPath }: FileExplorerPro
     <>
       {/* Breadcrumb Path */}
       <BreadcrumbPath path={currentPath} />
-
-      {/* Parent Directory Option */}
-      {parentPath && (
-        <Pressable
-          onPress={() =>
-            router.push({
-              pathname: '/file-explorer',
-              params: { path: parentPath, showHidden: showHidden ? '1' : '0' },
-            })
-          }
-          className="flex-row items-center py-4 px-4 active:opacity-80 border-b border-border"
-        >
-          <Text className="text-base text-muted-foreground font-mono mr-2">📁 ..</Text>
-          <Text className="text-muted-foreground font-mono">Parent Directory</Text>
-          <View className="flex-1" />
-          <Text className="text-muted-foreground text-lg font-mono">›</Text>
-        </Pressable>
-      )}
-
-      {/* Hidden files toggle */}
-      <Row
-        title="Show hidden items"
-        className="border-b border-border"
-        leading={{ type: 'icon', library: 'Feather', name: 'eye-off', color: '#666' }}
-        trailing={{
-          type: 'switch',
-          value: showHidden,
-          onValueChange: (value: boolean) => {
-            setShowHidden(value);
-            router.setParams({ showHidden: value ? '1' : '0' });
-          },
-        }}
-      />
     </>
   );
 
@@ -218,7 +177,7 @@ export const FileExplorer = memo(({ initialPath, onSelectPath }: FileExplorerPro
         renderItem={renderDirectory}
         ListHeaderComponent={renderHeader}
         ListEmptyComponent={renderEmptyState}
-        ItemSeparatorComponent={() => <View className="h-px bg-border ml-4" />}
+        ItemSeparatorComponent={ListSeparator}
         showsVerticalScrollIndicator={false}
         refreshing={isLoading}
         onRefresh={refetch}
@@ -228,3 +187,5 @@ export const FileExplorer = memo(({ initialPath, onSelectPath }: FileExplorerPro
     </View>
   );
 });
+
+const ListSeparator = () => <View className="h-px bg-border ml-4" />;

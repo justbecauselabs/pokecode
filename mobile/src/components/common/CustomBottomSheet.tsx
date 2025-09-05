@@ -1,55 +1,30 @@
-import type { BottomSheetBackdropProps } from '@gorhom/bottom-sheet';
-import { BottomSheetBackdrop, BottomSheetModal } from '@gorhom/bottom-sheet';
-import { forwardRef, type ReactNode, useMemo } from 'react';
-import { backgroundColors } from '@/utils/styleUtils';
+import { BottomSheetView } from '@gorhom/bottom-sheet';
+import type { BottomSheetModal } from '@gorhom/bottom-sheet';
+import type React from 'react';
+import { forwardRef } from 'react';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { CustomBottomModalSheet } from './CustomBottomModalSheet';
 
 interface CustomBottomSheetProps {
-  children: ReactNode;
+  children: React.ReactNode;
   onClose?: () => void;
   onDismiss?: () => void;
   snapPoints?: string[];
   enablePanDownToClose?: boolean;
+  paddingTop?: number;
 }
 
 export const CustomBottomSheet = forwardRef<BottomSheetModal, CustomBottomSheetProps>(
-  (
-    { children, onClose, onDismiss, snapPoints: customSnapPoints, enablePanDownToClose = true },
-    ref,
-  ) => {
-    // Bottom sheet snap points
-    const snapPoints = useMemo(() => customSnapPoints || ['50%', '90%'], [customSnapPoints]);
-
-    // Use onDismiss if provided, otherwise use onClose
-    const dismissHandler = onDismiss || onClose;
-
-    // Render backdrop
-    const renderBackdrop = (props: BottomSheetBackdropProps) => (
-      <BottomSheetBackdrop
-        {...props}
-        disappearsOnIndex={-1}
-        appearsOnIndex={0}
-        opacity={0.5}
-        onPress={dismissHandler}
-      />
-    );
+  (props, ref) => {
+    const { children, paddingTop = 12, ...modalProps } = props;
+    const insets = useSafeAreaInsets();
 
     return (
-      <BottomSheetModal
-        ref={ref}
-        snapPoints={snapPoints}
-        enablePanDownToClose={enablePanDownToClose}
-        onDismiss={dismissHandler}
-        backdropComponent={renderBackdrop}
-        stackBehavior="replace"
-        backgroundStyle={{
-          backgroundColor: backgroundColors.background, // Using design token equivalent of bg-background
-        }}
-        handleIndicatorStyle={{
-          backgroundColor: backgroundColors.foreground, // Using design token equivalent of text-foreground
-        }}
-      >
-        {children}
-      </BottomSheetModal>
+      <CustomBottomModalSheet ref={ref} {...modalProps}>
+        <BottomSheetView style={{ paddingTop, paddingBottom: 12 + insets.bottom }}>
+          {children}
+        </BottomSheetView>
+      </CustomBottomModalSheet>
     );
   },
 );

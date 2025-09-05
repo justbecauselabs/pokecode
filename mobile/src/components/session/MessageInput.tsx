@@ -1,5 +1,5 @@
 import { Feather } from '@expo/vector-icons';
-import { type ClaudeModel, getModelDisplayName } from '@pokecode/api';
+import { type ClaudeModel } from '@pokecode/api';
 import { forwardRef, useImperativeHandle, useRef, useState } from 'react';
 import { Alert, Keyboard, Text, type TextInput, TouchableOpacity, View } from 'react-native';
 import type { SessionInfo } from '@/types/messages';
@@ -27,7 +27,6 @@ interface MessageInputProps {
 
 export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>((props, ref) => {
   const {
-    session,
     onSendMessage,
     onCancelSession,
     onShowSlashCommands,
@@ -106,125 +105,113 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>((prop
   };
 
   return (
-    <View className="border-t border-border bg-background p-4">
-      <View className="flex-row items-end gap-3">
-        <View className="flex-1">
-          <TextField
-            ref={inputRef}
-            value={message}
-            onChangeText={setMessage}
-            placeholder="Enter your message..."
-            multiline
-            autoGrow
-            textAlignVertical="top"
-            editable={!disabled && !isSending}
-            returnKeyType="default"
-            blurOnSubmit={false}
-          />
-        </View>
-
-        {/* Send/Stop Button */}
-        {isWorking ? (
-          // Stop button when session is working
-          <TouchableOpacity
-            className={`w-8 h-8 rounded items-center justify-center active:opacity-70 ${
-              disabled || isCancelling ? 'bg-gray-500' : 'bg-red-500'
-            }`}
-            onPress={handleCancel}
-            disabled={disabled || isCancelling}
-            activeOpacity={0.7}
-          >
-            {isCancelling ? (
-              <View className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
-            ) : (
-              <View className="w-3 h-3 bg-white rounded-sm" />
-            )}
-          </TouchableOpacity>
-        ) : (
-          // Send button when session is not working
-          <TouchableOpacity
-            className={`w-8 h-8 rounded-full items-center justify-center active:opacity-70 ${
-              disabled || !message.trim() || isSending ? 'bg-gray-500' : 'bg-white'
-            }`}
-            onPress={handleSend}
-            disabled={disabled || !message.trim() || isSending}
-            activeOpacity={0.7}
-          >
-            {isSending ? (
-              <View className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
-            ) : (
-              <Feather
-                name="arrow-up"
-                size={16}
-                color={disabled || !message.trim() || isSending ? '#9ca3af' : '#282c34'} // Using design tokens for muted vs primary-foreground
-              />
-            )}
-          </TouchableOpacity>
-        )}
-      </View>
-
-      {/* Agent, Model, and Slash Command Links Below Input */}
-      <View className="mt-3 flex-row gap-4 items-start">
-        <TouchableOpacity
-          onPress={() => {
-            Keyboard.dismiss();
-            onShowAgents?.();
-          }}
-          disabled={disabled || isSending}
-          activeOpacity={0.7}
-        >
-          <Text
-            className={`text-sm ${selectedAgents.length > 0 ? 'text-blue-600 font-medium' : 'text-blue-500'} ${disabled || isSending ? 'opacity-50' : ''}`}
-          >
-            {selectedAgents.length > 0 ? `agents (${selectedAgents.length})` : 'agent'}
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          onPress={() => {
-            Keyboard.dismiss();
-            onShowModels?.();
-          }}
-          disabled={disabled || isSending}
-          activeOpacity={0.7}
-        >
-          <Text className={`text-sm text-blue-500 ${disabled || isSending ? 'opacity-50' : ''}`}>
-            {selectedModel ? getModelDisplayName(selectedModel) : 'model'}
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          onPress={
-            selectedCommand
-              ? () => setSelectedCommand(null)
-              : () => {
-                  Keyboard.dismiss();
-                  onShowSlashCommands?.();
-                }
-          }
-          disabled={disabled || isSending}
-          activeOpacity={0.7}
-        >
-          <Text
-            className={`text-sm ${selectedCommand ? 'text-blue-600 font-medium' : 'text-blue-500'} ${disabled || isSending ? 'opacity-50' : ''}`}
-          >
-            {selectedCommand ? `/${selectedCommand}` : 'slash command'}
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Session Stats */}
-      {session && (
-        <View className="mt-2 flex-row items-center gap-4">
-          <Text className="text-xs text-muted-foreground font-mono">
-            {session.messageCount} messages
-          </Text>
-          <Text className="text-xs text-muted-foreground font-mono">•</Text>
-          <Text className="text-xs text-muted-foreground font-mono">
-            {session.tokenCount.toLocaleString()} tokens
-          </Text>
+    <View className="bg-background p-4">
+      {/* Pending status above input */}
+      {isWorking && (
+        <View className="mb-2 flex-row items-center gap-2">
+          <View className="h-2 w-2 rounded-full bg-indicator-loading" />
+          <Text className="text-muted-foreground">Your agent is working</Text>
+          <View className="h-3 w-3 rounded-full border-2 border-indicator-loading border-t-transparent animate-spin" />
         </View>
       )}
+
+      {/* Unified input container */}
+      <View className="rounded-2xl border border-border bg-input p-3">
+        <View className="flex-row items-end gap-3">
+          <View className="flex-1">
+            <TextField
+              ref={inputRef}
+              value={message}
+              onChangeText={setMessage}
+              placeholder="Type a message ..."
+              multiline
+              autoGrow
+              textAlignVertical="top"
+              editable={!disabled && !isSending}
+              returnKeyType="default"
+              blurOnSubmit={false}
+              variant="default"
+              containerClassName="rounded-2xl border-0 bg-transparent"
+            />
+          </View>
+
+          {/* Send/Stop Button */}
+          {isWorking ? (
+            <TouchableOpacity
+              className={`h-8 w-8 items-center justify-center rounded active:opacity-70 ${
+                disabled || isCancelling ? 'bg-gray-500' : 'bg-red-500'
+              }`}
+              onPress={handleCancel}
+              disabled={disabled || isCancelling}
+              activeOpacity={0.7}
+            >
+              {isCancelling ? (
+                <View className="h-4 w-4 rounded-full border-2 border-gray-400 border-t-transparent animate-spin" />
+              ) : (
+                <View className="h-3 w-3 rounded-sm bg-white" />
+              )}
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity
+              className={`h-8 w-8 items-center justify-center rounded-full active:opacity-70 ${
+                disabled || !message.trim() || isSending ? 'bg-gray-500' : 'bg-white'
+              }`}
+              onPress={handleSend}
+              disabled={disabled || !message.trim() || isSending}
+              activeOpacity={0.7}
+            >
+              {isSending ? (
+                <View className="h-4 w-4 rounded-full border-2 border-gray-400 border-t-transparent animate-spin" />
+              ) : (
+                <Feather
+                  name="arrow-up"
+                  size={16}
+                  color={disabled || !message.trim() || isSending ? '#9ca3af' : '#282c34'}
+                />
+              )}
+            </TouchableOpacity>
+          )}
+        </View>
+
+        {/* Icon actions inside the input */}
+        <View className="mt-2 flex-row items-center gap-4">
+          <TouchableOpacity
+            onPress={() => {
+              Keyboard.dismiss();
+              onShowModels?.();
+            }}
+            disabled={disabled || isSending}
+            activeOpacity={0.7}
+            className={disabled || isSending ? 'opacity-50' : ''}
+          >
+            <Feather name="cpu" size={18} color="#9da5b4" />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={() => {
+              Keyboard.dismiss();
+              onShowSlashCommands?.();
+            }}
+            disabled={disabled || isSending}
+            activeOpacity={0.7}
+            className={disabled || isSending ? 'opacity-50' : ''}
+          >
+            <Feather name="hash" size={18} color="#9da5b4" />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={() => {
+              Keyboard.dismiss();
+              onShowAgents?.();
+            }}
+            disabled={disabled || isSending}
+            activeOpacity={0.7}
+            className={disabled || isSending ? 'opacity-50' : ''}
+          >
+            <Feather name="users" size={18} color="#9da5b4" />
+          </TouchableOpacity>
+        </View>
+      </View>
     </View>
   );
 });

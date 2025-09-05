@@ -1,11 +1,16 @@
 import type { AssistantMessageToolResult } from '@pokecode/api';
-import { FlashList } from '@shopify/flash-list';
+import { FlashList, type FlashListRef } from '@shopify/flash-list';
 import type React from 'react';
-import { useEffect, useMemo, useRef } from 'react';
-import { Text, View } from 'react-native';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { StyleSheet, Text, View } from 'react-native';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withDelay,
+  withTiming,
+} from 'react-native-reanimated';
 import type { Message } from '../../types/messages';
 import { textStyles } from '../../utils/styleUtils';
-import { LoadingState } from '../common';
 import { MessageView } from './MessageView';
 
 // Type header component using pure TailwindCSS
@@ -13,14 +18,14 @@ const TypeHeader: React.FC<{ type: Message['type'] }> = ({ type }) => {
   const displayName = type.charAt(0).toUpperCase() + type.slice(1);
 
   // Define colors based on message type
-  const getHeaderColor = (type: Message['type']): string => {
-    switch (type) {
+  const getHeaderColor = (msgType: Message['type']): string => {
+    switch (msgType) {
       case 'user':
-        return '!text-blue-400'; // Nice blue for user
+        return '!text-blue-400';
       case 'assistant':
-        return '!text-green-400'; // Nice green for assistant
+        return '!text-green-400';
       default:
-        return '!text-gray-400'; // Default for other types
+        return '!text-gray-400';
     }
   };
 
@@ -44,45 +49,22 @@ interface MessageListProps {
 
 export const MessageList: React.FC<MessageListProps> = ({
   messages,
-  isLoading,
   error,
-  onMessageLongPress,
-  onToolResultPress,
-  onTaskToolPress,
-  agentColors,
+  onMessageLongPress, // unused in test mode
+  onToolResultPress, // unused in test mode
+  onTaskToolPress, // unused in test mode
+  agentColors, // unused in test mode
   showAllMessages = false,
 }) => {
-  const flashListRef = useRef<FlashList<Message>>(null);
-  const isInitialLoad = useRef(true);
-
-  useEffect(() => {
-    if (messages.length > 0 && flashListRef.current) {
-      // Get current scroll offset directly from the ref
-      // FlashList doesn't provide direct access to scroll metrics in this way
-      // We'll track scroll position manually
-      const currentOffset = 0; // Default to 0 for auto-scroll
-
-      // Only auto-scroll if user is near the bottom (scroll offset <= 50)
-      if (currentOffset <= 50) {
-        // Small delay to ensure content is rendered
-        setTimeout(() => {
-          flashListRef.current?.scrollToIndex({ index: 0, animated: !isInitialLoad.current });
-          isInitialLoad.current = false;
-        }, 100);
-      }
-    }
-  }, [messages.length]);
+  const listRef = useRef<FlashListRef<Message>>(null);
+  const opacity = useSharedValue(0);
+  const fadeStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
+  const [_didInitialFetch, _setDidInitialFetch] = useState(false);
 
   const { finalMessages, toolResults, taskMessages } = useMemo(() => {
-    // Create a dictionary of tool results keyed by toolUseId
     const toolResultsDict: Record<string, AssistantMessageToolResult> = {};
-
-    // Create a dictionary of messages organized by parent tool use id
     const taskMessagesDict: Record<string, Message[]> = {};
-
-    // Filter out tool result messages and collect them in the dictionary
     const filteredMessages = messages.filter((message) => {
-      // Check if message has a parent tool use id
       if (message.parentToolUseId && !showAllMessages) {
         const parentToolUseId = message.parentToolUseId;
         if (!taskMessagesDict[parentToolUseId]) {
@@ -112,22 +94,28 @@ export const MessageList: React.FC<MessageListProps> = ({
     console.log('MessageList processing:', {
       totalMessages: messages.length,
       filteredMessages: filteredMessages.length,
-      taskMessagesKeys: Object.keys(taskMessagesDict),
-      taskMessagesContent: Object.entries(taskMessagesDict).map(([key, msgs]) => ({
-        toolId: key,
-        messageCount: msgs.length,
-      })),
+      taskMessages: Object.keys(taskMessagesDict).length,
     });
 
     return {
-      finalMessages: filteredMessages.toReversed(),
+      finalMessages: filteredMessages,
       toolResults: toolResultsDict,
       taskMessages: taskMessagesDict,
     };
   }, [messages, showAllMessages]);
 
+  // Always fade in once the initial fetch completes, regardless of message count
+  useEffect(() => {
+    if (messages.length > 0 && opacity.value === 0) {
+      listRef.current?.scrollToEnd({ animated: false });
+      opacity.value = withDelay(250, withTiming(1, { duration: 250 }));
+    }
+    return undefined;
+  }, [messages, opacity]);
+
+  // Do not imperatively scroll here; v2's MVCP handles anchoring when has data
+
   const renderMessage = ({ item, index }: { item: Message; index: number }) => {
-    // Since the list is inverted, we need to check the next item (which is actually the previous message)
     const nextMessage = finalMessages[index + 1];
     const shouldShowHeader = !nextMessage || nextMessage.type !== item.type;
 
@@ -147,12 +135,6 @@ export const MessageList: React.FC<MessageListProps> = ({
     );
   };
 
-  const renderEmpty = () => (
-    <View>
-      <Text>No messages yet</Text>
-    </View>
-  );
-
   const renderError = () => (
     <View>
       <Text>Error loading messages</Text>
@@ -165,20 +147,23 @@ export const MessageList: React.FC<MessageListProps> = ({
   }
 
   return (
-    <View className="flex-1">
-      {isLoading && messages.length === 0 ? (
-        <LoadingState />
-      ) : (
-        <FlashList
-          ref={flashListRef}
-          data={finalMessages}
-          renderItem={renderMessage}
-          keyExtractor={(item) => item.id}
-          inverted={true}
-          ListEmptyComponent={renderEmpty}
-          estimatedItemSize={100}
-        />
-      )}
-    </View>
+    <Animated.View className="flex-1" style={fadeStyle}>
+      <FlashList
+        ref={listRef}
+        data={finalMessages}
+        renderItem={renderMessage}
+        keyExtractor={(item) => item.id}
+        maintainVisibleContentPosition={{
+          startRenderingFromBottom: true,
+          autoscrollToBottomThreshold: 0.25,
+          animateAutoScrollToBottom: true,
+        }}
+        style={styles.list}
+      />
+    </Animated.View>
   );
 };
+
+const styles = StyleSheet.create({
+  list: { flex: 1 },
+});

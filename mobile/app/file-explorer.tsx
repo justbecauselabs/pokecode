@@ -1,13 +1,26 @@
+import { Feather } from '@expo/vector-icons';
+import type { BottomSheetModal } from '@gorhom/bottom-sheet';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { Alert } from 'react-native';
+import { useRef, useState } from 'react';
+import { Alert, Pressable } from 'react-native';
 import { FileExplorer } from '@/components/session/FileExplorer';
+import { FileExplorerFilterBottomSheet } from '@/components/session/FileExplorerFilterBottomSheet';
 import { useCreateSession } from '@/hooks/useCreateSession';
+import { SafeAreaView } from '@/components/common';
 
 export default function FileExplorerScreen() {
   const router = useRouter();
-  const { path } = useLocalSearchParams<{
+  const { path, showHidden: showHiddenParam } = useLocalSearchParams<{
     path?: string;
+    showHidden?: string | string[];
   }>();
+  const parseBoolParam = (value: string | string[] | undefined): boolean => {
+    if (Array.isArray(value)) return value.length > 0 && (value[0] === '1' || value[0] === 'true');
+    return value === '1' || value === 'true';
+  };
+  const [showHidden, setShowHidden] = useState<boolean>(parseBoolParam(showHiddenParam));
+
+  const filterSheetRef = useRef<BottomSheetModal>(null);
   const createSessionMutation = useCreateSession();
 
   const handleSelectPath = async (selectedPath: string) => {
@@ -45,8 +58,32 @@ export default function FileExplorerScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ title: path ? 'Browse Directory' : 'Find Project' }} />
-      <FileExplorer initialPath={path} onSelectPath={handleSelectPath} />
+      <Stack.Screen
+        options={{
+          title: path ? 'Browse Directory' : 'Find Project',
+          headerRight: () => (
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => filterSheetRef.current?.present()}
+              className="w-10 h-10 items-center justify-center"
+              hitSlop={8}
+            >
+              <Feather name="filter" size={20} color="#abb2bf" />
+            </Pressable>
+          ),
+        }}
+      />
+      <SafeAreaView className="flex-1 bg-background">
+        <FileExplorer initialPath={path} onSelectPath={handleSelectPath} showHidden={showHidden} />
+      </SafeAreaView>
+      <FileExplorerFilterBottomSheet
+        ref={filterSheetRef}
+        showHidden={showHidden}
+        onToggleShowHidden={(value) => {
+          setShowHidden(value);
+          router.setParams({ showHidden: value ? '1' : '0' });
+        }}
+      />
     </>
   );
 }

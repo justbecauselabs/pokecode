@@ -59,8 +59,8 @@ export default function BackendUrlSettingsScreen() {
 
   const isValidUrl = (url: string): boolean => {
     try {
-      new URL(url);
-      return true;
+      const parsed = new URL(url);
+      return typeof parsed.href === 'string' && parsed.href.length > 0;
     } catch {
       return false;
     }

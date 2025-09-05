@@ -292,7 +292,10 @@ export function parseCodexDbMessage(
   try {
     const parsedLine = CodexSDKMessageSchema.safeParse(JSON.parse(dbMessage.contentData));
     if (!parsedLine.success) {
-      logger.warn({ issues: parsedLine.error.issues }, 'Unrecognized Codex JSONL line');
+      logger.warn(
+        { issues: parsedLine.error.issues, data: dbMessage.contentData },
+        'Unrecognized Codex JSONL line',
+      );
       return null;
     }
 

@@ -144,7 +144,7 @@ export const RepositoryList = memo(
           data={repositories}
           keyExtractor={(item) => item?.path || `repo-${Math.random()}`}
           renderItem={renderRepository}
-          ItemSeparatorComponent={() => <View className="h-px bg-border ml-4" />}
+          ItemSeparatorComponent={ListSeparator}
           showsVerticalScrollIndicator={false}
           refreshing={isLoading}
           onRefresh={onRefresh}
@@ -154,3 +154,5 @@ export const RepositoryList = memo(
     );
   },
 );
+
+const ListSeparator = () => <View className="h-px bg-border ml-4" />;

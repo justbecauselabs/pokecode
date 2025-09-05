@@ -1,10 +1,10 @@
 import { Feather } from '@expo/vector-icons';
 import type { BottomSheetModal } from '@gorhom/bottom-sheet';
-import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
+ 
 import type { Agent } from '@pokecode/api';
 import { forwardRef, useMemo } from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
-import { CustomBottomSheet } from '../common';
+import { CustomScrollableBottomSheet } from '../common';
 
 interface AgentSelectionBottomSheetProps {
   agents: Agent[];
@@ -19,8 +19,6 @@ export const AgentSelectionBottomSheet = forwardRef<
   BottomSheetModal,
   AgentSelectionBottomSheetProps
 >(({ agents, selectedAgents, isLoading, error, onToggleAgent, onClose }, ref) => {
-  // Bottom sheet snap points
-  const snapPoints = useMemo(() => ['50%', '90%'], []);
 
   const handleAgentToggle = (agentName: string) => {
     onToggleAgent({ agentName });
@@ -135,26 +133,23 @@ export const AgentSelectionBottomSheet = forwardRef<
   };
 
   return (
-    <CustomBottomSheet ref={ref} onClose={onClose} snapPoints={snapPoints}>
-      <View className="flex-1 px-4">
-        {/* Header */}
-        <View className="py-3 border-b border-border mb-3">
-          <Text className="text-lg font-semibold text-center text-foreground font-mono">
-            Agents
-          </Text>
-          <Text className="text-sm text-center text-muted-foreground mt-1 font-mono">
-            Select agents to assist with your message ({selectedAgents.length} selected)
-          </Text>
+    <CustomScrollableBottomSheet
+      ref={ref}
+      onClose={onClose}
+      header={
+        <View className="px-4">
+          <View className="py-3 border-b border-border mb-3">
+            <Text className="text-lg font-semibold text-center text-foreground font-mono">
+              Agents
+            </Text>
+            <Text className="text-sm text-center text-muted-foreground mt-1 font-mono">
+              Select agents to assist with your message ({selectedAgents.length} selected)
+            </Text>
+          </View>
         </View>
-
-        {/* Agents list */}
-        <BottomSheetScrollView
-          contentContainerClassName="pb-5"
-          showsVerticalScrollIndicator={false}
-        >
-          {renderContent()}
-        </BottomSheetScrollView>
-      </View>
-    </CustomBottomSheet>
+      }
+    >
+      <View className="px-4">{renderContent()}</View>
+    </CustomScrollableBottomSheet>
   );
 });

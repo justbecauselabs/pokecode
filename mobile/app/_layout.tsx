@@ -88,8 +88,8 @@ export default function RootLayout() {
                 name="index"
                 options={{
                   title: 'Sessions',
-                  headerLeft: () => <HeaderLeftButton />,
-                  headerRight: () => <HeaderButtons />,
+                  headerLeft: HeaderLeftButton,
+                  headerRight: HeaderButtons,
                 }}
               />
               <Stack.Screen name="+not-found" options={{ title: 'Not Found' }} />

@@ -98,7 +98,7 @@ export const Row: React.FC<RowProps> = ({
     color?: string;
     className?: string;
   }) => {
-    const { library, name, size = 20, color = '#666666', className } = params; // Using muted-foreground equivalent
+    const { library, name, size = 20, color = '#666666', className: iconWrapperClassName } = params; // Using muted-foreground equivalent
 
     const iconElement = (() => {
       switch (library) {
@@ -145,7 +145,11 @@ export const Row: React.FC<RowProps> = ({
       }
     })();
 
-    return className ? <View className={className}>{iconElement}</View> : iconElement;
+    return iconWrapperClassName ? (
+      <View className={iconWrapperClassName}>{iconElement}</View>
+    ) : (
+      iconElement
+    );
   };
 
   const renderAvatar = (params: {
@@ -240,11 +244,16 @@ export const Row: React.FC<RowProps> = ({
     showPercentage?: boolean;
     className?: string;
   }) => {
-    const { value, max = 100, showPercentage = true, className } = params;
+    const {
+      value,
+      max = 100,
+      showPercentage = true,
+      className: progressContainerClassName,
+    } = params;
     const percentage = Math.min(Math.max((value / max) * 100, 0), 100);
 
     return (
-      <View className={cn('items-end', className)}>
+      <View className={cn('items-end', progressContainerClassName)}>
         {showPercentage && (
           <Text className="text-sm font-medium text-foreground mb-1">
             {Math.round(percentage)}%
