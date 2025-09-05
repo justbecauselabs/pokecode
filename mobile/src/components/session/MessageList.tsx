@@ -64,6 +64,7 @@ export const MessageList: React.FC<MessageListProps> = ({
   const { finalMessages, toolResults, taskMessages } = useMemo(() => {
     const toolResultsDict: Record<string, AssistantMessageToolResult> = {};
     const taskMessagesDict: Record<string, Message[]> = {};
+    const toolIds: string[] = [];
     const filteredMessages = messages.filter((message) => {
       if (message.parentToolUseId && !showAllMessages) {
         const parentToolUseId = message.parentToolUseId;
@@ -85,6 +86,8 @@ export const MessageList: React.FC<MessageListProps> = ({
           const toolResultData = assistantData.data;
           toolResultsDict[toolResultData.toolUseId] = toolResultData;
           return false; // Filter out tool result messages
+        } else if (assistantData.type === 'tool_use') {
+          toolIds.push(assistantData.data.toolId);
         }
       }
       return true; // Keep all other messages
@@ -94,7 +97,8 @@ export const MessageList: React.FC<MessageListProps> = ({
     console.log('MessageList processing:', {
       totalMessages: messages.length,
       filteredMessages: filteredMessages.length,
-      taskMessages: Object.keys(taskMessagesDict).length,
+      toolIds,
+      toolResultsKeys: Object.keys(toolResultsDict),
     });
 
     return {
