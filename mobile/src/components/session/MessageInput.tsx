@@ -105,7 +105,7 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>((prop
   };
 
   return (
-    <View className="bg-background p-4">
+    <View className="bg-background px-3 py-4">
       {/* Pending status above input */}
       {isWorking && (
         <View className="mb-2 flex-row items-center gap-2">
@@ -117,22 +117,61 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>((prop
 
       {/* Unified input container */}
       <View className="rounded-2xl border border-border bg-input p-3">
-        <View className="flex-row items-end gap-3">
-          <View className="flex-1">
-            <TextField
-              ref={inputRef}
-              value={message}
-              onChangeText={setMessage}
-              placeholder="Type a message ..."
-              multiline
-              autoGrow
-              textAlignVertical="top"
-              editable={!disabled && !isSending}
-              returnKeyType="default"
-              blurOnSubmit={false}
-              variant="default"
-              containerClassName="rounded-2xl border-0 bg-transparent"
-            />
+        {/* Full-width text input */}
+        <TextField
+          ref={inputRef}
+          value={message}
+          onChangeText={setMessage}
+          placeholder="Type a message ..."
+          multiline
+          autoGrow
+          textAlignVertical="top"
+          editable={!disabled && !isSending}
+          returnKeyType="default"
+          blurOnSubmit={false}
+          variant="default"
+          containerClassName="rounded-2xl border-0 bg-transparent"
+          contentPaddingX={10}
+        />
+
+        {/* Actions row with send on right */}
+        <View className="mt-2 flex-row items-center justify-between">
+          <View className="flex-row items-center gap-4">
+            <TouchableOpacity
+              onPress={() => {
+                Keyboard.dismiss();
+                onShowModels?.();
+              }}
+            disabled={disabled || isSending}
+            activeOpacity={0.7}
+            className={disabled || isSending ? 'opacity-50' : ''}
+          >
+            <Feather name="cpu" size={18} color="#9da5b4" />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={() => {
+              Keyboard.dismiss();
+              onShowSlashCommands?.();
+            }}
+            disabled={disabled || isSending}
+            activeOpacity={0.7}
+            className={disabled || isSending ? 'opacity-50' : ''}
+          >
+            <Feather name="hash" size={18} color="#9da5b4" />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={() => {
+              Keyboard.dismiss();
+              onShowAgents?.();
+            }}
+            disabled={disabled || isSending}
+            activeOpacity={0.7}
+            className={disabled || isSending ? 'opacity-50' : ''}
+          >
+            <Feather name="users" size={18} color="#9da5b4" />
+          </TouchableOpacity>
           </View>
 
           {/* Send/Stop Button */}
@@ -171,45 +210,6 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>((prop
               )}
             </TouchableOpacity>
           )}
-        </View>
-
-        {/* Icon actions inside the input */}
-        <View className="mt-2 flex-row items-center gap-4">
-          <TouchableOpacity
-            onPress={() => {
-              Keyboard.dismiss();
-              onShowModels?.();
-            }}
-            disabled={disabled || isSending}
-            activeOpacity={0.7}
-            className={disabled || isSending ? 'opacity-50' : ''}
-          >
-            <Feather name="cpu" size={18} color="#9da5b4" />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            onPress={() => {
-              Keyboard.dismiss();
-              onShowSlashCommands?.();
-            }}
-            disabled={disabled || isSending}
-            activeOpacity={0.7}
-            className={disabled || isSending ? 'opacity-50' : ''}
-          >
-            <Feather name="hash" size={18} color="#9da5b4" />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            onPress={() => {
-              Keyboard.dismiss();
-              onShowAgents?.();
-            }}
-            disabled={disabled || isSending}
-            activeOpacity={0.7}
-            className={disabled || isSending ? 'opacity-50' : ''}
-          >
-            <Feather name="users" size={18} color="#9da5b4" />
-          </TouchableOpacity>
         </View>
       </View>
     </View>

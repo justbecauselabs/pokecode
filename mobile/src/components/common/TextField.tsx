@@ -7,6 +7,8 @@ interface TextFieldProps extends TextInputProps {
   size?: 'small' | 'medium' | 'large';
   className?: string;
   containerClassName?: string;
+  // Optional: adjust horizontal padding of container
+  contentPaddingX?: number; // default 16
   // Auto-grow configuration (multiline only)
   minLines?: number; // default 1
   maxLines?: number; // default 6
@@ -20,6 +22,7 @@ export const TextField = forwardRef<TextInput, TextFieldProps>((props, ref) => {
     size = 'medium',
     className,
     containerClassName,
+    contentPaddingX = 16,
     style,
     onFocus,
     onBlur,
@@ -71,12 +74,12 @@ export const TextField = forwardRef<TextInput, TextFieldProps>((props, ref) => {
   const containerStyle =
     multiline && autoGrow
       ? {
-          paddingHorizontal: 16,
+          paddingHorizontal: contentPaddingX,
           paddingVertical: 12,
         }
       : {
           height: currentSize.minHeight,
-          paddingHorizontal: 16,
+          paddingHorizontal: contentPaddingX,
           paddingVertical: multiline ? 12 : (currentSize.minHeight - 24) / 2,
         };
 
