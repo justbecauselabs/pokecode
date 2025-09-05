@@ -65,31 +65,45 @@ export const MessageList: React.FC<MessageListProps> = ({
     const toolResultsDict: Record<string, AssistantMessageToolResult> = {};
     const taskMessagesDict: Record<string, Message[]> = {};
     const toolIds: string[] = [];
+    const isAssistantToolResult = (data: unknown): data is { type: 'tool_result'; data: AssistantMessageToolResult } => {
+      if (!data || typeof data !== 'object' || !('type' in data)) return false;
+      const maybe = data as { type?: unknown; data?: unknown };
+      if (maybe.type !== 'tool_result' || !maybe.data || typeof maybe.data !== 'object') return false;
+      const res = maybe.data as { toolUseId?: unknown; content?: unknown };
+      return typeof res.toolUseId === 'string' && typeof res.content === 'string';
+    };
+
+    const isAssistantToolUse = (data: unknown): data is { type: 'tool_use'; data: { toolId: string } } => {
+      if (!data || typeof data !== 'object' || !('type' in data)) return false;
+      const maybe = data as { type?: unknown; data?: unknown };
+      if (maybe.type !== 'tool_use' || !maybe.data || typeof maybe.data !== 'object') return false;
+      const res = maybe.data as { toolId?: unknown };
+      return typeof res.toolId === 'string';
+    };
+
     const filteredMessages = messages.filter((message) => {
+      // Always capture assistant tool_result messages so we can pair them with tool_use
+      if (message.type === 'assistant' && isAssistantToolResult(message.data)) {
+        const toolResultData = message.data.data;
+        toolResultsDict[toolResultData.toolUseId] = toolResultData;
+        return false; // Do not render standalone; shown with its tool_use
+      }
+
+      // Group messages that belong to a task/tool thread (child messages)
       if (message.parentToolUseId && !showAllMessages) {
         const parentToolUseId = message.parentToolUseId;
         if (!taskMessagesDict[parentToolUseId]) {
           taskMessagesDict[parentToolUseId] = [];
         }
         taskMessagesDict[parentToolUseId].push(message);
-        return false; // Filter out messages with parent tool use id
+        return false; // Hide child messages by default
       }
 
-      if (
-        message.type === 'assistant' &&
-        message.data &&
-        typeof message.data === 'object' &&
-        'type' in message.data
-      ) {
-        const assistantData = message.data;
-        if (assistantData.type === 'tool_result') {
-          const toolResultData = assistantData.data;
-          toolResultsDict[toolResultData.toolUseId] = toolResultData;
-          return false; // Filter out tool result messages
-        } else if (assistantData.type === 'tool_use') {
-          toolIds.push(assistantData.data.toolId);
-        }
+      // Track tool_use IDs so UI can look up matching results
+      if (message.type === 'assistant' && isAssistantToolUse(message.data)) {
+        toolIds.push(message.data.data.toolId);
       }
+
       return true; // Keep all other messages
     });
 

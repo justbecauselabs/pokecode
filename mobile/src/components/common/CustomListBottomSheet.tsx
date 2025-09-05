@@ -1,4 +1,4 @@
-import { FlashList } from '@shopify/flash-list';
+import { BottomSheetFlashList } from '@gorhom/bottom-sheet';
 import type React from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CustomBottomModalSheet } from './CustomBottomModalSheet';
@@ -19,23 +19,34 @@ interface CustomListBottomSheetProps<T extends object> {
   snapPoints?: string[];
   enablePanDownToClose?: boolean;
   paddingTop?: number;
+  estimatedItemSize?: number;
 }
 
 export function CustomListBottomSheet<T extends object>(
   props: CustomListBottomSheetProps<T>,
 ): React.ReactElement {
-  const { data, renderItem, keyExtractor, header, footer, paddingTop = 12, ...modalProps } = props;
+  const {
+    data,
+    renderItem,
+    keyExtractor,
+    header,
+    footer,
+    paddingTop = 12,
+    estimatedItemSize,
+    ...modalProps
+  } = props;
   const insets = useSafeAreaInsets();
 
   return (
     <CustomBottomModalSheet {...modalProps}>
       {header}
-      <FlashList
+      <BottomSheetFlashList
         data={data}
         renderItem={renderItem}
         keyExtractor={keyExtractor}
         contentContainerStyle={{ paddingTop, paddingBottom: 12 + insets.bottom }}
         showsVerticalScrollIndicator={false}
+        {...(estimatedItemSize ? { estimatedItemSize } : {})}
       />
       {footer}
     </CustomBottomModalSheet>

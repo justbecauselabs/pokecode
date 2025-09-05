@@ -2,6 +2,7 @@ import type { BottomSheetBackdropProps } from '@gorhom/bottom-sheet';
 import { BottomSheetBackdrop, BottomSheetModal } from '@gorhom/bottom-sheet';
 import type React from 'react';
 import { forwardRef, useMemo } from 'react';
+import { useWindowDimensions } from 'react-native';
 import { backgroundColors } from '@/utils/styleUtils';
 
 interface CustomBottomModalSheetProps {
@@ -17,6 +18,8 @@ export const CustomBottomModalSheet = forwardRef<BottomSheetModal, CustomBottomM
     { children, onClose, onDismiss, snapPoints, enablePanDownToClose = true },
     ref,
   ) => {
+    const { height: windowHeight } = useWindowDimensions();
+    const maxHeight = Math.floor(windowHeight * 0.9);
     const effectiveSnapPoints = useMemo(() => snapPoints, [snapPoints]);
 
     const dismissHandler = onDismiss || onClose;
@@ -36,6 +39,7 @@ export const CustomBottomModalSheet = forwardRef<BottomSheetModal, CustomBottomM
         ref={ref}
         {...(effectiveSnapPoints ? { snapPoints: effectiveSnapPoints } : {})}
         enableDynamicSizing
+        maxDynamicContentSize={maxHeight}
         enablePanDownToClose={enablePanDownToClose}
         onDismiss={dismissHandler}
         backdropComponent={renderBackdrop}
@@ -54,4 +58,3 @@ export const CustomBottomModalSheet = forwardRef<BottomSheetModal, CustomBottomM
 );
 
 CustomBottomModalSheet.displayName = 'CustomBottomModalSheet';
-
