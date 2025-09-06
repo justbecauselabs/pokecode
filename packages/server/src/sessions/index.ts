@@ -197,6 +197,9 @@ const sessionRoutes: FastifyPluginAsync = async (fastify) => {
 
   // Register agent routes
   fastify.register(import('./agents'), { prefix: '/:sessionId/agents' });
+
+  // Register git routes
+  fastify.register(import('./git'), { prefix: '/:sessionId/git' });
 };
 
 export default sessionRoutes;

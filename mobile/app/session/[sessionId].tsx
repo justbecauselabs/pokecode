@@ -1,7 +1,7 @@
 import type { BottomSheetModal } from '@gorhom/bottom-sheet';
 import type { AssistantMessageToolResult } from '@pokecode/api';
 import { CLAUDE_MODELS, type ClaudeModel } from '@pokecode/api';
-import { Stack, useLocalSearchParams } from 'expo-router';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
 import { Keyboard, KeyboardAvoidingView, Platform, Text, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -22,6 +22,7 @@ import { useDefaultModel } from '../../src/stores/settingsStore';
 import type { Message } from '../../src/types/messages';
 
 export default function SessionDetailScreen() {
+  const router = useRouter();
   const { sessionId } = useLocalSearchParams<{ sessionId: string }>();
 
   const {
@@ -200,6 +201,16 @@ export default function SessionDetailScreen() {
       <Stack.Screen
         options={{
           title: messageSession?.name || 'Session',
+          headerRight: () => (
+            <Text
+              className="text-primary font-mono"
+              onPress={() =>
+                router.push({ pathname: '/session/[sessionId]/git-changes', params: { sessionId } })
+              }
+            >
+              Diff
+            </Text>
+          ),
           headerTitleStyle: {
             fontWeight: '600',
             color: '#abb2bf', // Using design token equivalent of text-foreground

@@ -1,5 +1,5 @@
 import { Feather } from '@expo/vector-icons';
-import { type ClaudeModel } from '@pokecode/api';
+import type { ClaudeModel } from '@pokecode/api';
 import { forwardRef, useImperativeHandle, useRef, useState } from 'react';
 import { Alert, Keyboard, Text, type TextInput, TouchableOpacity, View } from 'react-native';
 import type { SessionInfo } from '@/types/messages';
@@ -33,7 +33,6 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>((prop
     onShowAgents,
     onShowModels,
     selectedAgents,
-    selectedModel,
     isSending = false,
     isWorking = false,
     isCancelling = false,
@@ -142,36 +141,36 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>((prop
                 Keyboard.dismiss();
                 onShowModels?.();
               }}
-            disabled={disabled || isSending}
-            activeOpacity={0.7}
-            className={disabled || isSending ? 'opacity-50' : ''}
-          >
-            <Feather name="cpu" size={18} color="#9da5b4" />
-          </TouchableOpacity>
+              disabled={disabled || isSending}
+              activeOpacity={0.7}
+              className={disabled || isSending ? 'opacity-50' : ''}
+            >
+              <Feather name="cpu" size={18} color="#9da5b4" />
+            </TouchableOpacity>
 
-          <TouchableOpacity
-            onPress={() => {
-              Keyboard.dismiss();
-              onShowSlashCommands?.();
-            }}
-            disabled={disabled || isSending}
-            activeOpacity={0.7}
-            className={disabled || isSending ? 'opacity-50' : ''}
-          >
-            <Feather name="hash" size={18} color="#9da5b4" />
-          </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => {
+                Keyboard.dismiss();
+                onShowSlashCommands?.();
+              }}
+              disabled={disabled || isSending}
+              activeOpacity={0.7}
+              className={disabled || isSending ? 'opacity-50' : ''}
+            >
+              <Feather name="hash" size={18} color="#9da5b4" />
+            </TouchableOpacity>
 
-          <TouchableOpacity
-            onPress={() => {
-              Keyboard.dismiss();
-              onShowAgents?.();
-            }}
-            disabled={disabled || isSending}
-            activeOpacity={0.7}
-            className={disabled || isSending ? 'opacity-50' : ''}
-          >
-            <Feather name="users" size={18} color="#9da5b4" />
-          </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => {
+                Keyboard.dismiss();
+                onShowAgents?.();
+              }}
+              disabled={disabled || isSending}
+              activeOpacity={0.7}
+              className={disabled || isSending ? 'opacity-50' : ''}
+            >
+              <Feather name="users" size={18} color="#9da5b4" />
+            </TouchableOpacity>
           </View>
 
           {/* Send/Stop Button */}

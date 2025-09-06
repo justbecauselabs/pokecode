@@ -1,5 +1,5 @@
 import type { BottomSheetModal } from '@gorhom/bottom-sheet';
- 
+
 import { forwardRef, useEffect, useRef } from 'react';
 import { Text, View } from 'react-native';
 import type { Message } from '../../types/messages';
@@ -14,7 +14,6 @@ interface MessageDebugBottomSheetProps {
 export const MessageDebugBottomSheet = forwardRef<BottomSheetModal, MessageDebugBottomSheetProps>(
   ({ message, isVisible, onClose }, _ref) => {
     const bottomSheetRef = useRef<BottomSheetModal>(null);
-
 
     // Control bottom sheet visibility
     useEffect(() => {

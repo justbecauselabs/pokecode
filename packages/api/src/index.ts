@@ -9,6 +9,9 @@ export * as CommandSchemas from './schemas/command.schema';
 // Directory schemas
 export * from './schemas/directory.schema';
 export * as DirectorySchemas from './schemas/directory.schema';
+// Git schemas
+export * from './schemas/git.schema';
+export * as GitSchemas from './schemas/git.schema';
 // Health schemas
 export * from './schemas/health.schema';
 export * as HealthSchemas from './schemas/health.schema';

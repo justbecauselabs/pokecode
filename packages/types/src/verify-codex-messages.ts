@@ -11,44 +11,27 @@ async function main(): Promise<void> {
 
   const file = Bun.file(filePath);
   if (!(await file.exists())) {
-    console.error(`[FAIL] File not found: ${filePath}`);
-    Bun.exit(1);
-    return;
+    throw new Error(`File not found: ${filePath}`);
   }
 
   const content = await file.text();
   const lines = content.split(/\r?\n/);
 
-  let total = 0;
-  let parsed = 0;
-
   for (let i = 0; i < lines.length; i++) {
     const raw = lines[i];
     if (!raw || raw.trim().length === 0) continue;
-    total++;
     let obj: unknown;
     try {
       obj = parseJson(raw);
     } catch (e) {
-      console.error(`[FAIL] Line ${i + 1}: invalid JSON`);
-      console.error(raw);
-      console.error(e instanceof Error ? e.message : String(e));
-      Bun.exit(1);
-      return;
+      const detail = e instanceof Error ? e.message : String(e);
+      throw new Error(`Invalid JSON at line ${i + 1}: ${detail}`);
     }
     const result = CodexSDKOrEnvelopeSchema.safeParse(obj);
     if (!result.success) {
-      console.error(`[FAIL] Line ${i + 1}: schema validation failed`);
-      console.error(JSON.stringify(result.error.issues, null, 2));
-      console.error('Object:');
-      console.error(JSON.stringify(obj, null, 2));
-      process.exit(1);
-      return;
+      throw new Error(`Schema validation failed at line ${i + 1}`);
     }
-    parsed++;
   }
-
-  console.log(`[OK] Parsed ${parsed}/${total} JSONL lines from ${filePath}`);
 }
 
 await main();

@@ -1,5 +1,5 @@
 import type { BottomSheetModal } from '@gorhom/bottom-sheet';
- 
+
 import type { AssistantMessageToolResult } from '@pokecode/api';
 import { forwardRef } from 'react';
 import { Text, View } from 'react-native';
@@ -17,7 +17,6 @@ interface MessageTaskBottomSheetProps {
 
 export const MessageTaskBottomSheet = forwardRef<BottomSheetModal, MessageTaskBottomSheetProps>(
   ({ agentName, messages, onMessageLongPress, onToolResultPress, onClose }, ref) => {
-
     const renderContent = () => {
       if (messages.length === 0) {
         return (

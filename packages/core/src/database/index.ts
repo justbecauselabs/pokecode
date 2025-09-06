@@ -17,9 +17,9 @@ function resolveMigrationsFolder(): string {
   return url.pathname;
 }
 
-export async function initDatabase(params: { runMigrations?: boolean } = {}): Promise<
-  BunSQLiteDatabase<typeof schema>
-> {
+export async function initDatabase(
+  params: { runMigrations?: boolean } = {},
+): Promise<BunSQLiteDatabase<typeof schema>> {
   if (!db) {
     try {
       mkdirSync(path.dirname(DATABASE_PATH), { recursive: true });

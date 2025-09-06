@@ -15,6 +15,18 @@ import {
   CreateSessionRequestSchema,
   type GetMessagesResponse,
   GetMessagesResponseSchema,
+  type GitDiffQuery,
+  GitDiffQuerySchema,
+  type GitDiffResponse,
+  GitDiffResponseSchema,
+  type GitFileQuery,
+  GitFileQuerySchema,
+  type GitFileResponse,
+  GitFileResponseSchema,
+  type GitStatusQuery,
+  GitStatusQuerySchema,
+  type GitStatusResponse,
+  GitStatusResponseSchema,
   type ListSessionsQuery,
   ListSessionsQuerySchema,
   type ListSessionsResponse,
@@ -343,6 +355,46 @@ class APIClient {
     });
   }
 
+  // Git endpoints
+  async getGitStatus(params: {
+    sessionId: string;
+    query?: GitStatusQuery;
+  }): Promise<GitStatusResponse> {
+    const validatedParams = SessionIdParamsSchema.parse({ sessionId: params.sessionId });
+    const validatedQuery = params.query ? GitStatusQuerySchema.parse(params.query) : undefined;
+
+    return this.request({
+      path: '/api/sessions/{sessionId}/git/status',
+      pathParams: validatedParams,
+      options: { query: validatedQuery },
+      responseSchema: GitStatusResponseSchema,
+    });
+  }
+
+  async getGitDiff(params: { sessionId: string; query: GitDiffQuery }): Promise<GitDiffResponse> {
+    const validatedParams = SessionIdParamsSchema.parse({ sessionId: params.sessionId });
+    const validatedQuery = GitDiffQuerySchema.parse(params.query);
+
+    return this.request({
+      path: '/api/sessions/{sessionId}/git/diff',
+      pathParams: validatedParams,
+      options: { query: validatedQuery },
+      responseSchema: GitDiffResponseSchema,
+    });
+  }
+
+  async getGitFile(params: { sessionId: string; query: GitFileQuery }): Promise<GitFileResponse> {
+    const validatedParams = SessionIdParamsSchema.parse({ sessionId: params.sessionId });
+    const validatedQuery = GitFileQuerySchema.parse(params.query);
+
+    return this.request({
+      path: '/api/sessions/{sessionId}/git/file',
+      pathParams: validatedParams,
+      options: { query: validatedQuery },
+      responseSchema: GitFileResponseSchema,
+    });
+  }
+
   async createSession(data?: CreateSessionRequest): Promise<Session> {
     // Validate request body if provided
     const validatedData = data ? CreateSessionRequestSchema.parse(data) : undefined;
@@ -573,4 +625,11 @@ export type {
   FileContent,
   FileOperationResponse,
   DeleteResponse,
+  // Git types
+  GitStatusQuery,
+  GitStatusResponse,
+  GitDiffQuery,
+  GitDiffResponse,
+  GitFileQuery,
+  GitFileResponse,
 };

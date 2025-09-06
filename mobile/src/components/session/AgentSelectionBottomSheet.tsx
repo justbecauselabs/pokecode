@@ -1,6 +1,6 @@
 import { Feather } from '@expo/vector-icons';
 import type { BottomSheetModal } from '@gorhom/bottom-sheet';
- 
+
 import type { Agent } from '@pokecode/api';
 import { forwardRef, useMemo } from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
@@ -19,7 +19,6 @@ export const AgentSelectionBottomSheet = forwardRef<
   BottomSheetModal,
   AgentSelectionBottomSheetProps
 >(({ agents, selectedAgents, isLoading, error, onToggleAgent, onClose }, ref) => {
-
   const handleAgentToggle = (agentName: string) => {
     onToggleAgent({ agentName });
   };

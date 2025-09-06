@@ -1,5 +1,5 @@
-import { BottomSheetView } from '@gorhom/bottom-sheet';
 import type { BottomSheetModal } from '@gorhom/bottom-sheet';
+import { BottomSheetView } from '@gorhom/bottom-sheet';
 import type React from 'react';
 import { forwardRef } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';

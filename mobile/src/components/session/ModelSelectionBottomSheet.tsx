@@ -1,6 +1,6 @@
 import { Feather } from '@expo/vector-icons';
 import type { BottomSheetModal } from '@gorhom/bottom-sheet';
- 
+
 import type { ClaudeModel } from '@pokecode/api';
 import { getModelDisplayName } from '@pokecode/api';
 import { forwardRef } from 'react';
@@ -20,7 +20,6 @@ export const ModelSelectionBottomSheet = forwardRef<
   BottomSheetModal,
   ModelSelectionBottomSheetProps
 >(({ models, selectedModel, isLoading, error, onSelectModel, onClose }, ref) => {
-
   const handleModelSelect = (modelId: string) => {
     onSelectModel({ modelId });
   };

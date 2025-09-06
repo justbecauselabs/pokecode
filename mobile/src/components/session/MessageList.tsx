@@ -65,15 +65,20 @@ export const MessageList: React.FC<MessageListProps> = ({
     const toolResultsDict: Record<string, AssistantMessageToolResult> = {};
     const taskMessagesDict: Record<string, Message[]> = {};
     const toolIds: string[] = [];
-    const isAssistantToolResult = (data: unknown): data is { type: 'tool_result'; data: AssistantMessageToolResult } => {
+    const isAssistantToolResult = (
+      data: unknown,
+    ): data is { type: 'tool_result'; data: AssistantMessageToolResult } => {
       if (!data || typeof data !== 'object' || !('type' in data)) return false;
       const maybe = data as { type?: unknown; data?: unknown };
-      if (maybe.type !== 'tool_result' || !maybe.data || typeof maybe.data !== 'object') return false;
+      if (maybe.type !== 'tool_result' || !maybe.data || typeof maybe.data !== 'object')
+        return false;
       const res = maybe.data as { toolUseId?: unknown; content?: unknown };
       return typeof res.toolUseId === 'string' && typeof res.content === 'string';
     };
 
-    const isAssistantToolUse = (data: unknown): data is { type: 'tool_use'; data: { toolId: string } } => {
+    const isAssistantToolUse = (
+      data: unknown,
+    ): data is { type: 'tool_use'; data: { toolId: string } } => {
       if (!data || typeof data !== 'object' || !('type' in data)) return false;
       const maybe = data as { type?: unknown; data?: unknown };
       if (maybe.type !== 'tool_use' || !maybe.data || typeof maybe.data !== 'object') return false;

@@ -15,7 +15,7 @@ export const FileExplorerFilterBottomSheet = forwardRef<
   FileExplorerFilterBottomSheetProps
 >(({ showHidden, onToggleShowHidden, onClose }, ref) => {
   return (
-    <CustomBottomSheet ref={ref} onClose={onClose} snapPoints={["30%"]}>
+    <CustomBottomSheet ref={ref} onClose={onClose} snapPoints={['30%']}>
       <View className="px-4">
         <View className="py-3 border-b border-border mb-2">
           <Text className="text-lg font-semibold text-center text-foreground font-mono">
@@ -38,4 +38,3 @@ export const FileExplorerFilterBottomSheet = forwardRef<
 });
 
 FileExplorerFilterBottomSheet.displayName = 'FileExplorerFilterBottomSheet';
-

@@ -62,8 +62,7 @@ const BreadcrumbPath = memo(({ path }: { path?: string }) => {
 
 export const FileExplorer = memo(({ initialPath, onSelectPath, showHidden }: FileExplorerProps) => {
   const router = useRouter();
-  const { currentPath, directories, isLoading, error, refetch } =
-    useDirectoryBrowser(initialPath);
+  const { currentPath, directories, isLoading, error, refetch } = useDirectoryBrowser(initialPath);
 
   const visibleDirectories = useMemo(() => {
     return directories.filter((dir) => (showHidden ? true : !dir.name.startsWith('.')));

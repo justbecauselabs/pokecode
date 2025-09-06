@@ -1,5 +1,5 @@
 import type { BottomSheetModal as BottomSheetModalType } from '@gorhom/bottom-sheet';
- 
+
 import type { AssistantMessageToolResult } from '@pokecode/api';
 import { forwardRef } from 'react';
 import { Text, View } from 'react-native';
@@ -14,7 +14,6 @@ interface ToolResultBottomSheetProps {
 
 export const ToolResultBottomSheet = forwardRef<BottomSheetModalType, ToolResultBottomSheetProps>(
   ({ result, onClose }, ref) => {
-
     return (
       <CustomScrollableBottomSheet
         ref={ref}

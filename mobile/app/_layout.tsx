@@ -1,9 +1,9 @@
+import { Ionicons } from '@expo/vector-icons';
 import { type BottomSheetModal, BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Stack, useRouter } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useRef } from 'react';
 import { Pressable, Text } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -90,9 +90,6 @@ export default function RootLayout() {
                 },
                 headerTransparent: false,
                 headerTintColor: '#abb2bf', // One Dark Pro foreground
-                // Show only the back arrow (no text) across all screens
-                headerBackTitleVisible: false,
-                headerBackTitle: '',
                 headerBackVisible: false,
                 headerLeft: ({ canGoBack }) => (canGoBack ? <BackButton /> : undefined),
                 headerTitleStyle: {

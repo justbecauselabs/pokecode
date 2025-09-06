@@ -7,12 +7,12 @@ export {
   checkDatabaseHealth,
   closeDatabase,
   db,
+  initDatabase,
   jobQueue,
   schema,
   sessions,
   sqlite,
 } from './database';
-export { initDatabase } from './database';
 // Service exports
 export * from './services/agent.service';
 // Service instances
@@ -27,6 +27,8 @@ export { commandService } from './services/command.service';
 export * from './services/event-bus.service';
 // Event bus exports
 export { emitSessionDone, messageEvents } from './services/event-bus.service';
+export * from './services/git.service';
+export { gitService } from './services/git.service';
 export * from './services/message.service';
 export { messageService } from './services/message.service';
 export * from './services/queue-sqlite.service';

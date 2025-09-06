@@ -14,10 +14,7 @@ interface CustomBottomModalSheetProps {
 }
 
 export const CustomBottomModalSheet = forwardRef<BottomSheetModal, CustomBottomModalSheetProps>(
-  (
-    { children, onClose, onDismiss, snapPoints, enablePanDownToClose = true },
-    ref,
-  ) => {
+  ({ children, onClose, onDismiss, snapPoints, enablePanDownToClose = true }, ref) => {
     const { height: windowHeight } = useWindowDimensions();
     const maxHeight = Math.floor(windowHeight * 0.9);
     const effectiveSnapPoints = useMemo(() => snapPoints, [snapPoints]);

@@ -1,5 +1,5 @@
 import type { BottomSheetModal } from '@gorhom/bottom-sheet';
- 
+
 import { forwardRef, useMemo } from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
 import { CustomScrollableBottomSheet } from '../common';
@@ -119,26 +119,26 @@ export const SlashCommandBottomSheet = forwardRef<BottomSheetModal, SlashCommand
       );
     };
 
-  return (
-    <CustomScrollableBottomSheet
-      ref={ref}
-      onClose={onClose}
-      header={
-        <View className="px-4">
-          <View className="py-3 border-b border-border mb-3">
-            <Text className="text-lg font-semibold text-center text-foreground font-mono">
-              Slash Commands
-            </Text>
-            <Text className="text-sm text-center text-muted-foreground mt-1 font-mono">
-              Select a command to insert
-            </Text>
+    return (
+      <CustomScrollableBottomSheet
+        ref={ref}
+        onClose={onClose}
+        header={
+          <View className="px-4">
+            <View className="py-3 border-b border-border mb-3">
+              <Text className="text-lg font-semibold text-center text-foreground font-mono">
+                Slash Commands
+              </Text>
+              <Text className="text-sm text-center text-muted-foreground mt-1 font-mono">
+                Select a command to insert
+              </Text>
+            </View>
           </View>
-        </View>
-      }
-    >
-      <View className="px-4">{renderContent()}</View>
-    </CustomScrollableBottomSheet>
-  );
+        }
+      >
+        <View className="px-4">{renderContent()}</View>
+      </CustomScrollableBottomSheet>
+    );
   },
 );
 

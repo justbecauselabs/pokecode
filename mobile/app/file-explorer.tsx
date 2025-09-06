@@ -3,10 +3,10 @@ import type { BottomSheetModal } from '@gorhom/bottom-sheet';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
 import { Alert, Pressable } from 'react-native';
+import { SafeAreaView } from '@/components/common';
 import { FileExplorer } from '@/components/session/FileExplorer';
 import { FileExplorerFilterBottomSheet } from '@/components/session/FileExplorerFilterBottomSheet';
 import { useCreateSession } from '@/hooks/useCreateSession';
-import { SafeAreaView } from '@/components/common';
 
 export default function FileExplorerScreen() {
   const router = useRouter();
