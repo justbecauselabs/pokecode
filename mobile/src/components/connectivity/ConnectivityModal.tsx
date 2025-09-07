@@ -3,7 +3,6 @@ import { Ionicons } from '@expo/vector-icons';
 
 type Props = {
   visible: boolean;
-  onDismiss: () => void;
   onOpenSettings?: () => void;
 };
 
@@ -14,6 +13,7 @@ export function ConnectivityModal(props: Props) {
       animationType="slide"
       transparent={false}
       presentationStyle="fullScreen"
+      onRequestClose={() => {}}
     >
       <View className="flex-1 bg-background px-6 py-10">
         <View className="flex-1 items-center justify-center">
@@ -38,14 +38,6 @@ export function ConnectivityModal(props: Props) {
               <Text className="text-primary-foreground text-base font-semibold">Open Backend Settings</Text>
             </Pressable>
           ) : null}
-
-          <Pressable
-            accessibilityRole="button"
-            onPress={props.onDismiss}
-            className="w-full items-center justify-center rounded-md bg-card py-3 border border-border"
-          >
-            <Text className="text-foreground text-base">Dismiss</Text>
-          </Pressable>
         </View>
       </View>
     </Modal>
