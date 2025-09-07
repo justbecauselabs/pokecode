@@ -1,7 +1,12 @@
 import { FlashList } from '@shopify/flash-list';
 import { type Change, diffWordsWithSpace } from 'diff';
 import { useMemo } from 'react';
-import { ScrollView, Text, useWindowDimensions, View } from 'react-native';
+import { ScrollView, Text, useWindowDimensions, View, StyleSheet } from 'react-native';
+
+const ADDED_FG = '#d1f2e0';
+const ADDED_BG = '#1b5e3a';
+const REMOVED_FG = '#ffd6d6';
+const REMOVED_BG = '#6b2222';
 
 type RowKind = 'hunk' | 'context' | 'add' | 'del';
 type DiffRow = {
@@ -158,8 +163,6 @@ export function DiffViewer(params: { diffText: string; path?: string }) {
           const row = item as DisplayRow;
           const rowBg = row.kind === 'add' ? '#0c3b2a' : row.kind === 'del' ? '#4a1f1f' : '#2c313a';
           const rowFg = row.kind === 'add' ? '#c9f4d1' : row.kind === 'del' ? '#ffd1d1' : '#d7dae0';
-          const inlineAddBg = '#1b5e3a';
-          const inlineDelBg = '#6b2222';
           const lineNoBg = '#2a2f38';
           const lineNoFg = '#8b949e';
           return (
@@ -186,14 +189,11 @@ export function DiffViewer(params: { diffText: string; path?: string }) {
                 {row.tokens.map((t, idx) => (
                   <Text
                     key={`${row.key}-${idx}-${t.added ? 'a' : t.removed ? 'd' : 'c'}`}
-                    style={{
-                      backgroundColor: t.added
-                        ? inlineAddBg
-                        : t.removed
-                          ? inlineDelBg
-                          : 'transparent',
-                      color: t.added ? '#d1f2e0' : t.removed ? '#ffd6d6' : rowFg,
-                    }}
+                    style={[
+                      t.added ? styles.tokenAdded : t.removed ? styles.tokenRemoved : null,
+                      !t.added && !t.removed ? { color: rowFg } : null,
+                      t.added ? null : t.removed ? null : undefined,
+                    ]}
                   >
                     {t.value}
                   </Text>
@@ -208,3 +208,14 @@ export function DiffViewer(params: { diffText: string; path?: string }) {
 }
 
 export type { DiffRow };
+
+const styles = StyleSheet.create({
+  tokenAdded: {
+    backgroundColor: ADDED_BG,
+    color: ADDED_FG,
+  },
+  tokenRemoved: {
+    backgroundColor: REMOVED_BG,
+    color: REMOVED_FG,
+  },
+});

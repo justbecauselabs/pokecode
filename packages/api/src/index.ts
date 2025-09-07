@@ -6,6 +6,9 @@ export * as AgentSchemas from './schemas/agent.schema';
 // Command schemas
 export * from './schemas/command.schema';
 export * as CommandSchemas from './schemas/command.schema';
+// Device/connect schemas
+export * from './schemas/device.schema';
+export * as DeviceSchemas from './schemas/device.schema';
 // Directory schemas
 export * from './schemas/directory.schema';
 export * as DirectorySchemas from './schemas/directory.schema';

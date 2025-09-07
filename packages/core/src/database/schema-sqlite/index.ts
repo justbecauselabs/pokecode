@@ -1,3 +1,5 @@
+export * from './devices';
+export { devices } from './devices';
 export * from './job_queue';
 // Re-export individual tables for the schema object
 export { jobQueue } from './job_queue';

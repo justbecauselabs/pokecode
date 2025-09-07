@@ -91,10 +91,12 @@ export async function startServer(): Promise<void> {
 
   await server.listen({ port: config.port, host: config.host });
 
-  console.log(`🚀 PokéCode server running at http://${config.host}:${config.port}`);
-  console.log(`📝 Logs: ${config.logFile}`);
-  console.log(`📊 Log level: ${config.logLevel}`);
-  console.log(`🔍 Claude Code path: ${config.claudeCodePath}`);
+  if (process.env.POKECODE_TUI_ACTIVE !== '1') {
+    console.log(`🚀 PokéCode server running at http://${config.host}:${config.port}`);
+    console.log(`📝 Logs: ${config.logFile}`);
+    console.log(`📊 Log level: ${config.logLevel}`);
+    console.log(`🔍 Claude Code path: ${config.claudeCodePath}`);
+  }
 
   // Start worker after server is listening
   console.log('🔍 Starting worker after server startup...');

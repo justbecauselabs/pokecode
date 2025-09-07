@@ -43,6 +43,7 @@ export const createApp: FastifyPluginAsync = async (fastify) => {
   await fastify.register(repositoryRoutes, { prefix: '/api/repositories' });
   await fastify.register(directoryRoutes, { prefix: '/api/directories' });
   await fastify.register(sessionRoutes, { prefix: '/api/sessions' });
+  await fastify.register(import('./connect'), { prefix: '/api/connect' });
 
   // Health check database connection (worker started separately by CLI)
   fastify.addHook('onReady', async () => {

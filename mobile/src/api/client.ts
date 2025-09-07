@@ -7,6 +7,8 @@
 
 // Import schemas
 import {
+  ConnectRequestSchema,
+  ConnectResponseSchema,
   CreateMessageBodySchema,
   type CreateMessageRequest,
   type CreateMessageResponse,
@@ -313,6 +315,27 @@ class APIClient {
         `Invalid response: ${parseError instanceof Error ? parseError.message : String(parseError)}`,
       );
     }
+  }
+
+  // Connectivity endpoint
+  async connect(params: {
+    deviceId: string;
+    deviceName: string;
+    platform?: 'ios' | 'android';
+    appVersion?: string;
+  }): Promise<import('@pokecode/api').ConnectResponse> {
+    const validated = ConnectRequestSchema.parse({
+      device_id: params.deviceId,
+      device_name: params.deviceName,
+      platform: params.platform,
+      app_version: params.appVersion,
+    });
+
+    return this.request({
+      path: '/api/connect',
+      options: { method: 'POST', body: validated },
+      responseSchema: ConnectResponseSchema,
+    });
   }
 
   // Health endpoints

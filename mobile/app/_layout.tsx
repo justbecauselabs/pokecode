@@ -4,11 +4,14 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Stack, useRouter } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect, useRef } from 'react';
-import { Pressable, Text } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Platform, Pressable, Text } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { ErrorBoundary } from '@/components/common';
+import { ConnectivityModal } from '@/components/connectivity/ConnectivityModal';
 import { SessionOptionsBottomSheet } from '@/components/session/SessionOptionsBottomSheet';
+import { useDeviceIdentity } from '@/device/identity';
+import { useConnectivityPoller } from '@/hooks/useConnectivityPoller';
 
 // @ts-expect-error - global.css is not a module
 import '../global.css';
@@ -72,6 +75,21 @@ function BackButton() {
 }
 
 export default function RootLayout() {
+  const router = useRouter();
+  const [dismissed, setDismissed] = useState<boolean>(false);
+  const identity = useDeviceIdentity();
+  const poll = useConnectivityPoller({
+    deviceId: identity.deviceId,
+    deviceName: identity.deviceName,
+    platform: Platform.OS as 'ios' | 'android',
+    initialIntervalMs: 5000,
+    failureThreshold: 2,
+  });
+
+  useEffect(() => {
+    if (poll.isConnected) setDismissed(false);
+  }, [poll.isConnected]);
+
   useEffect(() => {
     // Hide splash screen after app loads
     SplashScreen.hideAsync();
@@ -83,6 +101,11 @@ export default function RootLayout() {
       <QueryClientProvider client={queryClient}>
         <GestureHandlerRootView className="flex-1 bg-background">
           <BottomSheetModalProvider>
+            <ConnectivityModal
+              visible={poll.showServerNeededModal && !dismissed}
+              onDismiss={() => setDismissed(true)}
+              onOpenSettings={() => router.push('/settings/backend-url')}
+            />
             <Stack
               screenOptions={{
                 headerStyle: {

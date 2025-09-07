@@ -9,3 +9,4 @@ export { status } from './commands/status';
 export { stop } from './commands/stop';
 export { DaemonManager } from './utils/daemon';
 export { spawnDetached } from './utils/runtime';
+export { runDashboard } from './tui';

@@ -24,6 +24,8 @@ export * from './services/codex-runner';
 export { CodexRunner } from './services/codex-runner';
 export * from './services/command.service';
 export { commandService } from './services/command.service';
+export * from './services/device.service';
+export { deviceService } from './services/device.service';
 export * from './services/event-bus.service';
 // Event bus exports
 export { emitSessionDone, messageEvents } from './services/event-bus.service';

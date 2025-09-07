@@ -6,6 +6,7 @@ import { getConfig, overrideConfig } from '@pokecode/core';
 import chalk from 'chalk';
 import ora from 'ora';
 import { startServer } from '../server';
+import { runDashboard } from '../tui';
 import { DaemonManager } from '../utils/daemon';
 import { spawnDetached } from '../utils/runtime';
 
@@ -68,6 +69,8 @@ const validateLogLevel = (level: string): string => {
 export const serve = async (options: ServeOptions): Promise<void> => {
   const daemonManager = new DaemonManager();
 
+  const useTui = process.stdout.isTTY && !options.daemon && process.env.POKECODE_TUI !== '0';
+
   // Validate and sanitize inputs
   const port = validatePort(options.port);
   const host = validateHost(options.host);
@@ -105,7 +108,7 @@ export const serve = async (options: ServeOptions): Promise<void> => {
   if (options.daemon) {
     await startDaemon();
   } else {
-    await startEmbedded();
+    await startEmbedded({ useTui });
   }
 };
 
@@ -172,28 +175,40 @@ const startDaemon = async (): Promise<void> => {
   }
 };
 
-const startEmbedded = async (): Promise<void> => {
+const startEmbedded = async (params: { useTui: boolean }): Promise<void> => {
   const config = await getConfig();
   const spinner = ora('Starting PokéCode server...').start();
 
   try {
+    // Signal to server to minimize noisy startup logs if TUI will take over
+    if (params.useTui) {
+      process.env.POKECODE_TUI_ACTIVE = '1';
+    }
+
     // Use the new unified server module
     await startServer();
 
-    spinner.succeed(chalk.green('✅ PokéCode server started successfully!'));
-    console.log(`🚀 Server running at: ${chalk.cyan(`http://${config.host}:${config.port}`)}`);
-    console.log(`📝 Logs: ${chalk.gray(config.logFile)}`);
-    console.log(`📊 Log level: ${chalk.gray(config.logLevel)}`);
-    console.log(`🔍 Claude Code path: ${chalk.gray(config.claudeCodePath)}`);
-    console.log(`🤖 Codex CLI path: ${chalk.gray(config.codexCliPath ?? 'not configured')}`);
-    if (!config.codexCliPath) {
-      console.log(
-        chalk.yellow(
-          '⚠️  Codex CLI not configured. Codex jobs will fail. Run `pokecode setup` to add it.',
-        ),
-      );
+    if (params.useTui) {
+      spinner.stop();
+      const serverUrl = `http://${config.host}:${config.port}`;
+      runDashboard({ serverUrl, mode: 'foreground' });
+      return; // TUI holds the process open
+    } else {
+      spinner.succeed(chalk.green('✅ PokéCode server started successfully!'));
+      console.log(`🚀 Server running at: ${chalk.cyan(`http://${config.host}:${config.port}`)}`);
+      console.log(`📝 Logs: ${chalk.gray(config.logFile)}`);
+      console.log(`📊 Log level: ${chalk.gray(config.logLevel)}`);
+      console.log(`🔍 Claude Code path: ${chalk.gray(config.claudeCodePath)}`);
+      console.log(`🤖 Codex CLI path: ${chalk.gray(config.codexCliPath ?? 'not configured')}`);
+      if (!config.codexCliPath) {
+        console.log(
+          chalk.yellow(
+            '⚠️  Codex CLI not configured. Codex jobs will fail. Run `pokecode setup` to add it.',
+          ),
+        );
+      }
+      console.log(chalk.yellow('\nPress Ctrl+C to stop the server'));
     }
-    console.log(chalk.yellow('\nPress Ctrl+C to stop the server'));
   } catch (error) {
     spinner.fail(chalk.red('❌ Failed to start PokéCode server'));
     console.error(chalk.red('Error:'), error instanceof Error ? error.message : String(error));
