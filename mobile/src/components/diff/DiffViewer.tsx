@@ -1,7 +1,7 @@
 import { FlashList } from '@shopify/flash-list';
+import { type Change, diffWordsWithSpace } from 'diff';
 import { useMemo } from 'react';
 import { ScrollView, Text, useWindowDimensions, View } from 'react-native';
-import { diffWordsWithSpace, type Change } from 'diff';
 
 type RowKind = 'hunk' | 'context' | 'add' | 'del';
 type DiffRow = {
@@ -75,10 +75,30 @@ function pairAndTokenize(rows: DiffRow[]): Array<DisplayRow | HunkRow> {
       const delText = r.text.slice(1);
       const addText = next.text.slice(1);
       const tokens: Change[] = diffWordsWithSpace(delText, addText);
-      const delTokens: Token[] = tokens.map((t: Change) => ({ value: t.value ?? '', removed: t.removed === true }));
-      const addTokens: Token[] = tokens.map((t: Change) => ({ value: t.value ?? '', added: t.added === true }));
-      out.push({ key: r.key, kind: 'del', oldNo: r.oldNo, newNo: null, sign: '-', tokens: delTokens });
-      out.push({ key: next.key, kind: 'add', oldNo: null, newNo: next.newNo, sign: '+', tokens: addTokens });
+      const delTokens: Token[] = tokens.map((t: Change) => ({
+        value: t.value ?? '',
+        removed: t.removed === true,
+      }));
+      const addTokens: Token[] = tokens.map((t: Change) => ({
+        value: t.value ?? '',
+        added: t.added === true,
+      }));
+      out.push({
+        key: r.key,
+        kind: 'del',
+        oldNo: r.oldNo,
+        newNo: null,
+        sign: '-',
+        tokens: delTokens,
+      });
+      out.push({
+        key: next.key,
+        kind: 'add',
+        oldNo: null,
+        newNo: next.newNo,
+        sign: '+',
+        tokens: addTokens,
+      });
       i += 2;
       continue;
     }
@@ -143,11 +163,20 @@ export function DiffViewer(params: { diffText: string; path?: string }) {
           const lineNoBg = '#2a2f38';
           const lineNoFg = '#8b949e';
           return (
-            <View className="flex-row px-2 py-0.5 items-start" style={{ width: contentWidth, backgroundColor: rowBg }}>
-              <Text className={`${base} w-10 text-right pr-2`} style={{ color: lineNoFg, backgroundColor: lineNoBg }}>
+            <View
+              className="flex-row px-2 py-0.5 items-start"
+              style={{ width: contentWidth, backgroundColor: rowBg }}
+            >
+              <Text
+                className={`${base} w-10 text-right pr-2`}
+                style={{ color: lineNoFg, backgroundColor: lineNoBg }}
+              >
                 {row.oldNo ?? ''}
               </Text>
-              <Text className={`${base} w-10 text-right pr-2`} style={{ color: lineNoFg, backgroundColor: lineNoBg }}>
+              <Text
+                className={`${base} w-10 text-right pr-2`}
+                style={{ color: lineNoFg, backgroundColor: lineNoBg }}
+              >
                 {row.newNo ?? ''}
               </Text>
               <Text className={`${base} pr-2`} style={{ color: rowFg }}>
@@ -156,10 +185,13 @@ export function DiffViewer(params: { diffText: string; path?: string }) {
               <Text numberOfLines={1} className={base} style={{ color: rowFg }}>
                 {row.tokens.map((t, idx) => (
                   <Text
-                    // eslint-disable-next-line react/no-array-index-key
-                    key={idx}
+                    key={`${row.key}-${idx}-${t.added ? 'a' : t.removed ? 'd' : 'c'}`}
                     style={{
-                      backgroundColor: t.added ? inlineAddBg : t.removed ? inlineDelBg : 'transparent',
+                      backgroundColor: t.added
+                        ? inlineAddBg
+                        : t.removed
+                          ? inlineDelBg
+                          : 'transparent',
                       color: t.added ? '#d1f2e0' : t.removed ? '#ffd6d6' : rowFg,
                     }}
                   >
