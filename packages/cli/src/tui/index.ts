@@ -227,14 +227,19 @@ export function runDashboard(params: { serverUrl: string; mode: Mode }): void {
   };
 
   let closed = false;
+  // Cache the last rendered frame to avoid unnecessary redraws
+  let prevFrame: string | null = null;
   const redraw = () => {
     if (closed) return;
     const now = Date.now();
-    // modest throttle to avoid excessive flicker
+    // modest throttle to avoid excessive CPU when events burst
     if (now - state.lastRedrawAt < 60) return;
+    const nextFrame = drawFrame({ serverUrl: params.serverUrl, mode: params.mode, state });
+    if (prevFrame === nextFrame) return;
     state.lastRedrawAt = now;
+    prevFrame = nextFrame;
     clear();
-    write(drawFrame({ serverUrl: params.serverUrl, mode: params.mode, state }));
+    write(nextFrame);
   };
 
   const poll = async () => {
