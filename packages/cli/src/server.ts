@@ -1,15 +1,16 @@
 import { getConfig, initDatabase } from '@pokecode/core';
-import { AgentRunnerWorker, createServer, setWorker } from '@pokecode/server';
+import type { AgentRunnerWorker } from '@pokecode/server';
 
 // Store worker reference at module level for cleanup
 let worker: AgentRunnerWorker | null = null;
 
 export async function startServer(options: { quiet?: boolean } = {}): Promise<void> {
-  const { quiet = Boolean(process.env.POKECODE_QUIET) || false } = options;
+  const { quiet = false } = options;
   const config = await getConfig();
   // Ensure database is initialized and migrations are applied before server startup
   await initDatabase({ runMigrations: true });
-  const server = await createServer();
+  const serverModule: typeof import('@pokecode/server') = await import('@pokecode/server');
+  const server = await serverModule.createServer({ prettyConsole: !quiet });
 
   // Signal handling for graceful shutdown
   const handleShutdown = async (signal: string): Promise<void> => {
@@ -106,10 +107,10 @@ export async function startServer(options: { quiet?: boolean } = {}): Promise<vo
   // Start worker after server is listening
   if (!quiet) console.log('🔍 Starting worker after server startup...');
   try {
-    worker = new AgentRunnerWorker();
+    worker = new serverModule.AgentRunnerWorker();
     await worker.start();
     // Store the worker globally so server components can access it
-    setWorker(worker);
+    serverModule.setWorker(worker);
     if (!quiet) console.log('✅ Worker started successfully!');
   } catch (error) {
     if (!quiet) console.error('❌ Failed to start worker:', error);

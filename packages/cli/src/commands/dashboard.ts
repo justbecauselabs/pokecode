@@ -11,8 +11,6 @@ export interface DashboardOptions {
 export async function dashboard(options: DashboardOptions = {}): Promise<void> {
   const spinner = ora('Connecting to PokéCode server...').start();
   try {
-    // Suppress console pretty logs while dashboard is active
-    process.env.POKECODE_TUI = '1';
     const defaultConfig = await getConfig();
     const host = (options.host ?? 'localhost').trim();
     const portStr = options.port ?? String(defaultConfig.port);

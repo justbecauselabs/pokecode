@@ -1,10 +1,9 @@
 /**
  * Serve command implementation with robust daemon support
  */
-import { getConfig, overrideConfig } from '@pokecode/core';
+import { getConfig, overrideConfig, setConsolePrettyEnabled } from '@pokecode/core';
 import chalk from 'chalk';
 import ora from 'ora';
-import { startServer } from '../server';
 
 export interface ServeOptions {
   port: string;
@@ -85,6 +84,8 @@ export const serve = async (options: ServeOptions): Promise<void> => {
     overrideConfig({ codexCliPath: envCodexPath });
   }
 
+  // Configure core logger console output before importing server/worker
+  setConsolePrettyEnabled(!useTui);
   await startEmbedded({ useTui });
 };
 
@@ -93,13 +94,9 @@ const startEmbedded = async (params: { useTui: boolean }): Promise<void> => {
   const spinner = ora('Starting PokéCode server...').start();
 
   try {
-    if (params.useTui) {
-      // Suppress console logging from server when TUI is active
-      process.env.POKECODE_TUI = '1';
-      process.env.POKECODE_QUIET = '1';
-    }
-    // Use the new unified server module
-    await startServer({ quiet: params.useTui });
+    // Import server lazily AFTER logger config is set
+    const serverModule: typeof import('../server') = await import('../server');
+    await serverModule.startServer({ quiet: params.useTui });
 
     if (params.useTui) {
       spinner.stop();
