@@ -5,13 +5,10 @@ import { getConfig, overrideConfig } from '@pokecode/core';
 import chalk from 'chalk';
 import ora from 'ora';
 import { startServer } from '../server';
-import { DaemonManager } from '../utils/daemon';
-import { spawnDetached } from '../utils/runtime';
 
 export interface ServeOptions {
   port: string;
   host: string;
-  daemon?: boolean;
   logLevel: string;
   codexCli?: string;
 }
@@ -65,9 +62,7 @@ const validateLogLevel = (level: string): string => {
 };
 
 export const serve = async (options: ServeOptions): Promise<void> => {
-  const daemonManager = new DaemonManager();
-
-  const useTui = process.stdout.isTTY && !options.daemon;
+  const useTui = process.stdout.isTTY;
 
   // Validate and sanitize inputs
   const port = validatePort(options.port);
@@ -90,89 +85,7 @@ export const serve = async (options: ServeOptions): Promise<void> => {
     overrideConfig({ codexCliPath: envCodexPath });
   }
 
-  // Check if daemon is already running
-  if (await daemonManager.isRunning()) {
-    const info = await daemonManager.getDaemonInfo();
-    console.log(chalk.yellow('⚠️  PokéCode server is already running!'));
-    if (info) {
-      console.log(`   Running on: http://${info.host}:${info.port}`);
-      console.log(`   PID: ${info.pid}`);
-      console.log(`   Started: ${info.startTime}`);
-    }
-    console.log('\nUse "pokecode stop" to stop the server first.');
-    return;
-  }
-
-  if (options.daemon) {
-    await startDaemon();
-  } else {
-    await startEmbedded({ useTui });
-  }
-};
-
-const startDaemon = async (): Promise<void> => {
-  const config = await getConfig();
-  const spinner = ora('Starting PokéCode server in daemon mode...').start();
-  const daemonManager = new DaemonManager();
-
-  try {
-    const env: Record<string, string> = {
-      NODE_ENV: 'production',
-      POKECODE_DAEMON: '1',
-      POKECODE_QUIET: '1',
-    };
-
-    // Re-exec the current process (handle both dev and compiled modes)
-    let execPath: string;
-    let execArgs: string[];
-
-    // Check if we're running from a compiled binary or development mode
-    if (process.argv[1]?.endsWith('.ts')) {
-      // Development mode: bun src/cli.ts
-      execPath = process.execPath; // bun executable
-      execArgs = [process.argv[1], '--internal-run-server']; // [src/cli.ts, --internal-run-server]
-    } else {
-      // Compiled binary mode
-      execPath = process.execPath; // compiled binary path
-      execArgs = ['--internal-run-server'];
-    }
-
-    const child = spawnDetached(execPath, execArgs, {
-      env: Object.fromEntries(
-        Object.entries({ ...process.env, ...env }).filter(([, value]) => value !== undefined),
-      ) as Record<string, string>,
-      stdout: 'ignore',
-      stderr: 'ignore',
-    });
-
-    if (!child.pid) throw new Error('Failed to start daemon process');
-
-    await daemonManager.saveDaemonInfo({
-      pid: child.pid,
-      port: config.port,
-      host: config.host,
-      startTime: new Date().toISOString(),
-    });
-
-    spinner.succeed(chalk.green('✅ PokéCode server started in daemon mode!'));
-    console.log(`🚀 Server running at: ${chalk.cyan(`http://${config.host}:${config.port}`)}`);
-    console.log(`📝 Logs: ${chalk.gray(config.logFile)}`);
-    console.log(`🆔 PID: ${chalk.gray(child.pid)}`);
-    console.log('\nUse the following commands:');
-    console.log(`  ${chalk.cyan('pokecode status')} - Check server status`);
-    console.log(`  ${chalk.cyan('pokecode logs -f')} - Follow logs`);
-    console.log(`  ${chalk.cyan('pokecode stop')} - Stop the server`);
-
-    // Parent exits immediately to detach
-    process.exit(0);
-  } catch (error) {
-    spinner.fail(chalk.red('❌ Failed to start PokéCode server'));
-    console.error(chalk.red('Error:'), error instanceof Error ? error.message : String(error));
-
-    // Clean up on failure
-    await daemonManager.cleanup();
-    process.exit(1);
-  }
+  await startEmbedded({ useTui });
 };
 
 const startEmbedded = async (params: { useTui: boolean }): Promise<void> => {

@@ -31,7 +31,6 @@ if (process.argv.includes('--internal-run-server')) {
     .option('-p, --port <port>', 'Server port', '3001')
     .option('-h, --host <host>', 'Server host', '0.0.0.0')
     .option('--codex-cli <path>', 'Override Codex CLI path for this run')
-    .option('-d, --daemon', 'Run as daemon in background')
     .option('--data-dir <dir>', 'Data directory path')
     .option('--log-level <level>', 'Log level (trace, debug, info, warn, error)', 'info')
     .option('--no-cors', 'Disable CORS')

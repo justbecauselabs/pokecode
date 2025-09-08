@@ -39,7 +39,7 @@
     "build:types": "tsc --emitDeclarationOnly --outDir dist",
     "dev": "bun build src/index.ts --outdir dist --target bun --format esm --watch",
     "lint": "bunx @biomejs/biome check .",
-    "start": "bun run dist/index.js",
+    "start": "bun run src/entry.ts",
     "test": "bun test",
     "typecheck": "tsc --noEmit"
   },
