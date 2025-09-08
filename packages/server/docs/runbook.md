@@ -7,13 +7,11 @@ Operational guidance for running `@pokecode/server` in development or on a singl
 - Bun installed
 - `~/.pokecode/config.json` present with a valid `claudeCodePath` (use `pokecode setup`)
 
-## Start/Stop
+## Start
 
-- Foreground: `pokecode serve`
-- Daemon: `pokecode serve --daemon`
-- Status: `pokecode status`
-- Logs: `pokecode logs -f`
-- Stop: `pokecode stop` (or `--force`)
+- TUI (recommended): `pokecode serve`
+- Direct server (stdout logs): `bun run dev:server`
+- Logs (file): `pokecode logs -f`
 
 ## Health
 
@@ -59,4 +57,3 @@ Operational guidance for running `@pokecode/server` in development or on a singl
 
 - Job queue is SQLite‑backed; avoid running multiple separate server+worker stacks against the same DB file unless you fully understand the concurrency trade‑offs.
 - CLI log redaction minimizes sensitive fields in request logging, but audit before exposing to the internet; there is no auth built‑in.
-

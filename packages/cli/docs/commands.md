@@ -4,37 +4,23 @@ Reference for the `pokecode` CLI.
 
 ## serve
 
-Start the API server (and worker) in the foreground or as a daemon.
+Start the API server (and worker) with an interactive TUI.
 
 - `-p, --port <port>`: server port (default `3001`, must be 1024–65535)
 - `-h, --host <host>`: `localhost`, `127.0.0.1`, `0.0.0.0`, or IPv4 (default `0.0.0.0`)
-- `-d, --daemon`: run in background; PID and metadata saved under `~/.pokecode`
 - `--log-level <level>`: `trace|debug|info|warn|error` (default `info`)
 
 Examples:
 - `pokecode serve`
-- `pokecode serve --daemon --port 3002 --log-level debug`
+- `pokecode serve --port 3002 --log-level debug`
 
-## status
+## status/stop
 
-Show daemon status if running via `--daemon`. Displays URL, PID, uptime, log path and attempts a `/health` probe.
-
-Examples:
-- `pokecode status`
-
-## stop
-
-Stop a running daemon.
-
-- `--force`: send `SIGKILL` if graceful stop fails
-
-Examples:
-- `pokecode stop`
-- `pokecode stop --force`
+Removed. The server runs in the foreground when using the direct dev script; use Ctrl+C to exit. The TUI mode also exits with `q` or Ctrl+C.
 
 ## logs
 
-Show or follow the daemon log file (`~/.pokecode/pokecode.log`).
+Show or follow the log file (`~/.pokecode/pokecode.log`).
 
 - `-f, --follow`: follow the log (stream)
 - `-n, --lines <number>`: number of lines to show (default `50`)
@@ -54,4 +40,3 @@ Examples:
 
 - Runtime overrides: `serve` flags update port/host/log level via `overrideConfig()`.
 - File config: edit `~/.pokecode/config.json` (see core config reference).
-

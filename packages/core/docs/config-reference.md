@@ -23,8 +23,8 @@ Bun auto‑loads `.env`, but config currently does not read individual env vars,
 - `repositories` (string[]): list of project roots the server can expose
 - `configFile` (string): `~/.pokecode/config.json`
 - `logFile` (string): `~/.pokecode/pokecode.log`
-- `pidFile` (string): `~/.pokecode/pokecode.pid`
-- `daemonFile` (string): `~/.pokecode/daemon.json`
+- `pidFile` (string): deprecated
+- `daemonFile` (string): deprecated
 - Worker
   - `workerConcurrency` (number): 5
   - `workerPollingInterval` (ms): 1000
@@ -53,5 +53,4 @@ Other fields can be overridden at runtime by the CLI `serve` command flags.
 - Server binding (`createServer`) reads `port`, `host`, `logLevel`.
 - Worker (`ClaudeCodeSQLiteWorker`) reads concurrency, polling, and retention settings.
 - DB init (`src/database/index.ts`) reads `databasePath` and enables WAL/PRAGMA.
-- Paths for logs/PID/daemon files affect CLI daemon management and `pokecode logs`.
-
+- Log file path affects `pokecode logs`. PID/daemon files are deprecated.

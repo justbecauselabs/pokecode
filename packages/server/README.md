@@ -14,7 +14,8 @@ Fastify HTTP API with SSE streaming plus a lightweight worker that executes Clau
 
 ## Run (Bun)
 
-- Dev server: `bun run dev`
+- TUI via CLI: `pokecode serve`
+- Direct dev server (stdout logs, runs worker + migrations): `bun run start`
 - Build: `bun run build`
 - Typecheck: `bun run typecheck`
 

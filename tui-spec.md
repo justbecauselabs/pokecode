@@ -16,7 +16,7 @@ Owner: CLI team  • Target: packages/cli  • Trigger: `pokecode serve`
 ## Launch & Modes
 
 - Foreground: `pokecode serve` starts server and takes over terminal with the TUI.
-- Daemon: `pokecode serve --daemon` starts server in background (no TUI). Attach with `pokecode dashboard` (new) or `pokecode serve --attach`.
+- TUI runs in the foreground via `pokecode serve`. You can attach to a running server with `pokecode dashboard`.
 - Non‑TTY: fall back to plain logs/URLs (current behavior).
 
 ## UX Overview
@@ -127,7 +127,7 @@ Open to implement later (nice‑to‑have):
 
 ## CLI Surface Changes
 
-- `pokecode serve [--daemon] [--attach]` — default: TUI in foreground; `--attach` connects to running server.
+- `pokecode serve` — runs TUI in foreground. Use `pokecode dashboard` to attach to an existing server.
 - `pokecode dashboard` — alias for `serve --attach`.
 - `pokecode logs -f` — remains; useful for non‑TTY pipelines.
 
@@ -174,7 +174,7 @@ Open to implement later (nice‑to‑have):
 
 ## Open Questions
 
-- Should `serve --daemon` auto‑launch an attaching dashboard? Current daemon implementation exits immediately; attaching would require a follow‑up process.
+-- No daemon mode. The recommended flow is foreground TUI or direct server for development.
 - Do we need a “session details” modal with message tail and job list? (proposed, later)
 - Minimum terminal size to render all panes? If too small, collapse logs by default.
 

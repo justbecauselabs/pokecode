@@ -22,11 +22,8 @@ npx pokecode --help
 ### Start Server
 
 ```bash
-# Start in foreground (development)
+# Start with TUI (recommended)
 pokecode serve
-
-# Start as daemon (production)
-pokecode serve --daemon
 
 # Custom port and host
 pokecode serve --port 8080 --host localhost
@@ -35,18 +32,9 @@ pokecode serve --port 8080 --host localhost
 pokecode serve --data-dir ~/pokecode-data
 ```
 
-### Daemon Management
+### Logs
 
 ```bash
-# Check server status
-pokecode status
-
-# Stop daemon
-pokecode stop
-
-# Force stop daemon
-pokecode stop --force
-
 # View logs
 pokecode logs
 
@@ -117,12 +105,10 @@ bun run typecheck
 ## Docs
 
 - Commands: docs/commands.md
-- Daemon mode: docs/daemon.md
 
 ## Features
 
 - ✅ **Cross-platform**: Works on Windows, macOS, and Linux
-- ✅ **Daemon mode**: Run server in background with proper process management
 - ✅ **Robust logging**: Structured logging with multiple levels
 - ✅ **Configuration management**: File-based config with environment override
 - ✅ **Health monitoring**: Built-in health checks and status reporting
@@ -135,46 +121,20 @@ The CLI uses a bundled architecture to avoid dependency resolution issues in glo
 
 - **CLI package**: Self-contained with all dependencies bundled
 - **Server entry**: Standalone server process that can be spawned
-- **Daemon management**: Cross-platform process management with PID files
 - **Configuration system**: Hierarchical config loading (file → env → args)
 
 ## Troubleshooting
 
 ### Server won't start
 
-1. Check if another process is using the port:
-   ```bash
-   pokecode status
-   ```
-
-2. Try a different port:
+1. Try a different port:
    ```bash
    pokecode serve --port 3002
    ```
 
-3. Check logs for errors:
+2. Check logs for errors:
    ```bash
    pokecode logs
-   ```
-
-### Daemon management issues
-
-1. Clean up stale processes:
-   ```bash
-   pokecode stop --force
-   ```
-
-2. Check daemon status:
-   ```bash
-   pokecode status
-   ```
-
-3. Manually clean up:
-   ```bash
-   # Remove config directory (will reset everything)
-   rm -rf ~/.config/pokecode  # Unix
-   # or
-   rmdir /s %APPDATA%\pokecode  # Windows
    ```
 
 ## License
