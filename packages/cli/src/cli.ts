@@ -3,8 +3,6 @@ import { program } from 'commander';
 import { logs } from './commands/logs';
 import { serve } from './commands/serve';
 import { setup } from './commands/setup';
-import { status } from './commands/status';
-import { stop } from './commands/stop';
 import { startServer } from './server';
 
 // Handle internal server mode
@@ -37,18 +35,7 @@ if (process.argv.includes('--internal-run-server')) {
     .option('--no-helmet', 'Disable Helmet security headers')
     .action(serve);
 
-  program
-    .command('status')
-    .description('Check server status')
-    .option('-p, --port <port>', 'Server port to check', '3001')
-    .option('-h, --host <host>', 'Server host to check', 'localhost')
-    .action(status);
-
-  program
-    .command('stop')
-    .description('Stop the daemon server')
-    .option('--force', 'Force stop the server')
-    .action(stop);
+  // status/stop removed; server runs in foreground
 
   program
     .command('logs')

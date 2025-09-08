@@ -12,8 +12,7 @@ const defaultLogLevel = 'info';
 const streams: StreamEntry[] = [];
 
 // Add console stream with pretty printing when interactive, not in tests/daemon/TUI
-const enableConsolePretty =
-  !isTest && process.stdout.isTTY && process.env.POKECODE_DAEMON !== '1' && process.env.POKECODE_TUI !== '1';
+const enableConsolePretty = !isTest && process.stdout.isTTY && process.env.POKECODE_TUI !== '1';
 if (enableConsolePretty) {
   streams.push({
     level: defaultLogLevel,

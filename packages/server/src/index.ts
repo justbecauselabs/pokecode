@@ -99,7 +99,7 @@ export const setWorker = (worker: AgentRunnerWorker | null) => {
 
 export async function createServer() {
   const config = await getConfig();
-  const enableConsolePretty = process.stdout.isTTY && process.env.POKECODE_DAEMON !== '1' && process.env.POKECODE_TUI !== '1';
+  const enableConsolePretty = process.stdout.isTTY && process.env.POKECODE_TUI !== '1';
   const targets = [
     ...(enableConsolePretty
       ? ([
