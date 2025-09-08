@@ -13,7 +13,6 @@
     "build:cli": "cd packages/cli && bun run build",
     "dev": "bun run dev:server",
     "dev:server": "cd packages/server && bun run src/entry.ts",
-    "dev:server:direct": "cd packages/server && bun run src/entry.ts",
     "dev:cli": "cd packages/cli && bun run src/cli.ts",
     "lint": "bunx @biomejs/biome check .",
     "lint:fix": "bunx @biomejs/biome check . --write",
