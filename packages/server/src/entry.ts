@@ -7,7 +7,7 @@ async function start(): Promise<void> {
   // Ensure DB is ready (apply migrations) before starting server
   await initDatabase({ runMigrations: true });
 
-  const fastify = await createServer({ prettyConsole: true });
+  const fastify = await createServer();
 
   const shutdown = async (signal: string) => {
     try {

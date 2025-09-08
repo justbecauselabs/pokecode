@@ -47,4 +47,3 @@ export * from './types/provider';
 export * from './utils/file';
 export * from './utils/logger';
 export { createChildLogger, logger } from './utils/logger';
-export * from './utils/logger-control';

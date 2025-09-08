@@ -97,9 +97,9 @@ export const setWorker = (worker: AgentRunnerWorker | null) => {
   globalWorker = worker;
 };
 
-export async function createServer(options?: { prettyConsole?: boolean }) {
+export async function createServer() {
   const config = await getConfig();
-  const enableConsolePretty = options?.prettyConsole ?? Boolean(process.stdout.isTTY);
+  const enableConsolePretty = process.stdout.isTTY && process.env.POKECODE_TUI !== '1';
   const targets = [
     ...(enableConsolePretty
       ? ([

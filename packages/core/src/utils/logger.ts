@@ -3,7 +3,6 @@ import path from 'node:path';
 import pino, { type StreamEntry } from 'pino';
 import pinoPretty from 'pino-pretty';
 import { isTest, LOG_FILE } from '../config';
-import { isConsolePrettyEnabled } from './logger-control';
 
 // Create simple logger with sensible defaults
 // Config file can override log level via server startup
@@ -12,8 +11,8 @@ const defaultLogLevel = 'info';
 // Create streams array for multistream
 const streams: StreamEntry[] = [];
 
-// Add console stream with pretty printing when interactive, not in tests
-const enableConsolePretty = isConsolePrettyEnabled();
+// Add console stream with pretty printing when interactive, not in tests/daemon/TUI
+const enableConsolePretty = !isTest && process.stdout.isTTY && process.env.POKECODE_TUI !== '1';
 if (enableConsolePretty) {
   streams.push({
     level: defaultLogLevel,
