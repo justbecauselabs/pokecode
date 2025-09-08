@@ -103,7 +103,8 @@ const startEmbedded = async (params: { useTui: boolean }): Promise<void> => {
 
     if (params.useTui) {
       spinner.stop();
-      const hostForClient = config.host === '0.0.0.0' || config.host === '::' ? 'localhost' : config.host;
+      const hostForClient =
+        config.host === '0.0.0.0' || config.host === '::' ? 'localhost' : config.host;
       const serverUrl = `http://${hostForClient}:${config.port}`;
       const { runDashboard } = await import('../tui');
       runDashboard({ serverUrl, mode: 'foreground' });

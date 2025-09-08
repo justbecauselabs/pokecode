@@ -1,5 +1,5 @@
 import { getConfig, initDatabase } from '@pokecode/core';
-import { AgentRunnerWorker, createServer, setWorker, getWorker } from './index';
+import { AgentRunnerWorker, createServer, getWorker, setWorker } from './index';
 
 async function start(): Promise<void> {
   const config = await getConfig();

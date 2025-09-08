@@ -1,4 +1,4 @@
-import { desc, gte, sql } from 'drizzle-orm';
+import { sql } from 'drizzle-orm';
 import { db, sqlite } from '../database';
 import { devices } from '../database/schema-sqlite/devices';
 

@@ -1,7 +1,7 @@
 import { FlashList } from '@shopify/flash-list';
 import { type Change, diffWordsWithSpace } from 'diff';
 import { useMemo } from 'react';
-import { ScrollView, Text, useWindowDimensions, View, StyleSheet } from 'react-native';
+import { ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 
 const ADDED_FG = '#d1f2e0';
 const ADDED_BG = '#1b5e3a';

@@ -7,16 +7,16 @@ import {
   type ZodTypeProvider,
 } from 'fastify-type-provider-zod';
 import directoryRoutes from './directories';
-import queueRoutes from './queue';
-import healthConfigRoutes from './health.config';
-import workerRoutes from './worker';
 // Import routes
 import healthRoutes from './health';
+import healthConfigRoutes from './health.config';
 // Import plugins
 import errorHandlerPlugin from './plugins/error-handler';
 import requestLoggerPlugin from './plugins/request-logger';
+import queueRoutes from './queue';
 import repositoryRoutes from './repositories';
 import sessionRoutes from './sessions';
+import workerRoutes from './worker';
 import type { AgentRunnerWorker } from './workers';
 
 // Export worker class for external usage

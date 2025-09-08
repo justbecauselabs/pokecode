@@ -11,4 +11,3 @@ export const QueueMetricsSchema = z.object({
 });
 
 export type QueueMetrics = z.infer<typeof QueueMetricsSchema>;
-

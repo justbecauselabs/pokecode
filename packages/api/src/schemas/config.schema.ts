@@ -14,4 +14,3 @@ export const ConfigStatusSchema = z.object({
 
 export type ToolConfigStatus = z.infer<typeof ToolConfigStatusSchema>;
 export type ConfigStatus = z.infer<typeof ConfigStatusSchema>;
-

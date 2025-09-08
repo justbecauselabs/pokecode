@@ -1,6 +1,6 @@
 import type { FastifyPluginAsync } from 'fastify';
-import { AgentRunnerWorker } from './workers';
 import { getWorker, setWorker } from './index';
+import { AgentRunnerWorker } from './workers';
 
 const workerRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.post('/restart', async (_request, reply) => {

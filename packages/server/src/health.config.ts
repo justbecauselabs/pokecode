@@ -1,6 +1,6 @@
-import type { FastifyPluginAsync } from 'fastify';
 import { ConfigStatusSchema } from '@pokecode/api';
 import { getConfig } from '@pokecode/core';
+import type { FastifyPluginAsync } from 'fastify';
 
 const healthConfigRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.get(
@@ -31,7 +31,10 @@ const healthConfigRoutes: FastifyPluginAsync = async (fastify) => {
         return { configuredPath: path, exists, version } as const;
       }
 
-      const [claude, codex] = await Promise.all([check(cfg.claudeCodePath), check(cfg.codexCliPath)]);
+      const [claude, codex] = await Promise.all([
+        check(cfg.claudeCodePath),
+        check(cfg.codexCliPath),
+      ]);
       return reply.send({ claudeCode: claude, codexCli: codex, logLevel: cfg.logLevel });
     },
   );

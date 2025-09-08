@@ -24,9 +24,10 @@ const connectRoutes: FastifyPluginAsync = async (fastify) => {
     async (request, reply) => {
       const query = ListDevicesQuerySchema.parse(request.query);
       const args: { activeWithinSeconds?: number; limit?: number; offset?: number } = {};
-      if (typeof query.activeWithinSeconds == 'number') args.activeWithinSeconds = query.activeWithinSeconds;
-      if (typeof query.limit == 'number') args.limit = query.limit;
-      if (typeof query.offset == 'number') args.offset = query.offset;
+      if (typeof query.activeWithinSeconds === 'number')
+        args.activeWithinSeconds = query.activeWithinSeconds;
+      if (typeof query.limit === 'number') args.limit = query.limit;
+      if (typeof query.offset === 'number') args.offset = query.offset;
       const result = await deviceService.list(args);
       return reply.send(result);
     },

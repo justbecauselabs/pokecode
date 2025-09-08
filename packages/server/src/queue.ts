@@ -1,6 +1,6 @@
-import type { FastifyPluginAsync } from 'fastify';
 import { QueueMetricsSchema } from '@pokecode/api';
 import { sqliteQueueService } from '@pokecode/core';
+import type { FastifyPluginAsync } from 'fastify';
 
 const queueRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.get(

@@ -1,8 +1,8 @@
-import { Modal, Pressable, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useEffect, useMemo, useState } from 'react';
+import { Modal, Pressable, Text, TextInput, View } from 'react-native';
 import { API_BASE_URL } from '@/constants/api';
 import { useSettingsStore } from '@/stores/settingsStore';
-import { useEffect, useMemo, useState } from 'react';
 
 type Props = {
   visible: boolean;
@@ -56,14 +56,17 @@ export function ConnectivityModal(props: Props) {
             Can’t Reach Your Local Server
           </Text>
           <Text className="text-muted-foreground text-base text-center max-w-md">
-            Please run the PokéCode server on your computer and make sure your phone and computer are on the same network.
+            Please run the PokéCode server on your computer and make sure your phone and computer
+            are on the same network.
           </Text>
         </View>
 
         <View className="gap-4">
           <View className="bg-card border border-border rounded-md p-4">
             <Text className="text-sm text-muted-foreground mb-2">Current host</Text>
-            <Text className="text-foreground mb-3" selectable>{effectiveUrl}</Text>
+            <Text className="text-foreground mb-3" selectable>
+              {effectiveUrl}
+            </Text>
             <Text className="text-sm text-muted-foreground mb-2">Update host URL</Text>
             <TextInput
               value={url}
@@ -99,7 +102,9 @@ export function ConnectivityModal(props: Props) {
               onPress={props.onOpenSettings}
               className="w-full items-center justify-center rounded-md bg-primary py-3"
             >
-              <Text className="text-primary-foreground text-base font-semibold">Open Advanced Settings</Text>
+              <Text className="text-primary-foreground text-base font-semibold">
+                Open Advanced Settings
+              </Text>
             </Pressable>
           ) : null}
         </View>

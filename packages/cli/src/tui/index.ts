@@ -1,16 +1,17 @@
-import chalk from 'chalk';
 import {
-  HealthResponseSchema,
-  type HealthResponse,
-  ConfigStatusSchema,
   type ConfigStatus,
-  ListDevicesResponseSchema,
+  ConfigStatusSchema,
+  type HealthResponse,
+  HealthResponseSchema,
   type ListDevicesResponse,
-  QueueMetricsSchema,
+  ListDevicesResponseSchema,
+  type ListSessionsResponse,
+  ListSessionsResponseSchema,
   type QueueMetrics,
+  QueueMetricsSchema,
 } from '@pokecode/api';
-import { ListSessionsResponseSchema, type ListSessionsResponse } from '@pokecode/api';
 import { getConfig } from '@pokecode/core';
+import chalk from 'chalk';
 
 type SafeParsed<T> = { success: true; data: T } | { success: false };
 
@@ -33,7 +34,7 @@ type DashboardState = {
 };
 
 function pad(text: string, width: number): string {
-  const t = text.length > width ? text.slice(0, Math.max(0, width - 1)) + '…' : text;
+  const t = text.length > width ? `${text.slice(0, Math.max(0, width - 1))}…` : text;
   const diff = width - t.length;
   return diff > 0 ? t + ' '.repeat(diff) : t;
 }
@@ -50,7 +51,13 @@ function relativeAgo(iso: string): string {
 }
 
 function statusColor(state: Status): (s: string) => string {
-  return state === 'ok' ? chalk.green : state === 'warn' ? chalk.yellow : state === 'error' ? chalk.red : chalk.gray;
+  return state === 'ok'
+    ? chalk.green
+    : state === 'warn'
+      ? chalk.yellow
+      : state === 'error'
+        ? chalk.red
+        : chalk.gray;
 }
 
 function healthToStatus(h?: HealthResponse): Status {
@@ -98,23 +105,32 @@ function drawFrame(params: { serverUrl: string; mode: Mode; state: DashboardStat
   const worker = 'unknown' as Status; // refined later via /api/worker if needed
 
   const tag = (label: string, s: Status) => `${statusColor(s)('●')} ${label}`;
-  const cfgTag = (label: string, ok: boolean | undefined) => `${statusColor(boolToStatus(ok))('●')} ${label}`;
+  const cfgTag = (label: string, ok: boolean | undefined) =>
+    `${statusColor(boolToStatus(ok))('●')} ${label}`;
 
   const healthLine = [tag('API', api), tag('DB', db), tag('Queue', q), tag('Worker', worker)];
   const configLine = cfg
-    ? [cfgTag('ClaudeCode', cfg.claudeCode.exists), cfgTag('CodexCLI', cfg.codexCli.exists), `LogLevel: ${cfg.logLevel}`]
+    ? [
+        cfgTag('ClaudeCode', cfg.claudeCode.exists),
+        cfgTag('CodexCLI', cfg.codexCli.exists),
+        `LogLevel: ${cfg.logLevel}`,
+      ]
     : ['Config: —'];
 
-  lines.push(' ' + healthLine.join('   '));
-  lines.push(' ' + configLine.join('   '));
+  lines.push(` ${healthLine.join('   ')}`);
+  lines.push(` ${configLine.join('   ')}`);
 
   // Paths (log and database)
-  const trunc = (s: string, max: number) => (s.length > max ? s.slice(0, max - 1) + '…' : s);
+  const trunc = (s: string, max: number) => (s.length > max ? `${s.slice(0, max - 1)}…` : s);
   if (params.state.logFilePath || params.state.dbFilePath) {
-    const logLine = params.state.logFilePath ? `Log: ${trunc(params.state.logFilePath, width - 6)}` : null;
-    const dbLine = params.state.dbFilePath ? `DB:  ${trunc(params.state.dbFilePath, width - 6)}` : null;
-    if (logLine) lines.push(' ' + chalk.gray(logLine));
-    if (dbLine) lines.push(' ' + chalk.gray(dbLine));
+    const logLine = params.state.logFilePath
+      ? `Log: ${trunc(params.state.logFilePath, width - 6)}`
+      : null;
+    const dbLine = params.state.dbFilePath
+      ? `DB:  ${trunc(params.state.dbFilePath, width - 6)}`
+      : null;
+    if (logLine) lines.push(` ${chalk.gray(logLine)}`);
+    if (dbLine) lines.push(` ${chalk.gray(dbLine)}`);
   }
 
   // Devices table
@@ -126,22 +142,22 @@ function drawFrame(params: { serverUrl: string; mode: Mode; state: DashboardStat
     { name: 'platform', w: 8 },
     { name: 'version', w: 10 },
     { name: 'last seen', w: 14 },
-  ];
-  const header = ' ' + cols.map((c) => pad(c.name, c.w)).join('  ');
+  ] as const;
+  const header = ` ${cols.map((c) => pad(c.name, c.w)).join('  ')}`;
   lines.push(chalk.gray(header));
   const devs = params.state.devices?.devices ?? [];
   const toShow = devs.slice(0, 8);
   for (const d of toShow) {
     const row = [
-      pad(d.deviceId.slice(0, 8), cols[0]!.w),
-      pad(d.deviceName, cols[1]!.w),
-      pad(d.platform ?? '-', cols[2]!.w),
-      pad(d.appVersion ?? '-', cols[3]!.w),
-      pad(relativeAgo(d.lastConnectedAt), cols[4]!.w),
+      pad(d.deviceId.slice(0, 8), cols[0].w),
+      pad(d.deviceName, cols[1].w),
+      pad(d.platform ?? '-', cols[2].w),
+      pad(d.appVersion ?? '-', cols[3].w),
+      pad(relativeAgo(d.lastConnectedAt), cols[4].w),
     ].join('  ');
-    lines.push(' ' + row);
+    lines.push(` ${row}`);
   }
-  if (toShow.length === 0) lines.push(' ' + chalk.gray('no recent devices'));
+  if (toShow.length === 0) lines.push(` ${chalk.gray('no recent devices')}`);
 
   // Sessions table
   lines.push('');
@@ -154,24 +170,26 @@ function drawFrame(params: { serverUrl: string; mode: Mode; state: DashboardStat
     { name: 'updated', w: 14 },
     { name: 'msgs', w: 5 },
     { name: 'tokens', w: 7 },
-  ];
-  lines.push(chalk.gray(' ' + sessCols.map((c) => pad(c.name, c.w)).join('  ')));
+  ] as const;
+  lines.push(chalk.gray(` ${sessCols.map((c) => pad(c.name, c.w)).join('  ')}`));
   const now = Date.now();
-  const sessions = (params.state.sessions?.sessions ?? []).filter((s) => now - new Date(s.updatedAt).getTime() <= 3600 * 1000);
+  const sessions = (params.state.sessions?.sessions ?? []).filter(
+    (s) => now - new Date(s.updatedAt).getTime() <= 3600 * 1000,
+  );
   const sShow = sessions.slice(0, 8);
   for (const s of sShow) {
     const row = [
-      pad(s.id.slice(0, 8), sessCols[0]!.w),
-      pad(s.name, sessCols[1]!.w),
-      pad(s.provider, sessCols[2]!.w),
-      pad(s.isWorking ? 'yes' : 'no', sessCols[3]!.w),
-      pad(relativeAgo(s.updatedAt), sessCols[4]!.w),
-      pad(String(s.messageCount), sessCols[5]!.w),
-      pad(String(s.tokenCount), sessCols[6]!.w),
+      pad(s.id.slice(0, 8), sessCols[0].w),
+      pad(s.name, sessCols[1].w),
+      pad(s.provider, sessCols[2].w),
+      pad(s.isWorking ? 'yes' : 'no', sessCols[3].w),
+      pad(relativeAgo(s.updatedAt), sessCols[4].w),
+      pad(String(s.messageCount), sessCols[5].w),
+      pad(String(s.tokenCount), sessCols[6].w),
     ].join('  ');
-    lines.push(' ' + row);
+    lines.push(` ${row}`);
   }
-  if (sShow.length === 0) lines.push(' ' + chalk.gray('no recently updated sessions'));
+  if (sShow.length === 0) lines.push(` ${chalk.gray('no recently updated sessions')}`);
 
   // Queue
   if (params.state.queue) {
@@ -186,7 +204,7 @@ function drawFrame(params: { serverUrl: string; mode: Mode; state: DashboardStat
   // Logs section
   lines.push('');
   lines.push(chalk.bold(' Logs'));
-  lines.push(' ' + chalk.gray('not shown in TUI; use `pokecode logs -f`'));
+  lines.push(` ${chalk.gray('not shown in TUI; use `pokecode logs -f`')}`);
 
   // Footer
   lines.push('');
@@ -194,7 +212,7 @@ function drawFrame(params: { serverUrl: string; mode: Mode; state: DashboardStat
   lines.push(chalk.gray(foot));
 
   if (params.state.statusMessage) {
-    lines.push(chalk.yellow(' ' + params.state.statusMessage));
+    lines.push(chalk.yellow(` ${params.state.statusMessage}`));
   }
 
   // Cut to terminal height minus 1 for safety
@@ -247,9 +265,15 @@ export function runDashboard(params: { serverUrl: string; mode: Mode }): void {
     const [health, config, devices, queue, sessions] = await Promise.all([
       safeGet<HealthResponse>(`${base}/health`, HealthResponseSchema),
       safeGet<ConfigStatus>(`${base}/health/config`, ConfigStatusSchema),
-      safeGet<ListDevicesResponse>(`${base}/api/connect/devices?activeWithinSeconds=3600&limit=20`, ListDevicesResponseSchema),
+      safeGet<ListDevicesResponse>(
+        `${base}/api/connect/devices?activeWithinSeconds=3600&limit=20`,
+        ListDevicesResponseSchema,
+      ),
       safeGet<QueueMetrics>(`${base}/api/queue/metrics`, QueueMetricsSchema),
-      safeGet<ListSessionsResponse>(`${base}/api/sessions?state=active&limit=50`, ListSessionsResponseSchema),
+      safeGet<ListSessionsResponse>(
+        `${base}/api/sessions?state=active&limit=50`,
+        ListSessionsResponseSchema,
+      ),
     ]);
     state.health = health;
     state.config = config;
@@ -280,7 +304,7 @@ export function runDashboard(params: { serverUrl: string; mode: Mode }): void {
           const res = await fetch(`${params.serverUrl}/api/worker/restart`, { method: 'POST' });
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
           state.statusMessage = 'Worker restarted';
-        } catch (e) {
+        } catch (_e) {
           state.statusMessage = `Worker restart failed`;
         }
         setTimeout(() => {

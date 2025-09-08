@@ -6,6 +6,9 @@ export * as AgentSchemas from './schemas/agent.schema';
 // Command schemas
 export * from './schemas/command.schema';
 export * as CommandSchemas from './schemas/command.schema';
+// Config schemas
+export * from './schemas/config.schema';
+export * as ConfigSchemas from './schemas/config.schema';
 // Device/connect schemas
 export * from './schemas/device.schema';
 export * as DeviceSchemas from './schemas/device.schema';
@@ -18,17 +21,14 @@ export * as GitSchemas from './schemas/git.schema';
 // Health schemas
 export * from './schemas/health.schema';
 export * as HealthSchemas from './schemas/health.schema';
-// Config schemas
-export * from './schemas/config.schema';
-export * as ConfigSchemas from './schemas/config.schema';
-// Queue schemas
-export * from './schemas/queue.schema';
-export * as QueueSchemas from './schemas/queue.schema';
 // Message schemas
 export * from './schemas/message.schema';
 export * as MessageSchemas from './schemas/message.schema';
 // Model definitions
 export * from './schemas/model.schema';
+// Queue schemas
+export * from './schemas/queue.schema';
+export * as QueueSchemas from './schemas/queue.schema';
 // Repository schemas
 export * from './schemas/repository.schema';
 export * as RepositorySchemas from './schemas/repository.schema';

@@ -39,7 +39,13 @@ export const DeviceSchema = z.object({
 export type Device = z.infer<typeof DeviceSchema>;
 
 export const ListDevicesQuerySchema = z.object({
-  activeWithinSeconds: z.coerce.number().int().min(1).max(24 * 60 * 60).default(3600).optional(),
+  activeWithinSeconds: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(24 * 60 * 60)
+    .default(3600)
+    .optional(),
   limit: z.coerce.number().int().min(1).max(200).default(100).optional(),
   offset: z.coerce.number().int().min(0).default(0).optional(),
 });
