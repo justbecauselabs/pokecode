@@ -1,7 +1,6 @@
 /**
  * Status command implementation
  */
-
 import type { HealthResponse } from '@pokecode/api';
 import { HealthResponseSchema } from '@pokecode/api';
 import { getConfig } from '@pokecode/core';

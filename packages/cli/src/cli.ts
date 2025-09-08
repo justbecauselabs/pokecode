@@ -1,5 +1,10 @@
 #!/usr/bin/env bun
-
+import { program } from 'commander';
+import { logs } from './commands/logs';
+import { serve } from './commands/serve';
+import { setup } from './commands/setup';
+import { status } from './commands/status';
+import { stop } from './commands/stop';
 import { startServer } from './server';
 
 // Handle internal server mode
@@ -9,12 +14,6 @@ if (process.argv.includes('--internal-run-server')) {
   // Server keeps the process alive naturally - no need to exit
 } else {
   // Normal CLI mode
-  const { program } = await import('commander');
-  const { serve } = await import('./commands/serve');
-  const { status } = await import('./commands/status');
-  const { stop } = await import('./commands/stop');
-  const { logs } = await import('./commands/logs');
-  const { setup } = await import('./commands/setup');
 
   const pkg = {
     version: process.env.npm_package_version || '0.1.0',
@@ -60,6 +59,8 @@ if (process.argv.includes('--internal-run-server')) {
     .action(logs);
 
   program.command('setup').description('Setup PokéCode with Claude Code path').action(setup);
+
+  // Experimental OpenTUI command removed in favor of built-in ANSI TUI
 
   // Parse normally so --help and errors are handled by commander
   program.parse();

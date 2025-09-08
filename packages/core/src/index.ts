@@ -27,7 +27,7 @@ export { commandService } from './services/command.service';
 export * from './services/device.service';
 export { deviceService } from './services/device.service';
 export * from './services/event-bus.service';
-// Event bus exports
+// Event bus exports (logs removed)
 export { emitSessionDone, messageEvents } from './services/event-bus.service';
 export * from './services/git.service';
 export { gitService } from './services/git.service';

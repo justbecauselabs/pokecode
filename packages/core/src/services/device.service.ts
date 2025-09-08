@@ -1,5 +1,5 @@
-import { sql } from 'drizzle-orm';
-import { db } from '../database';
+import { desc, gte, sql } from 'drizzle-orm';
+import { db, sqlite } from '../database';
 import { devices } from '../database/schema-sqlite/devices';
 
 export class DeviceService {
@@ -29,6 +29,45 @@ export class DeviceService {
           updatedAt: now,
         },
       });
+  }
+
+  async list(params: { activeWithinSeconds?: number; limit?: number; offset?: number }) {
+    const activeWithin = params.activeWithinSeconds ?? 3600;
+    const limit = Math.min(Math.max(params.limit ?? 100, 1), 200);
+    const offset = Math.max(params.offset ?? 0, 0);
+
+    // Use raw sqlite for this listing to avoid timestamp binding issues
+    const sinceSec = Math.floor(Date.now() / 1000) - activeWithin;
+
+    type Row = {
+      device_id: string;
+      device_name: string;
+      platform: string | null;
+      app_version: string | null;
+      last_connected_at: number; // epoch seconds
+    };
+    const listStmt = sqlite.query<Row, [number, number, number]>(
+      'select device_id, device_name, platform, app_version, last_connected_at from devices where last_connected_at >= ? order by last_connected_at desc limit ? offset ?',
+    );
+    const rows = listStmt.all(sinceSec, limit, offset);
+
+    const countStmt = sqlite.query<{ cnt: number }, [number]>(
+      'select count(*) as cnt from devices where last_connected_at >= ?',
+    );
+    const countRow = countStmt.get(sinceSec);
+
+    return {
+      devices: rows.map((d) => ({
+        deviceId: d.device_id,
+        deviceName: d.device_name,
+        platform: d.platform === 'ios' || d.platform === 'android' ? d.platform : null,
+        appVersion: d.app_version,
+        lastConnectedAt: new Date(d.last_connected_at * 1000).toISOString(),
+      })),
+      total: countRow?.cnt ?? 0,
+      limit,
+      offset,
+    };
   }
 }
 

@@ -92,3 +92,6 @@ export function emitHeartbeat(sessionId: string) {
     },
   });
 }
+
+// Emit a structured log event for SSE consumers
+// (log events removed; logs are written directly to the log file)

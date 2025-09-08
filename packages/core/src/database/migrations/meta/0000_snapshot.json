@@ -1,9 +1,75 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "f72c4a5b-9d4c-4a3e-9054-be67988d8ae3",
+  "id": "b9523204-643b-4b5b-94a4-2fe1cd98980a",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
+    "devices": {
+      "name": "devices",
+      "columns": {
+        "device_id": {
+          "name": "device_id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "device_name": {
+          "name": "device_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "platform": {
+          "name": "platform",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "app_version": {
+          "name": "app_version",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "last_connected_at": {
+          "name": "last_connected_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "idx_devices_last_connected_at": {
+          "name": "idx_devices_last_connected_at",
+          "columns": [
+            "last_connected_at"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {}
+    },
     "job_queue": {
       "name": "job_queue",
       "columns": {
@@ -23,6 +89,13 @@
         },
         "prompt_id": {
           "name": "prompt_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "provider": {
+          "name": "provider",
           "type": "text",
           "primaryKey": false,
           "notNull": true,
@@ -123,6 +196,13 @@
             "created_at"
           ],
           "isUnique": false
+        },
+        "idx_job_queue_provider": {
+          "name": "idx_job_queue_provider",
+          "columns": [
+            "provider"
+          ],
+          "isUnique": false
         }
       },
       "foreignKeys": {},
@@ -146,6 +226,13 @@
           "notNull": true,
           "autoincrement": false
         },
+        "provider": {
+          "name": "provider",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
         "type": {
           "name": "type",
           "type": "text",
@@ -160,8 +247,8 @@
           "notNull": false,
           "autoincrement": false
         },
-        "claude_code_session_id": {
-          "name": "claude_code_session_id",
+        "provider_session_id": {
+          "name": "provider_session_id",
           "type": "text",
           "primaryKey": false,
           "notNull": false,
@@ -204,19 +291,26 @@
           ],
           "isUnique": false
         },
-        "idx_session_messages_claude_code_session_id": {
-          "name": "idx_session_messages_claude_code_session_id",
+        "idx_session_messages_provider": {
+          "name": "idx_session_messages_provider",
           "columns": [
-            "claude_code_session_id"
+            "provider"
+          ],
+          "isUnique": false
+        },
+        "idx_session_messages_provider_session_id": {
+          "name": "idx_session_messages_provider_session_id",
+          "columns": [
+            "provider_session_id"
           ],
           "isUnique": false
         }
       },
       "foreignKeys": {
-        "session_messages_session_id_claude_code_sessions_id_fk": {
-          "name": "session_messages_session_id_claude_code_sessions_id_fk",
+        "session_messages_session_id_sessions_id_fk": {
+          "name": "session_messages_session_id_sessions_id_fk",
           "tableFrom": "session_messages",
-          "tableTo": "claude_code_sessions",
+          "tableTo": "sessions",
           "columnsFrom": [
             "session_id"
           ],
@@ -230,13 +324,20 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {}
     },
-    "claude_code_sessions": {
-      "name": "claude_code_sessions",
+    "sessions": {
+      "name": "sessions",
       "columns": {
         "id": {
           "name": "id",
           "type": "text",
           "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "provider": {
+          "name": "provider",
+          "type": "text",
+          "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },

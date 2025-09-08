@@ -1,4 +1,4 @@
-import { checkDatabaseHealth, getConfig } from '@pokecode/core';
+import { checkDatabaseHealth, getConfig, LOG_FILE } from '@pokecode/core';
 import Fastify, { type FastifyPluginAsync } from 'fastify';
 import { FastifySSEPlugin } from 'fastify-sse-v2';
 import {
@@ -7,6 +7,9 @@ import {
   type ZodTypeProvider,
 } from 'fastify-type-provider-zod';
 import directoryRoutes from './directories';
+import queueRoutes from './queue';
+import healthConfigRoutes from './health.config';
+import workerRoutes from './worker';
 // Import routes
 import healthRoutes from './health';
 // Import plugins
@@ -40,10 +43,14 @@ export const createApp: FastifyPluginAsync = async (fastify) => {
 
   // Register routes
   await fastify.register(healthRoutes, { prefix: '/health' });
+  await fastify.register(healthConfigRoutes, { prefix: '/health' });
   await fastify.register(repositoryRoutes, { prefix: '/api/repositories' });
   await fastify.register(directoryRoutes, { prefix: '/api/directories' });
   await fastify.register(sessionRoutes, { prefix: '/api/sessions' });
   await fastify.register(import('./connect'), { prefix: '/api/connect' });
+  await fastify.register(queueRoutes, { prefix: '/api/queue' });
+  // Logs SSE removed; logs are written to file and viewed via `pokecode logs`
+  await fastify.register(workerRoutes, { prefix: '/api/worker' });
 
   // Health check database connection (worker started separately by CLI)
   fastify.addHook('onReady', async () => {
@@ -92,20 +99,25 @@ export const setWorker = (worker: AgentRunnerWorker | null) => {
 
 export async function createServer() {
   const config = await getConfig();
-  const fastify = Fastify({
-    logger: {
+  const enableConsolePretty = process.stdout.isTTY && process.env.POKECODE_DAEMON !== '1' && process.env.POKECODE_TUI !== '1';
+  const targets = [
+    ...(enableConsolePretty
+      ? ([
+          {
+            target: 'pino-pretty',
+            options: { colorize: true, translateTime: 'HH:MM:ss Z', ignore: 'pid,hostname' },
+            level: config.logLevel,
+          },
+        ] as const)
+      : ([] as const)),
+    {
+      target: 'pino/file',
+      options: { destination: LOG_FILE, mkdir: true },
       level: config.logLevel,
-      transport: {
-        target: 'pino-pretty',
-        options: {
-          colorize: true,
-          translateTime: 'HH:MM:ss Z',
-          ignore: 'pid,hostname',
-        },
-      },
-      // We emit request logs ourselves (with sanitized bodies)
-      // to avoid duplicate lines and to include parsed body safely.
-    },
+    } as const,
+  ];
+  const fastify = Fastify({
+    logger: { level: config.logLevel, transport: { targets } },
     // Disable Fastify's built-in request logging so we can replace it
     // with our sanitized version in the request-logger plugin.
     disableRequestLogging: true,

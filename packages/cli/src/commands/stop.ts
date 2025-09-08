@@ -1,7 +1,6 @@
 /**
  * Stop command implementation
  */
-
 import chalk from 'chalk';
 import ora from 'ora';
 import { DaemonManager } from '../utils/daemon';

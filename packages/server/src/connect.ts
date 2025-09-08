@@ -3,11 +3,35 @@ import {
   type ConnectRequest,
   ConnectRequestSchema,
   ConnectResponseSchema,
+  ListDevicesQuerySchema,
+  ListDevicesResponseSchema,
 } from '@pokecode/api';
 import { deviceService } from '@pokecode/core';
 import type { FastifyPluginAsync } from 'fastify';
 
 const connectRoutes: FastifyPluginAsync = async (fastify) => {
+  // GET /devices - list devices seen within timeframe
+  fastify.get(
+    '/devices',
+    {
+      schema: {
+        querystring: ListDevicesQuerySchema,
+        response: {
+          200: ListDevicesResponseSchema,
+        },
+      },
+    },
+    async (request, reply) => {
+      const query = ListDevicesQuerySchema.parse(request.query);
+      const args: { activeWithinSeconds?: number; limit?: number; offset?: number } = {};
+      if (typeof query.activeWithinSeconds == 'number') args.activeWithinSeconds = query.activeWithinSeconds;
+      if (typeof query.limit == 'number') args.limit = query.limit;
+      if (typeof query.offset == 'number') args.offset = query.offset;
+      const result = await deviceService.list(args);
+      return reply.send(result);
+    },
+  );
+
   fastify.post<{ Body: ConnectRequest }>(
     '/',
     {

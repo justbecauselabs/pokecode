@@ -427,10 +427,8 @@ const messageRoutes: FastifyPluginAsync = async (fastify) => {
     {
       schema: {
         params: SessionIdParamsSchema,
-        response: {
-          200: z.object({ success: z.boolean() }),
-          404: ErrorResponseSchema,
-        },
+        // Intentionally omit response schema to avoid serialization.
+        // We return 204 No Content on success.
       },
     },
     async (request, reply) => {
@@ -449,14 +447,8 @@ const messageRoutes: FastifyPluginAsync = async (fastify) => {
         // Cancel the current session processing
         await messageService.cancelSession(sessionId);
 
-        logger.debug(
-          {
-            sessionId,
-          },
-          'Session cancelled successfully',
-        );
-
-        return reply.send({ success: true });
+        logger.debug({ sessionId }, 'Session cancelled successfully');
+        return reply.code(204).send();
       } catch (error) {
         logger.error(
           {

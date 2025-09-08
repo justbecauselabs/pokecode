@@ -4,7 +4,8 @@ import { AgentRunnerWorker, createServer, setWorker } from '@pokecode/server';
 // Store worker reference at module level for cleanup
 let worker: AgentRunnerWorker | null = null;
 
-export async function startServer(): Promise<void> {
+export async function startServer(options: { quiet?: boolean } = {}): Promise<void> {
+  const { quiet = Boolean(process.env.POKECODE_QUIET) || false } = options;
   const config = await getConfig();
   // Ensure database is initialized and migrations are applied before server startup
   await initDatabase({ runMigrations: true });
@@ -12,33 +13,33 @@ export async function startServer(): Promise<void> {
 
   // Signal handling for graceful shutdown
   const handleShutdown = async (signal: string): Promise<void> => {
-    console.log(`\n🚨 Received ${signal}, shutting down gracefully...`);
+    if (!quiet) console.log(`\n🚨 Received ${signal}, shutting down gracefully...`);
 
     // Set up timeout fallback to prevent hanging
     const forceExitTimeout = setTimeout(() => {
-      console.warn('⏰ Forced exit after 10 seconds timeout');
+      if (!quiet) console.warn('⏰ Forced exit after 10 seconds timeout');
       process.exit(1);
     }, 10000);
 
     try {
       // Shutdown worker FIRST before server
       if (worker) {
-        console.log('🔄 Shutting down worker...');
+        if (!quiet) console.log('🔄 Shutting down worker...');
         await worker.shutdown();
-        console.log('✅ Worker shutdown complete');
+        if (!quiet) console.log('✅ Worker shutdown complete');
       }
 
       // Then close server
-      console.log('🔄 Closing server...');
+      if (!quiet) console.log('🔄 Closing server...');
       await server.close();
-      console.log('✅ Server closed successfully');
+      if (!quiet) console.log('✅ Server closed successfully');
 
       // Clear timeout since we completed gracefully
       clearTimeout(forceExitTimeout);
-      console.log('🎉 Graceful shutdown complete');
+      if (!quiet) console.log('🎉 Graceful shutdown complete');
       process.exit(0);
     } catch (error) {
-      console.error('❌ Error during graceful shutdown:', error);
+      if (!quiet) console.error('❌ Error during graceful shutdown:', error);
       clearTimeout(forceExitTimeout);
       process.exit(1);
     }
@@ -57,8 +58,10 @@ export async function startServer(): Promise<void> {
 
   // Handle uncaught exceptions
   process.on('uncaughtException', (error) => {
-    console.error('💥 Uncaught exception:', error);
-    console.error('📍 Stack trace:', error.stack);
+    if (!quiet) {
+      console.error('💥 Uncaught exception:', error);
+      console.error('📍 Stack trace:', error.stack);
+    }
 
     // Try to cleanup worker synchronously to avoid further issues
     if (worker) {
@@ -71,9 +74,11 @@ export async function startServer(): Promise<void> {
 
   // Handle unhandled promise rejections
   process.on('unhandledRejection', (reason, promise) => {
-    console.error('💥 Unhandled rejection at:', promise, 'reason:', reason);
-    if (reason instanceof Error) {
-      console.error('📍 Stack trace:', reason.stack);
+    if (!quiet) {
+      console.error('💥 Unhandled rejection at:', promise, 'reason:', reason);
+      if (reason instanceof Error) {
+        console.error('📍 Stack trace:', reason.stack);
+      }
     }
 
     // Try to cleanup worker synchronously to avoid further issues
@@ -86,12 +91,12 @@ export async function startServer(): Promise<void> {
   });
 
   process.on('exit', (code) => {
-    console.log('Process exiting with code:', code);
+    if (!quiet) console.log('Process exiting with code:', code);
   });
 
   await server.listen({ port: config.port, host: config.host });
 
-  if (process.env.POKECODE_TUI_ACTIVE !== '1') {
+  if (!quiet) {
     console.log(`🚀 PokéCode server running at http://${config.host}:${config.port}`);
     console.log(`📝 Logs: ${config.logFile}`);
     console.log(`📊 Log level: ${config.logLevel}`);
@@ -99,15 +104,15 @@ export async function startServer(): Promise<void> {
   }
 
   // Start worker after server is listening
-  console.log('🔍 Starting worker after server startup...');
+  if (!quiet) console.log('🔍 Starting worker after server startup...');
   try {
     worker = new AgentRunnerWorker();
     await worker.start();
     // Store the worker globally so server components can access it
     setWorker(worker);
-    console.log('✅ Worker started successfully!');
+    if (!quiet) console.log('✅ Worker started successfully!');
   } catch (error) {
-    console.error('❌ Failed to start worker:', error);
+    if (!quiet) console.error('❌ Failed to start worker:', error);
     process.exit(1);
   }
 

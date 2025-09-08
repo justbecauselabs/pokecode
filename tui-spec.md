@@ -46,18 +46,15 @@ Terminal takeover layout (80x24+). Resizable, mouse optional.
 - Header: endpoint, health summary, uptime, config summary, log level.
 - Devices: list of devices with heartbeat in last 3600s (sorted by lastConnectedAt desc).
 - Sessions: list of sessions updated in last 3600s (sorted by updatedAt desc).
-- Logs: streaming server + worker logs with level filter; preserves last N lines (default 1000) with memory cap.
+- Logs: not rendered in TUI; users follow the log file via `pokecode logs -f`.
 - Footer: keyboard cheatsheet and transient status messages.
 
 ### Keyboard & Mouse
 
 - q: quit (graceful server shutdown in foreground mode; detach in attach mode).
 - r: restart worker (POST `/api/worker/restart`).
-- s: show/hide logs pane.
-- f: open filter box (applies to focused list/log pane; regex optional, case‑insensitive toggle with `i`).
-- p: pause/resume log streaming (buffer while paused).
 - ←/→: move focus between panes; ↑/↓/PgUp/PgDn: navigate; Enter: open details view (modal) for selected item.
-- Mouse: click to focus; scroll in lists/logs.
+- Mouse: click to focus; scroll in lists.
 
 ## Data Sources
 
@@ -80,10 +77,6 @@ New APIs to add (server + api packages):
 
 - GET `/api/queue/metrics` — surface `sqliteQueueService.getQueueMetrics()`.
 
-- SSE: GET `/api/logs/stream` — server and worker logs as newline‑delimited JSON events.
-  - Event: `{ time, level, source: 'server' | 'worker' | 'http', msg, meta? }`.
-  - Wire format: `text/event-stream` with `event: log` + `data: <json>` per line.
-
 - POST `/api/worker/restart` — instruct `AgentRunnerWorker` to shutdown + start; returns `{ status: 'ok' }`.
 
 Open to implement later (nice‑to‑have):
@@ -95,39 +88,31 @@ Open to implement later (nice‑to‑have):
 ### Runtime & Libraries
 
 - Runtime: Bun. All CLI code runs with `bun`.
-- TUI lib: OpenTUI via `@opentui/react` (renders with `@opentui/core`). React function components for panels and layout.
-- HTTP/SSE: native `fetch` with a minimal SSE reader built on ReadableStream + TextDecoder (no external polyfill).
+- TUI: minimal ANSI renderer using Chalk and raw stdin for keys (no React/Ink).
+- HTTP: native `fetch` for polling.
 - Strict TypeScript: use zod schemas from `@pokecode/api` to parse responses on the client; infer types with `z.infer`.
 
 ### Version Pinning
 
-- Pin OpenTUI to exact versions (no caret/tilde) in `packages/cli/package.json`:
-  - `"@opentui/core": "<exact>"`
-  - `"@opentui/react": "<exact>"`
-- Commit `bun.lockb` to lock transitive deps.
-- Add syncpack exception so `@opentui/*` stays exact:
-  - Either a dedicated `versionGroup` for `@opentui/*` with `pinVersion: "<exact>"`, or exclude from the caret `semverGroups`.
-- Release process: explicitly bump OpenTUI versions in a PR titled `chore(tui): bump @opentui/*` and run quick smoke on macOS/Linux before merge.
+- Keep dependencies minimal; commit `bun.lockb` to lock transitive deps.
 
 ### Process Model
 
-- Foreground mode: one process hosts both Fastify server and the TUI. The TUI consumes in‑process events via a lightweight emitter AND HTTP/SSE to mirror attach behavior.
+- Foreground mode: one process hosts both Fastify server and the TUI. The TUI polls HTTP endpoints for data.
 - Attach mode: TUI runs as a pure client against an already running server.
 - Daemon mode: No TUI; users attach with `pokecode dashboard`.
 
 ### In‑Process Event Bridge (foreground)
 
-- Create a small log bus that subscribes to pino logs and re‑emits to the TUI (and the SSE endpoint) to avoid double work. The bridge forwards: http request logs (sanitized), worker logs, and core queue state changes.
-- Ensure backpressure: cap ring buffers and drop oldest.
+- Not used for logs; logs are file-only. May add for other events later if needed.
 
 ### State Model (client)
 
-- Root state: `{ focus: 'devices' | 'sessions' | 'logs', filters, paused, health, config, devices[], sessions[], queueMetrics, logs[] }`.
+- Root state: `{ focus: 'devices' | 'sessions', health, config, devices[], sessions[], queueMetrics }`.
 - Refresh cadences:
   - Health/config/metrics: every 5s.
   - Devices: every 5s (with `activeWithinSeconds=3600`).
   - Sessions: every 10s (client filters by last hour).
-  - Logs: push via SSE; backfill by reading log file head (optional) or history buffer endpoint.
 
 ### Error Handling
 
@@ -152,30 +137,27 @@ Open to implement later (nice‑to‑have):
   - Add `GET /api/connect/devices` route (uses `deviceService`, new read method).
   - Add `GET /health/config` route (reads `getConfig()`, checks paths with `Bun.file`, runs `Bun.$` `--version`).
   - Add `GET /api/queue/metrics` route (returns `sqliteQueueService.getQueueMetrics()`).
-  - Add `GET /api/logs/stream` SSE. Hook pino transport and worker/logger to publish `log` events.
   - Add `POST /api/worker/restart` wiring to `AgentRunnerWorker`.
 
 - packages/api
-  - Add zod schemas/types: `Device`, `ListDevicesQuery`, `ListDevicesResponse`, `ConfigStatus`, `QueueMetrics`, `LogEvent`.
+  - Add zod schemas/types: `Device`, `ListDevicesQuery`, `ListDevicesResponse`, `ConfigStatus`, `QueueMetrics`.
 
 ## Implementation Plan (incremental)
 
 1) API types & routes
    - Add device/config/queue/logs endpoints and schemas.
-2) TUI bootstrap (OpenTUI)
-   - Add `@opentui/react` + `@opentui/core` to `packages/cli` with exact versions.
-   - Update `packages/cli/tsconfig.json`: `"jsx": "react-jsx"`, `"jsxImportSource": "@opentui/react"`.
-   - Create `packages/cli/src/tui/` with React components: `App.tsx`, `Header.tsx`, `Devices.tsx`, `Sessions.tsx`, `Logs.tsx`, `Footer.tsx`.
-   - Implement SSE client (`sse.ts`) using `fetch` stream.
+2) TUI bootstrap (ANSI)
+   - Implement ANSI TUI renderer in `packages/cli/src/tui/` (no React/Ink): draws header/devices/sessions/queue and footer.
+   - Poll endpoints on intervals; redraw with minimal flicker.
    - Wire `serve.ts` to detect TTY and mount TUI in foreground; `--attach` launches TUI-only client.
-3) Logs bridge
-   - Add pino transport hook to emit to SSE + in‑process bus.
+3) Logs
+   - No TUI log stream. All logs are written to `~/.pokecode/pokecode.log`; users view via `pokecode logs -f`.
 4) Worker controls
    - Implement `POST /api/worker/restart`; bind to `r` key.
 5) Polish
    - Filters, pause, persist last focused pane, theme.
 6) Tests (bun test)
-   - Snapshot tests for OpenTUI render; HTTP mock for health/devices/sessions.
+   - Snapshot tests for ANSI draw function; HTTP mock for health/devices/sessions.
 
 ## TypeScript & Bun Standards
 
@@ -183,7 +165,7 @@ Open to implement later (nice‑to‑have):
 - Validate all network responses with zod; use inferred types (`z.infer<...>`).
 - Rely on `Bun.file(path).exists()` for file checks and `Bun.$` for subprocess version checks.
 - No `dotenv`; Bun auto‑loads `.env`.
-- Keep React types strict; avoid `as` assertions. Define component props via exact object types.
+- No React. Keep strict types for TUI renderer functions and HTTP clients; avoid `as` assertions.
 
 ## Telemetry & Privacy
 

@@ -27,3 +27,28 @@ export const ConnectErrorResponseSchema = z.object({
   code: z.enum(['INVALID_BODY', 'INTERNAL']).optional(),
 });
 export type ConnectErrorResponse = z.infer<typeof ConnectErrorResponseSchema>;
+
+// Device model for listings
+export const DeviceSchema = z.object({
+  deviceId: z.string(),
+  deviceName: z.string(),
+  platform: z.union([z.literal('ios'), z.literal('android')]).nullable(),
+  appVersion: z.string().nullable(),
+  lastConnectedAt: z.string().datetime(),
+});
+export type Device = z.infer<typeof DeviceSchema>;
+
+export const ListDevicesQuerySchema = z.object({
+  activeWithinSeconds: z.coerce.number().int().min(1).max(24 * 60 * 60).default(3600).optional(),
+  limit: z.coerce.number().int().min(1).max(200).default(100).optional(),
+  offset: z.coerce.number().int().min(0).default(0).optional(),
+});
+export type ListDevicesQuery = z.infer<typeof ListDevicesQuerySchema>;
+
+export const ListDevicesResponseSchema = z.object({
+  devices: z.array(DeviceSchema),
+  total: z.number().int(),
+  limit: z.number().int(),
+  offset: z.number().int(),
+});
+export type ListDevicesResponse = z.infer<typeof ListDevicesResponseSchema>;

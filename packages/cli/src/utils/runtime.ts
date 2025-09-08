@@ -8,8 +8,8 @@ export const spawnDetached = (
   options: {
     cwd?: string;
     env?: Record<string, string>;
-    stdout?: string;
-    stderr?: string;
+    stdout?: string | 'inherit' | 'ignore';
+    stderr?: string | 'inherit' | 'ignore';
   } = {},
 ): Bun.Subprocess => {
   const env: Record<string, string> = {
@@ -17,20 +17,24 @@ export const spawnDetached = (
     ...(options.env ?? {}),
   } as Record<string, string>;
 
-  const proc =
-    options.stdout || options.stderr
-      ? Bun.spawn([runtimePath, ...args], {
-          env,
-          ...(options.cwd && { cwd: options.cwd }),
-          stdout: options.stdout ? Bun.file(options.stdout) : 'inherit',
-          stderr: options.stderr ? Bun.file(options.stderr) : 'inherit',
-          stdin: 'ignore',
-        })
-      : Bun.spawn([runtimePath, ...args], {
-          env,
-          ...(options.cwd && { cwd: options.cwd }),
-          stdio: ['ignore', 'inherit', 'inherit'] as const,
-        });
+  const useCustom = options.stdout !== undefined || options.stderr !== undefined;
+  const proc = useCustom
+    ? Bun.spawn([runtimePath, ...args], {
+        env,
+        ...(options.cwd && { cwd: options.cwd }),
+        stdout: typeof options.stdout === 'string' && options.stdout !== 'inherit' && options.stdout !== 'ignore'
+          ? Bun.file(options.stdout)
+          : (options.stdout ?? 'inherit'),
+        stderr: typeof options.stderr === 'string' && options.stderr !== 'inherit' && options.stderr !== 'ignore'
+          ? Bun.file(options.stderr)
+          : (options.stderr ?? 'inherit'),
+        stdin: 'ignore',
+      })
+    : Bun.spawn([runtimePath, ...args], {
+        env,
+        ...(options.cwd && { cwd: options.cwd }),
+        stdio: ['ignore', 'inherit', 'inherit'] as const,
+      });
 
   if (proc.pid) {
     process.nextTick(() => {

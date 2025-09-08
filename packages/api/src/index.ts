@@ -18,6 +18,12 @@ export * as GitSchemas from './schemas/git.schema';
 // Health schemas
 export * from './schemas/health.schema';
 export * as HealthSchemas from './schemas/health.schema';
+// Config schemas
+export * from './schemas/config.schema';
+export * as ConfigSchemas from './schemas/config.schema';
+// Queue schemas
+export * from './schemas/queue.schema';
+export * as QueueSchemas from './schemas/queue.schema';
 // Message schemas
 export * from './schemas/message.schema';
 export * as MessageSchemas from './schemas/message.schema';

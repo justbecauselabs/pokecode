@@ -112,7 +112,7 @@ async function processCodexPath(rawPath: string): Promise<void> {
   console.log(`Codex path: ${codexPath}`);
 }
 
-async function savePaths(paths: {
+async function savePaths(pathsToSave: {
   claudeCodePath?: string;
   codexCliPath?: string | undefined;
 }): Promise<void> {
@@ -136,8 +136,8 @@ async function savePaths(paths: {
     }
   }
 
-  if (paths.claudeCodePath) config.claudeCodePath = paths.claudeCodePath;
-  if (paths.codexCliPath !== undefined) config.codexCliPath = paths.codexCliPath;
+  if (pathsToSave.claudeCodePath) config.claudeCodePath = pathsToSave.claudeCodePath;
+  if (pathsToSave.codexCliPath !== undefined) config.codexCliPath = pathsToSave.codexCliPath;
 
   // Write config file
   await Bun.write(CONFIG_FILE, JSON.stringify(config, null, 2));

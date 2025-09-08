@@ -1,12 +1,10 @@
 /**
  * Serve command implementation with robust daemon support
  */
-
 import { getConfig, overrideConfig } from '@pokecode/core';
 import chalk from 'chalk';
 import ora from 'ora';
 import { startServer } from '../server';
-import { runDashboard } from '../tui';
 import { DaemonManager } from '../utils/daemon';
 import { spawnDetached } from '../utils/runtime';
 
@@ -69,7 +67,7 @@ const validateLogLevel = (level: string): string => {
 export const serve = async (options: ServeOptions): Promise<void> => {
   const daemonManager = new DaemonManager();
 
-  const useTui = process.stdout.isTTY && !options.daemon && process.env.POKECODE_TUI !== '0';
+  const useTui = process.stdout.isTTY && !options.daemon;
 
   // Validate and sanitize inputs
   const port = validatePort(options.port);
@@ -120,6 +118,8 @@ const startDaemon = async (): Promise<void> => {
   try {
     const env: Record<string, string> = {
       NODE_ENV: 'production',
+      POKECODE_DAEMON: '1',
+      POKECODE_QUIET: '1',
     };
 
     // Re-exec the current process (handle both dev and compiled modes)
@@ -141,8 +141,8 @@ const startDaemon = async (): Promise<void> => {
       env: Object.fromEntries(
         Object.entries({ ...process.env, ...env }).filter(([, value]) => value !== undefined),
       ) as Record<string, string>,
-      stdout: config.logFile,
-      stderr: config.logFile,
+      stdout: 'ignore',
+      stderr: 'ignore',
     });
 
     if (!child.pid) throw new Error('Failed to start daemon process');
@@ -180,17 +180,19 @@ const startEmbedded = async (params: { useTui: boolean }): Promise<void> => {
   const spinner = ora('Starting PokéCode server...').start();
 
   try {
-    // Signal to server to minimize noisy startup logs if TUI will take over
     if (params.useTui) {
-      process.env.POKECODE_TUI_ACTIVE = '1';
+      // Suppress console logging from server when TUI is active
+      process.env.POKECODE_TUI = '1';
+      process.env.POKECODE_QUIET = '1';
     }
-
     // Use the new unified server module
-    await startServer();
+    await startServer({ quiet: params.useTui });
 
     if (params.useTui) {
       spinner.stop();
-      const serverUrl = `http://${config.host}:${config.port}`;
+      const hostForClient = config.host === '0.0.0.0' || config.host === '::' ? 'localhost' : config.host;
+      const serverUrl = `http://${hostForClient}:${config.port}`;
+      const { runDashboard } = await import('../tui');
       runDashboard({ serverUrl, mode: 'foreground' });
       return; // TUI holds the process open
     } else {
