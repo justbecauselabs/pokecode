@@ -328,6 +328,7 @@ const messageRoutes: FastifyPluginAsync = async (fastify) => {
             createdAt: session.createdAt,
             updatedAt: session.updatedAt,
             lastAccessedAt: session.lastAccessedAt,
+            lastMessageSentAt: session.lastMessageSentAt,
             isWorking: session.isWorking,
             currentJobId: session.currentJobId,
             lastJobStatus: session.lastJobStatus,

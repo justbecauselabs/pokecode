@@ -5,7 +5,7 @@ import type {
   ListSessionsQuery,
   UpdateSessionRequest,
 } from '@pokecode/types';
-import { desc, eq, sql } from 'drizzle-orm';
+import { and, desc, eq, isNotNull, sql } from 'drizzle-orm';
 import { db } from '../database';
 import { sessions } from '../database/schema-sqlite';
 import { NotFoundError, ValidationError } from '../types';
@@ -74,8 +74,10 @@ export class SessionService {
     // Always enforce a maximum limit of 20 sessions
     const effectiveLimit = Math.min(limit, 20);
 
-    // Build where clause - show all sessions (including those without Claude Code session IDs yet)
-    const whereClause = sql`1=1`;
+    // Build where clause - only sessions with at least one message
+    const whereClause = options.state
+      ? and(isNotNull(sessions.lastMessageSentAt), eq(sessions.state, options.state))
+      : and(isNotNull(sessions.lastMessageSentAt));
 
     // Get total count
     const countResult = await db
@@ -84,23 +86,19 @@ export class SessionService {
       .where(whereClause);
     const count = countResult[0]?.count ?? 0;
 
-    // Get sessions ordered by updated_at descending
+    // Get sessions ordered by last_message_sent_at (most recent message first)
     const results = await db
       .select()
       .from(sessions)
       .where(whereClause)
-      .orderBy(desc(sessions.updatedAt))
+      .orderBy(desc(sessions.lastMessageSentAt))
       .limit(effectiveLimit)
       .offset(offset);
 
     logger.info({ results }, 'Sessions listed');
 
-    // Format sessions and apply state filter if needed
-    let formattedSessions = results.map((session) => this.formatSession(session));
-
-    if (options.state) {
-      formattedSessions = formattedSessions.filter((session) => session.state === options.state);
-    }
+    // Format sessions (state is already filtered in SQL when provided)
+    const formattedSessions = results.map((session) => this.formatSession(session));
 
     return {
       sessions: formattedSessions,
@@ -184,6 +182,7 @@ export class SessionService {
       createdAt: session.createdAt.toISOString(),
       updatedAt: session.updatedAt.toISOString(),
       lastAccessedAt: session.lastAccessedAt.toISOString(),
+      lastMessageSentAt: session.lastMessageSentAt ? session.lastMessageSentAt.toISOString() : null,
       // Working state fields
       isWorking: session.isWorking,
       currentJobId: session.currentJobId,

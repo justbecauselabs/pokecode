@@ -160,7 +160,7 @@ export default function HomeScreen() {
                           {truncatePath(item.projectPath)}
                         </Text>
                         <Text className="text-xs text-muted-foreground font-mono mb-1">
-                          {formatRelativeTime(item.lastAccessedAt)}
+                          {item.lastMessageSentAt ? formatRelativeTime(item.lastMessageSentAt) : ''}
                         </Text>
                         <View className="flex-row items-center gap-2">
                           <Text className="text-xs text-muted-foreground font-mono">

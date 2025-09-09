@@ -35,6 +35,8 @@ export const sessions = sqliteTable(
     // Token and message tracking
     messageCount: integer('message_count').default(0).notNull(),
     tokenCount: integer('token_count').default(0).notNull(),
+    // Last time a message was sent in this session (user or assistant)
+    lastMessageSentAt: integer('last_message_sent_at', { mode: 'timestamp' }),
     // Session state
     state: text('state', { enum: ['active', 'inactive'] as const })
       .default('active')
@@ -43,6 +45,8 @@ export const sessions = sqliteTable(
   (table) => ({
     lastAccessedIdx: index('idx_sessions_last_accessed').on(table.lastAccessedAt),
     isWorkingIdx: index('idx_sessions_is_working').on(table.isWorking),
+    // New index to optimize ordering by last message timestamp
+    lastMessageSentIdx: index('idx_sessions_last_message_sent').on(table.lastMessageSentAt),
   }),
 );
 

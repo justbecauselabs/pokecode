@@ -1,6 +1,6 @@
 import type { SDKMessage as ClaudeSDKMessage } from '@anthropic-ai/claude-code';
 import { createId } from '@paralleldrive/cuid2';
-import type { CodexSDKMessage, Message } from '@pokecode/types';
+import type { CodexSDKMessage, Message, PokeCodeUserMessage } from '@pokecode/types';
 import { and, asc, desc, eq, gt, isNotNull, or, sql } from 'drizzle-orm';
 
 import { db } from '../database';
@@ -204,6 +204,7 @@ export class MessageService {
         .set({
           messageCount: sql`${sessions.messageCount} + 1`,
           tokenCount: sql`${sessions.tokenCount} + ${tokenCount}`,
+          lastMessageSentAt: new Date(),
         })
         .where(eq(sessions.id, sessionId));
 
@@ -239,16 +240,9 @@ export class MessageService {
    * Save user prompt as SDK-formatted message and update session counters
    */
   async saveUserMessage(sessionId: string, content: string): Promise<void> {
-    // Create user message in Claude SDK format
-    const userMessage: ClaudeSDKMessage & { type: 'user' } = {
-      type: 'user',
-      message: {
-        role: 'user',
-        content: content,
-      },
-      parent_tool_use_id: null,
-      session_id: createId(),
-    };
+    // Create provider-agnostic PokéCode user message
+    const { createPokeCodeUserMessage } = await import('../utils/pokecode-user-message');
+    const userMessage: PokeCodeUserMessage = createPokeCodeUserMessage({ content });
 
     // Use a transaction to ensure consistency
     await db.transaction(async (tx) => {
@@ -279,6 +273,7 @@ export class MessageService {
         .update(sessions)
         .set({
           messageCount: sql`${sessions.messageCount} + 1`,
+          lastMessageSentAt: new Date(),
         })
         .where(eq(sessions.id, sessionId));
 

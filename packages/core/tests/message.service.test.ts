@@ -132,7 +132,7 @@ describe('MessageService Integration Tests', () => {
   });
 
   describe('saveUserMessage', () => {
-    it('should save user message in SDK format', async () => {
+    it('should save user message in PokéCode format', async () => {
       const content = 'What is the weather today?';
 
       await messageService.saveUserMessage(sessionId, content);
@@ -145,9 +145,11 @@ describe('MessageService Integration Tests', () => {
       expect(messages[0]?.type).toBe('user');
 
       const savedContent = JSON.parse(messages[0]?.contentData || '{}');
-      expect(savedContent.type).toBe('user');
-      expect(savedContent.message.role).toBe('user');
-      expect(savedContent.message.content).toBe(content);
+      expect(savedContent.kind).toBe('pokecode_user_message');
+      expect(savedContent.role).toBe('user');
+      expect(savedContent.content).toBe(content);
+      expect(typeof savedContent.id).toBe('string');
+      expect(typeof savedContent.timestamp).toBe('string');
     });
 
     it('should increment message count but not token count for user messages', async () => {

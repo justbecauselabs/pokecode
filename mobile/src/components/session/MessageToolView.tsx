@@ -5,6 +5,7 @@ import { Text, View } from 'react-native';
 import type { Message } from '../../types/messages';
 import { MessageGenericToolView } from './MessageGenericToolView';
 import { MessageTaskToolView } from './MessageTaskToolView';
+import { MessageToolEditView } from './MessageToolEditView';
 import { MessageToolTodoView } from './MessageToolTodoView';
 
 interface MessageToolViewProps {
@@ -52,37 +53,37 @@ export const MessageToolView: React.FC<MessageToolViewProps> = memo(
             );
           }
           break;
-        case 'edit':
-          // For edit tools, use generic tool view
-          if (
-            'filePath' in toolUse.data &&
-            'oldString' in toolUse.data &&
-            'newString' in toolUse.data
-          ) {
+        case 'edit': {
+          const d = toolUse.data;
+          if ('filePath' in d && 'oldString' in d && 'newString' in d) {
             return (
-              <MessageGenericToolView
+              <MessageToolEditView
                 title="edit"
-                text={`${toolUse.data.filePath}: ${toolUse.data.oldString} → ${toolUse.data.newString}`}
-                result={toolResult}
+                filePath={d.filePath}
+                oldNewPairs={[{ oldString: d.oldString, newString: d.newString }]}
+                toolResult={toolResult}
                 onResultPress={onResultPress}
               />
             );
           }
           break;
-        case 'multiedit':
-          // For multiedit tools, use generic tool view
-          if ('filePath' in toolUse.data && 'edits' in toolUse.data) {
-            const editsCount = toolUse.data.edits.length;
+        }
+        case 'multiedit': {
+          const d = toolUse.data;
+          if ('filePath' in d && 'edits' in d) {
+            const pairs = d.edits.map((e) => ({ oldString: e.oldString, newString: e.newString }));
             return (
-              <MessageGenericToolView
+              <MessageToolEditView
                 title="multiedit"
-                text={`${toolUse.data.filePath} (${editsCount} edits)`}
-                result={toolResult}
+                filePath={d.filePath}
+                oldNewPairs={pairs}
+                toolResult={toolResult}
                 onResultPress={onResultPress}
               />
             );
           }
           break;
+        }
         case 'grep':
           // For grep tools, use generic tool view
           if ('pattern' in toolUse.data && 'path' in toolUse.data) {

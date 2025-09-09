@@ -16,10 +16,14 @@ export function useSessions() {
     queryKey: SESSIONS_QUERY_KEY,
     queryFn: async (): Promise<Session[]> => {
       const response = await apiClient.getSessions();
-      // Extract sessions array from response and sort by lastAccessedAt descending (most recent first)
-      return response.sessions.sort(
-        (a, b) => new Date(b.lastAccessedAt).getTime() - new Date(a.lastAccessedAt).getTime(),
-      );
+      // Server returns only sessions with lastMessageSentAt and orders by it desc.
+      // Keep a defensive client-side filter and stable sort by that field only.
+      return response.sessions
+        .filter((s) => !!s.lastMessageSentAt)
+        .slice()
+        .sort((a, b) =>
+          new Date(b.lastMessageSentAt || 0).getTime() - new Date(a.lastMessageSentAt || 0).getTime(),
+        );
     },
     staleTime: 30 * 1000, // Consider data fresh for 30 seconds
     refetchOnWindowFocus: true,

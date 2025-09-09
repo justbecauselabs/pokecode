@@ -47,10 +47,8 @@ export default function FileExplorerScreen() {
         });
 
       const provider = await chooseProvider();
+      // Create the session; hook will navigate to the new session screen
       await createSessionMutation.mutateAsync({ repository: tempRepository, provider });
-
-      // Navigate back to the main screen
-      router.replace('/');
     } catch (error) {
       console.error('Failed to create session from selected path:', error);
     }

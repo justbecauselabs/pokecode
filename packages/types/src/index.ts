@@ -27,6 +27,7 @@ export * from './codex';
 export * from './command';
 export * from './directory';
 export * from './message';
+export * from './pokecode-user-message';
 export * from './repository';
 export * from './session';
 export * from './sse';

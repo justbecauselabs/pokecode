@@ -26,6 +26,7 @@ export const SessionSchema = z.object({
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
   lastAccessedAt: z.string().datetime(),
+  lastMessageSentAt: z.string().datetime().nullable(),
   // Working state fields
   isWorking: z.boolean(),
   currentJobId: z.string().nullable(),
@@ -73,6 +74,7 @@ export type Session = {
   createdAt: string; // ISO timestamp
   updatedAt: string; // ISO timestamp
   lastAccessedAt: string; // ISO timestamp
+  lastMessageSentAt: string | null; // ISO timestamp or null if none
   isWorking: boolean;
   currentJobId: string | null;
   lastJobStatus: string | null;

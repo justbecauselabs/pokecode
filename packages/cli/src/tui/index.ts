@@ -167,15 +167,18 @@ function drawFrame(params: { serverUrl: string; mode: Mode; state: DashboardStat
     { name: 'name', w: 18 },
     { name: 'provider', w: 8 },
     { name: 'working', w: 8 },
-    { name: 'updated', w: 14 },
+    { name: 'last msg', w: 14 },
     { name: 'msgs', w: 5 },
     { name: 'tokens', w: 7 },
   ] as const;
   lines.push(chalk.gray(` ${sessCols.map((c) => pad(c.name, c.w)).join('  ')}`));
   const now = Date.now();
-  const sessions = (params.state.sessions?.sessions ?? []).filter(
-    (s) => now - new Date(s.updatedAt).getTime() <= 3600 * 1000,
-  );
+  const sessionsRaw = params.state.sessions?.sessions ?? [];
+  const sessions = sessionsRaw
+    .filter((s): s is typeof sessionsRaw[number] & { lastMessageSentAt: string } =>
+      typeof s.lastMessageSentAt === 'string',
+    )
+    .filter((s) => now - new Date(s.lastMessageSentAt).getTime() <= 3600 * 1000);
   const sShow = sessions.slice(0, 8);
   for (const s of sShow) {
     const row = [
@@ -183,7 +186,7 @@ function drawFrame(params: { serverUrl: string; mode: Mode; state: DashboardStat
       pad(s.name, sessCols[1].w),
       pad(s.provider, sessCols[2].w),
       pad(s.isWorking ? 'yes' : 'no', sessCols[3].w),
-      pad(relativeAgo(s.updatedAt), sessCols[4].w),
+      pad(relativeAgo(s.lastMessageSentAt), sessCols[4].w),
       pad(String(s.messageCount), sessCols[5].w),
       pad(String(s.tokenCount), sessCols[6].w),
     ].join('  ');

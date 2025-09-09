@@ -8,7 +8,9 @@ import type {
 import type React from 'react';
 import { memo } from 'react';
 import { Text, View } from 'react-native';
+import { isUnifiedDiff } from '../../utils/diff';
 import { textStyles } from '../../utils/styleUtils';
+import { InlineDiffBlock } from '../diff/InlineDiffBlock';
 import { MarkdownRenderer } from './MarkdownRenderer';
 import { MessageToolView } from './MessageToolView';
 
@@ -76,10 +78,17 @@ export const MessageView: React.FC<MessageViewProps> = memo(
       // Handle regular message content
       if (assistantMessage.type === 'message') {
         const messageData = assistantMessage.data;
-
+        const raw = messageData.content;
+        if (isUnifiedDiff({ text: raw })) {
+          return (
+            <View className="bg-background">
+              <InlineDiffBlock diffText={raw} />
+            </View>
+          );
+        }
         return (
           <View className="p-3 bg-background">
-            <MarkdownRenderer content={messageData.content} />
+            <MarkdownRenderer content={raw} />
           </View>
         );
       }

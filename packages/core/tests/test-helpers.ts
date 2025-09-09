@@ -60,10 +60,12 @@ export async function createTestSession(params: {
 export async function createTestSessions(count: number): Promise<string[]> {
   const sessionIds: string[] = [];
   for (let i = 0; i < count; i++) {
-    const session = await createTestSession({ 
-      projectPath: `/project${i + 1}` 
-    });
+    const session = await createTestSession({ projectPath: `/project${i + 1}` });
+    // Ensure each session has at least one message so lastMessageSentAt is set
+    await messageService.saveUserMessage(session.id, `hello ${i + 1}`);
     sessionIds.push(session.id);
+    // Small delay to ensure distinct timestamps across sessions
+    await new Promise((r) => setTimeout(r, 10));
   }
   return sessionIds;
 }
