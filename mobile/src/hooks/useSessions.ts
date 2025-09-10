@@ -21,8 +21,10 @@ export function useSessions() {
       return response.sessions
         .filter((s) => !!s.lastMessageSentAt)
         .slice()
-        .sort((a, b) =>
-          new Date(b.lastMessageSentAt || 0).getTime() - new Date(a.lastMessageSentAt || 0).getTime(),
+        .sort(
+          (a, b) =>
+            new Date(b.lastMessageSentAt || 0).getTime() -
+            new Date(a.lastMessageSentAt || 0).getTime(),
         );
     },
     staleTime: 30 * 1000, // Consider data fresh for 30 seconds

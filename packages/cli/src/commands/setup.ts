@@ -1,4 +1,5 @@
 import { CONFIG_DIR, CONFIG_FILE, type FileConfig } from '@pokecode/core';
+import { inferClaudeCodeCliPath, inferCodexCliPath } from '../utils/infer';
 
 type SetupOptions = Record<string, never>;
 
@@ -17,22 +18,55 @@ export async function setup(_options: SetupOptions): Promise<void> {
   console.log('  PokéCode Setup  ');
   console.log('==================');
   console.log();
-  console.log('To get started, I need the path to your Claude Code installation.');
-  console.log('Please run `which claude` in your terminal and paste the output below:');
-  console.log();
-
-  const claudePath = await promptLine('Claude path: ');
-  await processClaudePath(claudePath.trim());
-
-  console.log();
-  console.log('Optionally, provide the path to your Codex CLI.');
-  console.log('Tip: run `which codex`. Press Enter to skip.');
-  const codexPathRaw = await promptLine('Codex path (optional): ');
-  const codexPath = codexPathRaw.trim();
-  if (codexPath.length > 0) {
-    await processCodexPath(codexPath);
+  console.log('First, locating your Claude Code installation...');
+  const inferredClaude = await inferClaudeCodeCliPath();
+  if (inferredClaude) {
+    console.log(`Found Claude Code CLI: ${inferredClaude}`);
+    const useIt = await confirmYesNoDefaultYes('Use this path? (Y/n) ');
+    if (useIt) {
+      await savePaths({ claudeCodePath: inferredClaude });
+    } else {
+      console.log();
+      console.log('Paste the output of `which claude` (or path to cli.js):');
+      const claudePathManual = await promptLine('Claude path: ');
+      await processClaudePath(claudePathManual.trim());
+    }
   } else {
-    await savePaths({ codexCliPath: undefined });
+    console.log('Could not infer Claude Code automatically.');
+    console.log('Please run `which claude` and paste the result (or cli.js path).');
+    console.log();
+    const claudePath = await promptLine('Claude path: ');
+    await processClaudePath(claudePath.trim());
+  }
+
+  console.log();
+  console.log('Next, trying to locate Codex CLI (optional)...');
+  const inferredCodex = await inferCodexCliPath();
+  if (inferredCodex) {
+    console.log(`Found Codex CLI: ${inferredCodex}`);
+    const useCodex = await confirmYesNoDefaultYes('Use this Codex path? (Y/n) ');
+    if (useCodex) {
+      await processCodexPath(inferredCodex);
+    } else {
+      console.log('Tip: press Enter to skip.');
+      const codexPathRaw = await promptLine('Codex path (optional): ');
+      const codexPath = codexPathRaw.trim();
+      if (codexPath.length > 0) {
+        await processCodexPath(codexPath);
+      } else {
+        await savePaths({ codexCliPath: undefined });
+      }
+    }
+  } else {
+    console.log('Codex not found automatically. You can provide it now or skip.');
+    console.log('Tip: run `which codex`. Press Enter to skip.');
+    const codexPathRaw = await promptLine('Codex path (optional): ');
+    const codexPath = codexPathRaw.trim();
+    if (codexPath.length > 0) {
+      await processCodexPath(codexPath);
+    } else {
+      await savePaths({ codexCliPath: undefined });
+    }
   }
 }
 
@@ -177,5 +211,11 @@ async function promptLine(label: string): Promise<string> {
 
 async function confirmYesNo(label: string): Promise<boolean> {
   const ans = (await promptLine(label)).trim().toLowerCase();
+  return ans === 'y' || ans === 'yes';
+}
+
+async function confirmYesNoDefaultYes(label: string): Promise<boolean> {
+  const ans = (await promptLine(label)).trim().toLowerCase();
+  if (ans === '') return true;
   return ans === 'y' || ans === 'yes';
 }

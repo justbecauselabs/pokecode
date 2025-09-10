@@ -175,8 +175,9 @@ function drawFrame(params: { serverUrl: string; mode: Mode; state: DashboardStat
   const now = Date.now();
   const sessionsRaw = params.state.sessions?.sessions ?? [];
   const sessions = sessionsRaw
-    .filter((s): s is typeof sessionsRaw[number] & { lastMessageSentAt: string } =>
-      typeof s.lastMessageSentAt === 'string',
+    .filter(
+      (s): s is (typeof sessionsRaw)[number] & { lastMessageSentAt: string } =>
+        typeof s.lastMessageSentAt === 'string',
     )
     .filter((s) => now - new Date(s.lastMessageSentAt).getTime() <= 3600 * 1000);
   const sShow = sessions.slice(0, 8);
