@@ -39,3 +39,7 @@ Default to using Bun instead of Node.js.
 - Prefer type narrowing with type guards over type assertions
 - Use proper Zod schemas and inferred types instead of casting
 - If TypeScript is complaining, fix the types - don't silence it with assertions
+
+## Test Scripts
+
+- **ALWAYS** put one off scripts / test data in tmp_scripts so they are ignored from git

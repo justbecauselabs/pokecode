@@ -5,10 +5,10 @@ function extractPathFromWhichOutput(out: string, cmd: string): string | null {
   if (trimmed.length === 0) return null;
   const aliasZsh = new RegExp(`^${cmd}:[\t ]*aliased to[\t ]+(.+)$`);
   const m1 = trimmed.match(aliasZsh);
-  if (m1 && m1[1]) return m1[1].trim();
-  const aliasBash = new RegExp(`^alias[\t ]+${cmd}=['\"]([^'\"]+)['\"]$`);
+  if (m1?.[1]) return m1[1].trim();
+  const aliasBash = new RegExp(`^alias[\t ]+${cmd}=['"]([^'"]+)['"]$`);
   const m2 = trimmed.match(aliasBash);
-  if (m2 && m2[1]) return m2[1].trim();
+  if (m2?.[1]) return m2[1].trim();
   if (trimmed.startsWith('/')) return trimmed;
   for (const token of trimmed.split(/\s+/)) {
     if (token.startsWith('/')) return token;
@@ -28,29 +28,40 @@ async function runStdout(cmd: string[]): Promise<string> {
 }
 
 async function commandPath(cmd: string): Promise<string | null> {
+  console.log('Trying to detect claude code path');
   // Basic PATH-resolved checks
-  const out1 = await runStdout(['/bin/sh', '-lc', `command -v ${cmd}`]);
-  const p1 = extractPathFromWhichOutput(out1, cmd);
-  if (p1) return p1;
+  // const out1 = await runStdout(['/bin/sh', '-lc', `command -v ${cmd}`]);
+  // console.log('out1', out1);
+  // const p1 = extractPathFromWhichOutput(out1, cmd);
+  // if (p1) return p1;
 
   const out2 = await runStdout(['which', cmd]);
+  console.log('out2', out2);
   const p2 = extractPathFromWhichOutput(out2, cmd);
   if (p2) return p2;
 
   // zsh (login and interactive) to see aliases from ~/.zshrc
   const out3 = await runStdout(['zsh', '-lc', `which ${cmd}`]);
+  console.log('out3', out3);
+
   const p3 = extractPathFromWhichOutput(out3, cmd);
   if (p3) return p3;
 
   const out4 = await runStdout(['zsh', '-lc', `whence -p ${cmd} || print -r -- $commands[${cmd}]`]);
+  console.log('out4', out4);
+
   const p4 = extractPathFromWhichOutput(out4, cmd);
   if (p4) return p4;
 
   const out5 = await runStdout(['zsh', '-ic', `which ${cmd}`]);
+  console.log('out5', out5);
+
   const p5 = extractPathFromWhichOutput(out5, cmd);
   if (p5) return p5;
 
   const out6 = await runStdout(['zsh', '-ic', `whence -p ${cmd} || print -r -- $commands[${cmd}]`]);
+  console.log('out6', out6);
+
   const p6 = extractPathFromWhichOutput(out6, cmd);
   if (p6) return p6;
 
@@ -94,7 +105,7 @@ async function parseWrapperForClaudePath(binPath: string): Promise<string | null
   try {
     const content = await Bun.file(binPath).text();
     const match = content.match(/(["'])((?:[^"']*?@anthropic-ai\/claude-code\/cli\.js))["']/);
-    if (match && match[2]) {
+    if (match?.[2]) {
       const p = match[2];
       if (await fileExists(p)) return p;
     }
@@ -105,19 +116,8 @@ async function parseWrapperForClaudePath(binPath: string): Promise<string | null
 }
 
 export async function inferClaudeCodeCliPath(): Promise<string | null> {
-  // Env overrides commonly used by users
-  const envs = [
-    process.env.CLAUDE_CODE_PATH,
-    process.env.CLAUDE_CODE_CLI,
-    process.env.POKECODE_CLAUDE_CODE_PATH,
-  ];
-  for (const val of envs) {
-    if (val && (await fileExists(val))) return val;
-  }
-
   const bin = await commandPath('claude');
   if (!bin) return null;
-
   // Try to read wrapper and extract explicit path or derive from .bin
   const fromWrapper = await parseWrapperForClaudePath(bin);
   const candidates = candidateClaudeCliFromBin(bin);
@@ -127,12 +127,6 @@ export async function inferClaudeCodeCliPath(): Promise<string | null> {
 }
 
 export async function inferCodexCliPath(): Promise<string | null> {
-  // Env is handled in serve, but also honor here
-  const envs = [process.env.CODEX_CLI_PATH, process.env.POKECODE_CODEX_CLI_PATH];
-  for (const val of envs) {
-    if (val && (await fileExists(val))) return val;
-  }
-
   const bin = await commandPath('codex');
   if (!bin) return null;
 

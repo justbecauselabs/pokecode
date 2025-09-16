@@ -37,5 +37,5 @@ packages/**/dev-data/
 **/*.db-wal
 **/*.db-shm
 
-# Legacy conductor directory
-.conductor/
+# Helper Scripts
+/tmp_scripts
