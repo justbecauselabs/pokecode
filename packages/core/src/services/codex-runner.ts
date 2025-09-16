@@ -68,9 +68,12 @@ export class CodexRunner implements AgentRunner {
       this.options.sessionId,
     );
 
-    const markerId = createId();
-    const markerText = `Ignore this id: ${markerId}`;
-    const promptWithMarker = `${params.prompt}\n\n${markerText}`;
+    // When we don't have a provider session id yet, append a unique marker to the prompt.
+    // codex-cli writes the full prompt line into ~/.codex/history.jsonl, so this marker lets us
+    // unambiguously match the history entry and recover the generated session id for resume.
+    const markerId = !lastProviderSessionId ? createId() : null;
+    const markerText = markerId ? `Ignore this id: ${markerId}` : null;
+    const promptWithMarker = markerText ? `${params.prompt}\n\n${markerText}` : params.prompt;
 
     const args = [
       '--yolo',
@@ -93,9 +96,9 @@ export class CodexRunner implements AgentRunner {
         projectPath: this.options.projectPath,
         resume: !!lastProviderSessionId,
       resumeSessionId: lastProviderSessionId ?? null,
-      marker: markerId,
-    },
-    'Running Codex CLI',
+        marker: markerId,
+      },
+      'Running Codex CLI',
     );
 
     const proc = Bun.spawn({
@@ -165,7 +168,7 @@ export class CodexRunner implements AgentRunner {
           count++;
 
           // If we don't have a provider session id yet, block and get it now
-          if (providerSessionId === null) {
+          if (providerSessionId === null && markerText) {
             const id = await waitForSessionIdForPrompt(markerText, {
               sinceTs: spawnedAtSec,
               timeoutMs: 5_000,
