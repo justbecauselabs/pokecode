@@ -21,10 +21,11 @@ describe('waitForSessionIdForPrompt', () => {
     const nowSec = Math.floor(Date.now() / 1000);
     const sessionId = 'test-session-1';
 
-    // Schedule append after a short delay
+    // Schedule append after a short delay with additional logging content
     setTimeout(async () => {
+      const logWrapped = `LOG START\n${prompt}\nLOG END`;
       await writeHistory(filePath, [
-        { session_id: sessionId, ts: nowSec + 1, text: prompt },
+        { session_id: sessionId, ts: nowSec + 1, text: logWrapped },
       ]);
     }, 50);
 
@@ -45,14 +46,18 @@ describe('waitForSessionIdForPrompt', () => {
 
     // Write an older matching entry
     await writeHistory(filePath, [
-      { session_id: 'old-one', ts: nowSec - 10, text: prompt },
+      { session_id: 'old-one', ts: nowSec - 10, text: `prefix ${prompt} suffix` },
     ]);
 
     // Append a new valid entry shortly after
     const newId = 'new-one';
     setTimeout(async () => {
       const current = await Bun.file(filePath).text();
-      const extra = JSON.stringify({ session_id: newId, ts: nowSec + 1, text: prompt });
+      const extra = JSON.stringify({
+        session_id: newId,
+        ts: nowSec + 1,
+        text: `event::${prompt}::done`,
+      });
       await Bun.write(filePath, `${current}${extra}\n`);
     }, 50);
 
@@ -98,5 +103,25 @@ describe('waitForSessionIdForPrompt', () => {
     });
     expect(found).toBeNull();
   });
-});
 
+  it('matches prompt embedded within operational logs', async () => {
+    const filePath = tmpHistoryPath('log-wrap');
+    const nowSec = Math.floor(Date.now() / 1000);
+    const prompt = 'Inspect recording sheet behavior';
+    const sessionId = 'log-session';
+
+    const logEntry = `INFO: Running Codex CLI\nargs: [\n  "--json",\n  "${prompt}"\n]\nINFO: done`;
+    await writeHistory(filePath, [
+      { session_id: sessionId, ts: nowSec + 1, text: logEntry },
+    ]);
+
+    const found = await waitForSessionIdForPrompt(prompt, {
+      sinceTs: nowSec,
+      timeoutMs: 1_000,
+      pollIntervalMs: 20,
+      filePath,
+    });
+
+    expect(found).toBe(sessionId);
+  });
+});

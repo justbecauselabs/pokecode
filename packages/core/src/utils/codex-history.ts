@@ -16,7 +16,7 @@ export function getCodexHistoryPath(): string {
   return joinPath(getHomeDirectory(), '.codex', 'history.jsonl');
 }
 
-function normalizeNewlines(s: string): string {
+function normalizeText(s: string): string {
   return s.replace(/\r\n?/g, '\n');
 }
 
@@ -62,13 +62,13 @@ export async function findLatestSessionIdForPrompt(
   const windowLines = options.windowLines ?? 800;
   const entries = await readHistoryTail({ filePath: options.filePath, maxLines: windowLines });
   if (entries.length === 0) return null;
-  const target = normalizeNewlines(prompt);
+  const target = normalizeText(prompt);
   const sinceTs = options.sinceTs ?? 0;
 
   for (let i = entries.length - 1; i >= 0; i--) {
     const e = entries[i];
     if (e.ts < sinceTs) continue;
-    if (normalizeNewlines(e.text) === target) return e.session_id;
+    if (normalizeText(e.text).includes(target)) return e.session_id;
   }
   return null;
 }
@@ -88,7 +88,7 @@ export async function waitForSessionIdForPrompt(
   const filePath = options.filePath ?? getCodexHistoryPath();
   const sinceTs = options.sinceTs ?? 0;
 
-  const target = normalizeNewlines(prompt);
+  const target = normalizeText(prompt);
 
   while (Date.now() < deadline) {
     try {
@@ -96,7 +96,7 @@ export async function waitForSessionIdForPrompt(
       for (let i = entries.length - 1; i >= 0; i--) {
         const e = entries[i];
         if (e.ts < sinceTs) continue;
-        if (normalizeNewlines(e.text) === target) {
+        if (normalizeText(e.text).includes(target)) {
           logger.info({ sinceTs, ts: e.ts, sessionId: e.session_id }, 'Found Codex session id');
           return e.session_id;
         }
@@ -112,4 +112,3 @@ export async function waitForSessionIdForPrompt(
   logger.warn({ timeoutMs, sinceTs }, 'Timeout waiting for Codex session id');
   return null;
 }
-
