@@ -1,8 +1,10 @@
 import { type CodexSDKMessage, CodexSDKMessageSchema } from '@pokecode/types';
 import type { Subprocess } from 'bun';
 import { getConfig } from '../config';
+import { waitForSessionIdForPrompt } from '../utils/codex-history';
 import { createChildLogger } from '../utils/logger';
 import type { AgentRunner, RunnerExecuteParams, RunnerStreamItem } from './agent-runner';
+import type { MessageService } from './message.service';
 
 const logger = createChildLogger('codex-runner');
 
@@ -44,6 +46,7 @@ export class CodexRunner implements AgentRunner {
       sessionId: string;
       projectPath: string;
       model?: string | undefined;
+      messageService: MessageService;
     },
   ) {}
 
@@ -59,6 +62,11 @@ export class CodexRunner implements AgentRunner {
     const codexCliPath = await this.initialize();
     this.isProcessing = true;
 
+    // Attempt resume if we have a prior provider session id
+    const lastProviderSessionId = await this.options.messageService.getLastProviderSessionId(
+      this.options.sessionId,
+    );
+
     const args = [
       '--yolo',
       '-c',
@@ -67,6 +75,7 @@ export class CodexRunner implements AgentRunner {
       '-m',
       'gpt-5',
       'exec',
+      ...(lastProviderSessionId ? (['resume', lastProviderSessionId] as const) : ([] as const)),
       '--json',
       params.prompt,
     ];
@@ -77,6 +86,8 @@ export class CodexRunner implements AgentRunner {
         args,
         codexCliPath,
         projectPath: this.options.projectPath,
+        resume: !!lastProviderSessionId,
+        resumeSessionId: lastProviderSessionId ?? null,
       },
       'Running Codex CLI',
     );
@@ -88,6 +99,9 @@ export class CodexRunner implements AgentRunner {
       stderr: 'pipe',
     });
     this.proc = proc;
+
+    // Record spawn time in seconds to filter history.jsonl
+    const spawnedAtSec = Math.floor(Date.now() / 1000);
 
     // Abort handling
     const onAbort = () => {
@@ -131,6 +145,8 @@ export class CodexRunner implements AgentRunner {
         return; // nothing to stream
       }
       let count = 0;
+      let providerSessionId: string | null = null;
+
       for await (const line of readLines(proc.stdout)) {
         try {
           const parsed = JSON.parse(line) as unknown;
@@ -141,11 +157,24 @@ export class CodexRunner implements AgentRunner {
           }
           const message: CodexSDKMessage = ok.data;
           count++;
-          yield {
-            provider: 'codex-cli',
-            providerSessionId: null,
-            message,
-          };
+
+          // If we don't have a provider session id yet, block and get it now
+          if (providerSessionId === null) {
+            const id = await waitForSessionIdForPrompt(params.prompt, {
+              sinceTs: spawnedAtSec,
+              timeoutMs: 5_000,
+              pollIntervalMs: 300,
+            });
+            if (!id) {
+              const err = 'Timed out waiting for Codex session id';
+              logger.error({ sessionId: this.options.sessionId }, err);
+              throw new Error(err);
+            }
+            providerSessionId = id;
+          }
+
+          // Stream message with the captured providerSessionId
+          yield { provider: 'codex-cli', providerSessionId, message };
         } catch (e) {
           logger.warn(
             { error: e instanceof Error ? e.message : String(e) },

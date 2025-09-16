@@ -90,6 +90,7 @@ export class AgentRunnerWorker {
           sessionId,
           projectPath: data.projectPath,
           model,
+          messageService,
         });
       } else {
         throw new Error(`Unsupported provider: ${job.provider}`);
@@ -151,6 +152,16 @@ export class AgentRunnerWorker {
       this.stopCancellationChecker(promptId);
       this.activeSessions.delete(promptId);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      // Persist an error message for visibility in the UI
+      try {
+        await messageService.saveErrorMessage({
+          sessionId,
+          provider: job.provider,
+          message: errorMessage,
+        });
+      } catch (persistError) {
+        logger.error({ jobId, promptId, persistError }, 'Failed to save error message');
+      }
       await sqliteQueueService.markJobFailed(jobId, errorMessage);
       await db
         .update(sessions)

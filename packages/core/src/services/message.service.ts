@@ -360,6 +360,54 @@ export class MessageService {
   }
 
   /**
+   * Save an error message (provider-agnostic) to the database and emit SSE.
+   */
+  async saveErrorMessage(params: {
+    sessionId: string;
+    provider: 'claude-code' | 'codex-cli';
+    message: string;
+    providerSessionId?: string | null;
+  }): Promise<void> {
+    const { sessionId, provider, message, providerSessionId } = params;
+    await db.transaction(async (tx) => {
+      // Ensure session exists and get project path
+      const sessionRow = await tx.query.sessions.findFirst({
+        where: eq(sessions.id, sessionId),
+        columns: { projectPath: true },
+      });
+      if (!sessionRow) throw new Error('Session not found');
+
+      const [insertedMessage] = await tx
+        .insert(sessionMessages)
+        .values({
+          id: createId(),
+          sessionId,
+          provider,
+          type: 'error',
+          contentData: JSON.stringify({ message }),
+          providerSessionId: providerSessionId ?? null,
+          tokenCount: null,
+        })
+        .returning();
+
+      await tx
+        .update(sessions)
+        .set({
+          messageCount: sql`${sessions.messageCount} + 1`,
+          lastMessageSentAt: new Date(),
+        })
+        .where(eq(sessions.id, sessionId));
+
+      if (insertedMessage) {
+        const parsedMessage = parseDbMessageByProvider(insertedMessage, sessionRow.projectPath);
+        if (parsedMessage) {
+          emitNewMessage(sessionId, parsedMessage);
+        }
+      }
+    });
+  }
+
+  /**
    * Cancel current session processing
    */
   async cancelSession(sessionId: string): Promise<void> {

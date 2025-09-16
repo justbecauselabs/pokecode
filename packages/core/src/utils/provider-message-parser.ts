@@ -1,4 +1,5 @@
 import { type Message, PokeCodeUserMessageSchema } from '@pokecode/types';
+import { z } from 'zod';
 import type { SessionMessage } from '../database/schema-sqlite/session_messages';
 import { parseClaudeDbMessage } from './claude-code-message-parser';
 import { parseCodexDbMessage } from './codex-message-parser';
@@ -7,6 +8,28 @@ export function parseDbMessageByProvider(
   dbMessage: SessionMessage,
   projectPath?: string,
 ): Message | null {
+  // Handle error rows stored by our system
+  if (dbMessage.type === 'error') {
+    try {
+      const data = dbMessage.contentData ? JSON.parse(dbMessage.contentData) : null;
+      const ErrorMessageSchema = z.object({ message: z.string() });
+      const msg = ErrorMessageSchema.safeParse(data);
+      const content = msg.success ? msg.data.message : typeof data === 'string' ? data : 'An error occurred.';
+      return {
+        id: dbMessage.id,
+        type: 'error',
+        data: { message: content },
+        parentToolUseId: null,
+      };
+    } catch {
+      return {
+        id: dbMessage.id,
+        type: 'error',
+        data: { message: 'An error occurred.' },
+        parentToolUseId: null,
+      };
+    }
+  }
   // First, handle PokéCode canonical user input messages regardless of provider
   try {
     if (dbMessage.contentData) {
