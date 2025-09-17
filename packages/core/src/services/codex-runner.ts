@@ -1,5 +1,5 @@
-import { type CodexSDKMessage, CodexSDKMessageSchema } from '@pokecode/types';
 import { createId } from '@paralleldrive/cuid2';
+import { type CodexSDKMessage, CodexSDKMessageSchema } from '@pokecode/types';
 import type { Subprocess } from 'bun';
 import { getConfig } from '../config';
 import { waitForSessionIdForPrompt } from '../utils/codex-history';
@@ -95,7 +95,7 @@ export class CodexRunner implements AgentRunner {
         codexCliPath,
         projectPath: this.options.projectPath,
         resume: !!lastProviderSessionId,
-      resumeSessionId: lastProviderSessionId ?? null,
+        resumeSessionId: lastProviderSessionId ?? null,
         marker: markerId,
       },
       'Running Codex CLI',
@@ -170,13 +170,13 @@ export class CodexRunner implements AgentRunner {
           // If we don't have a provider session id yet, block and get it now
           if (providerSessionId === null && markerText) {
             const id = await waitForSessionIdForPrompt(markerText, {
-              sinceTs: spawnedAtSec,
               timeoutMs: 5_000,
               pollIntervalMs: 300,
             });
             if (!id) {
               const err = 'Timed out waiting for Codex session id';
               logger.error({ sessionId: this.options.sessionId }, err);
+              this.abort();
               throw new Error(err);
             }
             providerSessionId = id;

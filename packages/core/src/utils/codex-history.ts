@@ -1,82 +1,104 @@
 import { z } from 'zod';
+import path from 'node:path';
+import { access } from 'node:fs/promises';
 import { getHomeDirectory, joinPath } from './file';
 import { createChildLogger } from './logger';
 
 const logger = createChildLogger('codex-history');
 
-const HistoryEntrySchema = z.object({
-  session_id: z.string(),
-  ts: z.number().int(),
-  text: z.string(),
+const SessionMetaSchema = z.object({
+  payload: z.object({ id: z.string() }),
 });
-type HistoryEntry = z.infer<typeof HistoryEntrySchema>;
 
-export function getCodexHistoryPath(): string {
-  return joinPath(getHomeDirectory(), '.codex', 'history.jsonl');
+export function getCodexSessionsRoot(): string {
+  return joinPath(getHomeDirectory(), '.codex', 'sessions');
+}
+
+function extractSessionIdFromFilename(filePath: string): string | null {
+  const base = path.basename(filePath);
+  const match = base.match(/rollout-[^]+-([0-9a-fA-F-]{36})\.jsonl$/);
+  return match ? match[1] ?? null : null;
+}
+
+async function listSessionFiles(rootDir: string): Promise<string[]> {
+  try {
+    await access(rootDir);
+  } catch {
+    return [];
+  }
+
+  const glob = new Bun.Glob('**/*.jsonl');
+  const files = Array.from(glob.scanSync({ cwd: rootDir }));
+  files.sort();
+  return files.map((relativePath) => joinPath(rootDir, relativePath));
 }
 
 async function findSessionIdByMarker(params: {
   marker: string;
-  sinceTs: number;
-  filePath: string;
+  rootDir: string;
+  maxFiles?: number;
 }): Promise<string | null> {
-  const { marker, sinceTs, filePath } = params;
-  const file = Bun.file(filePath);
-  if (!(await file.exists())) return null;
+  const { marker, rootDir, maxFiles = 200 } = params;
+  const files = await listSessionFiles(rootDir);
+  if (files.length === 0) return null;
 
-  const content = await file.text();
-  if (content.trim().length === 0) return null;
-
-  const lines = content.split(/\r?\n/);
-  for (let i = lines.length - 1; i >= 0; i--) {
-    const line = lines[i];
-    if (line.length === 0) continue;
-    if (!line.includes(marker)) continue;
+  const sliceStart = Math.max(files.length - maxFiles, 0);
+  for (let i = files.length - 1; i >= sliceStart; i--) {
+    const filePath = files[i];
     try {
-      const parsed = HistoryEntrySchema.parse(JSON.parse(line) as unknown);
-      if (parsed.ts < sinceTs) continue;
-      return parsed.session_id;
+      const content = await Bun.file(filePath).text();
+      if (!content.includes(marker)) continue;
+      const sessionId = extractSessionIdFromFilename(filePath);
+      if (sessionId) return sessionId;
+
+      // Fallback: attempt to parse first line for session id
+      const firstLine = content.split(/\r?\n/).find((line) => line.length > 0);
+      if (firstLine) {
+        try {
+          const parsed = JSON.parse(firstLine) as unknown;
+          const schemaResult = SessionMetaSchema.safeParse(parsed);
+          if (schemaResult.success) return schemaResult.data.payload.id;
+        } catch {
+          // ignore parse errors, continue scanning
+        }
+      }
     } catch (error) {
       logger.warn(
-        { error: error instanceof Error ? error.message : String(error), line },
-        'Failed to parse Codex history line',
+        { filePath, error: error instanceof Error ? error.message : String(error) },
+        'Failed to read Codex session file',
       );
     }
   }
+
   return null;
 }
 
 export async function waitForSessionIdForPrompt(
   marker: string,
   options: {
-    sinceTs?: number;
     timeoutMs?: number;
     pollIntervalMs?: number;
-    filePath?: string;
+    sessionsDir?: string;
   } = {},
 ): Promise<string | null> {
   const timeoutMs = options.timeoutMs ?? 15_000;
   const pollIntervalMs = options.pollIntervalMs ?? 400;
+  const sessionsDir = options.sessionsDir ?? getCodexSessionsRoot();
   const deadline = Date.now() + timeoutMs;
-  const filePath = options.filePath ?? getCodexHistoryPath();
-  const sinceTs = options.sinceTs ?? 0;
 
   while (Date.now() < deadline) {
-    try {
-      const sessionId = await findSessionIdByMarker({ marker, sinceTs, filePath });
-      if (sessionId) {
-        logger.info({ marker, sessionId }, 'Found Codex session id');
-        return sessionId;
-      }
-    } catch (error) {
-      logger.warn(
-        { error: error instanceof Error ? error.message : String(error) },
-        'Error reading Codex history file',
-      );
+    const sessionId = await findSessionIdByMarker({
+      marker,
+      rootDir: sessionsDir,
+    });
+    if (sessionId) {
+      logger.info({ marker, sessionId }, 'Found Codex session id');
+      return sessionId;
     }
+
     await Bun.sleep(pollIntervalMs);
   }
 
-  logger.warn({ timeoutMs, sinceTs, marker }, 'Timeout waiting for Codex session id');
+  logger.warn({ marker, timeoutMs }, 'Timeout waiting for Codex session id');
   return null;
 }

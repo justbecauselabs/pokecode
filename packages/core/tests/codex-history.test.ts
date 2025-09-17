@@ -1,125 +1,131 @@
-import { describe, it, expect } from 'bun:test';
+import { describe, it, expect, beforeEach, afterEach } from 'bun:test';
 import os from 'node:os';
-import path from 'node:path';
+import { join } from 'node:path';
+import { mkdtemp, mkdir, rm } from 'node:fs/promises';
+import { dirname } from 'node:path';
 import { waitForSessionIdForPrompt } from '../src/utils/codex-history';
 
-function tmpHistoryPath(suffix: string): string {
-  return path.join(os.tmpdir(), `codex-history-test-${suffix}.jsonl`);
-}
+let sessionsDir: string;
 
-async function writeHistory(filePath: string, entries: Array<{ session_id: string; ts: number; text: string }>): Promise<void> {
-  const payload = entries.map((e) => JSON.stringify(e)).join('\n') + (entries.length > 0 ? '\n' : '');
-  await Bun.write(filePath, payload);
+async function createSessionFile(params: {
+  relativePath: string;
+  lines: string[];
+}): Promise<void> {
+  const fullPath = join(sessionsDir, params.relativePath);
+  await mkdir(dirname(fullPath), { recursive: true });
+  await Bun.write(fullPath, `${params.lines.join('\n')}\n`);
 }
 
 describe('waitForSessionIdForPrompt', () => {
-  it('resolves when the prompt appears within timeout', async () => {
-    const filePath = tmpHistoryPath('appears');
-    await writeHistory(filePath, []);
+  beforeEach(async () => {
+    sessionsDir = await mkdtemp(join(os.tmpdir(), 'codex-sessions-test-'));
+  });
 
+  afterEach(async () => {
+    await rm(sessionsDir, { recursive: true, force: true });
+  });
+
+  it('resolves when the marker appears within timeout', async () => {
     const marker = 'Ignore this id: marker-appears';
-    const nowSec = Math.floor(Date.now() / 1000);
-    const sessionId = 'test-session-1';
+    const sessionId = '11111111-1111-4111-8111-111111111111';
 
-    // Schedule append after a short delay with additional logging content
     setTimeout(async () => {
-      const logWrapped = `LOG START\n${marker}\nLOG END`;
-      await writeHistory(filePath, [
-        { session_id: sessionId, ts: nowSec + 1, text: logWrapped },
-      ]);
+      await createSessionFile({
+        relativePath: `2025/09/16/rollout-2025-09-16T12-00-00-${sessionId}.jsonl`,
+        lines: [
+          JSON.stringify({ timestamp: '2025-09-16T12:00:00Z', marker: false }),
+          `INFO: logs\n${marker}`,
+        ],
+      });
     }, 50);
 
     const found = await waitForSessionIdForPrompt(marker, {
-      sinceTs: nowSec,
+      sessionsDir,
       timeoutMs: 2_000,
       pollIntervalMs: 20,
-      filePath,
     });
 
     expect(found).toBe(sessionId);
   });
 
-  it('ignores entries older than sinceTs and resolves with a newer one', async () => {
-    const filePath = tmpHistoryPath('since');
+  it('uses the newest session file when multiple match', async () => {
     const marker = 'Ignore this id: find-later';
-    const nowSec = Math.floor(Date.now() / 1000);
+    const oldSession = '22222222-2222-4222-8222-222222222222';
+    const newSession = '33333333-3333-4333-8333-333333333333';
 
-    // Write an older matching entry
-    await writeHistory(filePath, [
-      { session_id: 'old-one', ts: nowSec - 10, text: `prefix ${marker} suffix` },
-    ]);
+    await createSessionFile({
+      relativePath: `2025/09/15/rollout-2025-09-15T11-00-00-${oldSession}.jsonl`,
+      lines: ['old file without marker'],
+    });
 
-    // Append a new valid entry shortly after
-    const newId = 'new-one';
     setTimeout(async () => {
-      const current = await Bun.file(filePath).text();
-      const extra = JSON.stringify({
-        session_id: newId,
-        ts: nowSec + 1,
-        text: `event::${marker}::done`,
+      await createSessionFile({
+        relativePath: `2025/09/16/rollout-2025-09-16T12-00-00-${newSession}.jsonl`,
+        lines: [`new file ${marker}`],
       });
-      await Bun.write(filePath, `${current}${extra}\n`);
     }, 50);
 
     const found = await waitForSessionIdForPrompt(marker, {
-      sinceTs: nowSec - 5,
+      sessionsDir,
       timeoutMs: 2_000,
       pollIntervalMs: 20,
-      filePath,
     });
 
-    expect(found).toBe(newId);
+    expect(found).toBe(newSession);
   });
 
-  it('normalizes CRLF in stored history against LF prompt', async () => {
-    const filePath = tmpHistoryPath('crlf');
+  it('handles CRLF line endings when searching for the marker', async () => {
     const marker = 'Ignore this id: crlf-test';
-    const crlfText = `Line A\r\nLine B\r\n${marker}`;
-    const nowSec = Math.floor(Date.now() / 1000);
-    const id = 'crlf-id';
-    await writeHistory(filePath, [
-      { session_id: id, ts: nowSec, text: crlfText },
-    ]);
+    const sessionId = '44444444-4444-4444-8444-444444444444';
+
+    await createSessionFile({
+      relativePath: `2025/09/16/rollout-2025-09-16T13-00-00-${sessionId}.jsonl`,
+      lines: [`Line A\r\nLine B\r\n${marker}`],
+    });
 
     const found = await waitForSessionIdForPrompt(marker, {
-      sinceTs: nowSec - 1,
-      timeoutMs: 500,
+      sessionsDir,
+      timeoutMs: 1_000,
       pollIntervalMs: 20,
-      filePath,
     });
-    expect(found).toBe(id);
+
+    expect(found).toBe(sessionId);
   });
 
-  it('returns null when prompt does not appear before timeout', async () => {
-    const filePath = tmpHistoryPath('timeout');
-    await writeHistory(filePath, []);
+  it('returns null when the marker never appears', async () => {
     const marker = 'Ignore this id: never';
-    const nowSec = Math.floor(Date.now() / 1000);
+
+    await createSessionFile({
+      relativePath: '2025/09/16/rollout-2025-09-16T10-00-00-aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa.jsonl',
+      lines: ['some other content'],
+    });
+
     const found = await waitForSessionIdForPrompt(marker, {
-      sinceTs: nowSec,
+      sessionsDir,
       timeoutMs: 200,
       pollIntervalMs: 20,
-      filePath,
     });
+
     expect(found).toBeNull();
   });
 
-  it('matches prompt embedded within operational logs', async () => {
-    const filePath = tmpHistoryPath('log-wrap');
-    const nowSec = Math.floor(Date.now() / 1000);
+  it('extracts the session id from the filename when the marker is inside logs', async () => {
     const marker = 'Ignore this id: inspect';
-    const sessionId = 'log-session';
+    const sessionId = '55555555-5555-4555-8555-555555555555';
 
-    const logEntry = `INFO: Running Codex CLI\nargs: [\n  "--json",\n  "prompt text"\n]\nINFO: done\n${marker}`;
-    await writeHistory(filePath, [
-      { session_id: sessionId, ts: nowSec + 1, text: logEntry },
-    ]);
+    await createSessionFile({
+      relativePath: `2025/09/16/rollout-2025-09-16T14-00-00-${sessionId}.jsonl`,
+      lines: [
+        'INFO: Running Codex CLI',
+        'args: [...]',
+        `marker -> ${marker}`,
+      ],
+    });
 
     const found = await waitForSessionIdForPrompt(marker, {
-      sinceTs: nowSec,
+      sessionsDir,
       timeoutMs: 1_000,
       pollIntervalMs: 20,
-      filePath,
     });
 
     expect(found).toBe(sessionId);
