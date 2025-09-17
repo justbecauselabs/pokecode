@@ -1,4 +1,4 @@
-import { getConfig, initDatabase } from '@pokecode/core';
+import { closeDatabase, getConfig, initDatabase, sqliteQueueService } from '@pokecode/core';
 import { AgentRunnerWorker, createServer, getWorker, setWorker } from './index';
 
 async function start(): Promise<void> {
@@ -8,17 +8,38 @@ async function start(): Promise<void> {
   await initDatabase({ runMigrations: true });
 
   const fastify = await createServer();
+  let isShuttingDown = false;
 
   const shutdown = async (signal: string) => {
+    if (isShuttingDown) return;
+    isShuttingDown = true;
     try {
       fastify.log.info({ signal }, 'Shutting down...');
+
+      const forceExitTimer = setTimeout(() => {
+        fastify.log.error({ signal }, 'Forced shutdown after timeout');
+        process.exit(1);
+      }, 5000);
+      forceExitTimer.unref();
+
       // Stop worker first if present
       const worker = getWorker();
       if (worker) {
         await worker.shutdown();
         setWorker(null);
       }
+
+      try {
+        await sqliteQueueService.cleanup();
+      } catch (cleanupError) {
+        fastify.log.warn({ cleanupError }, 'Queue cleanup during shutdown failed');
+      }
+
       await fastify.close();
+      closeDatabase();
+
+      clearTimeout(forceExitTimer);
+      fastify.log.info('Shutdown complete');
       process.exit(0);
     } catch (err) {
       fastify.log.error({ err }, 'Error during shutdown');
