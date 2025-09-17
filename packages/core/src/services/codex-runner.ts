@@ -109,9 +109,6 @@ export class CodexRunner implements AgentRunner {
     });
     this.proc = proc;
 
-    // Record spawn time in seconds to filter history.jsonl
-    const spawnedAtSec = Math.floor(Date.now() / 1000);
-
     // Abort handling
     const onAbort = () => {
       if (this.proc) {
@@ -127,24 +124,44 @@ export class CodexRunner implements AgentRunner {
 
     logger.info({ sessionId: this.options.sessionId }, 'Codex runner initialized');
 
-    // Log stderr in background
-    (async () => {
+    let stderrError: Error | null = null;
+    const stderrMonitor = (async () => {
       try {
-        if (proc.stderr) {
-          const reader = proc.stderr.getReader();
-          const decoder = new TextDecoder();
+        if (!proc.stderr) return;
+        const reader = proc.stderr.getReader();
+        const decoder = new TextDecoder();
+        try {
           while (true) {
             const { value, done } = await reader.read();
             if (done) break;
-            logger.debug(
-              { sessionId: this.options.sessionId, stderr: decoder.decode(value) },
-              'codex stderr',
-            );
+            if (value) {
+              const text = decoder.decode(value).trim();
+              if (text.length > 0) {
+                logger.error(
+                  { sessionId: this.options.sessionId, stderr: text },
+                  'Codex CLI wrote to stderr',
+                );
+                stderrError = new Error(`Codex CLI emitted stderr output: ${text}`);
+                try {
+                  proc.kill();
+                } catch {
+                  /* ignore */
+                }
+                break;
+              }
+            }
           }
+        } finally {
+          reader.releaseLock();
         }
-      } catch {
-        logger.error({ sessionId: this.options.sessionId }, 'Codex stderr error');
-        /* ignore */
+      } catch (error) {
+        logger.error(
+          {
+            sessionId: this.options.sessionId,
+            error: error instanceof Error ? error.message : String(error),
+          },
+          'Codex stderr monitor failed',
+        );
       }
     })();
 
@@ -158,6 +175,8 @@ export class CodexRunner implements AgentRunner {
 
       for await (const line of readLines(proc.stdout)) {
         try {
+          if (stderrError) throw stderrError;
+
           const parsed = JSON.parse(line) as unknown;
           const ok = CodexSDKMessageSchema.safeParse(parsed);
           if (!ok.success) {
@@ -185,17 +204,24 @@ export class CodexRunner implements AgentRunner {
           // Stream message with the captured providerSessionId
           yield { provider: 'codex-cli', providerSessionId, message };
         } catch (e) {
+          if (stderrError) throw stderrError;
           logger.warn(
             { error: e instanceof Error ? e.message : String(e) },
             'Codex JSONL parse failure',
           );
         }
       }
+      if (stderrError) throw stderrError;
       logger.info({ sessionId: this.options.sessionId, count }, 'Codex stream complete');
     } finally {
       params.abortController.signal.removeEventListener('abort', onAbort);
       this.isProcessing = false;
       this.proc = null;
+      try {
+        await stderrMonitor;
+      } catch {
+        /* ignore */
+      }
     }
   }
 
@@ -204,7 +230,7 @@ export class CodexRunner implements AgentRunner {
       try {
         this.proc.kill();
       } catch {
-        /* ignore */
+        logger.error({ sessionId: this.options.sessionId }, 'Codex CLI kill failed');
       }
       this.isProcessing = false;
     }
