@@ -5,7 +5,7 @@ import type {
   ListSessionsQuery,
   UpdateSessionRequest,
 } from '@pokecode/types';
-import { and, desc, eq, isNotNull, sql } from 'drizzle-orm';
+import { and, desc, eq, gte, isNotNull, sql } from 'drizzle-orm';
 import { db } from '../database';
 import { sessions } from '../database/schema-sqlite';
 import { NotFoundError, ValidationError } from '../types';
@@ -74,10 +74,16 @@ export class SessionService {
     // Always enforce a maximum limit of 20 sessions
     const effectiveLimit = Math.min(limit, 20);
 
+    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
     // Build where clause - only sessions with at least one message
     const whereClause = options.state
-      ? and(isNotNull(sessions.lastMessageSentAt), eq(sessions.state, options.state))
-      : and(isNotNull(sessions.lastMessageSentAt));
+      ? and(
+          isNotNull(sessions.lastMessageSentAt),
+          gte(sessions.lastMessageSentAt, twentyFourHoursAgo),
+          eq(sessions.state, options.state),
+        )
+      : and(isNotNull(sessions.lastMessageSentAt), gte(sessions.lastMessageSentAt, twentyFourHoursAgo));
 
     // Get total count
     const countResult = await db

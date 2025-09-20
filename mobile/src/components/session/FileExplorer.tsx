@@ -16,8 +16,6 @@ interface DirectoryItemProps {
 }
 
 const DirectoryItemComponent = memo(({ item, onPress }: DirectoryItemProps) => {
-  const isGitRepo = item.isGitRepository;
-
   return (
     <Pressable
       onPress={() => onPress(item.path)}
@@ -28,11 +26,6 @@ const DirectoryItemComponent = memo(({ item, onPress }: DirectoryItemProps) => {
           <Text className="text-base font-semibold text-foreground font-mono mr-2">
             📁 {item.name}
           </Text>
-          {isGitRepo && (
-            <View className="bg-primary px-2 py-1 rounded">
-              <Text className="text-primary-foreground text-xs font-medium font-mono">Git</Text>
-            </View>
-          )}
         </View>
       </View>
       <Text className="text-muted-foreground text-lg font-mono">›</Text>

@@ -1,0 +1,8 @@
+{
+  "ignore_dirs": [
+    "mobile/ios/build",
+    "mobile/android/build",
+    "mobile/.expo",
+    "tmp_scripts"
+  ]
+}

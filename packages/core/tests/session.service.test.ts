@@ -8,6 +8,9 @@ import {
   createTestSessions,
 } from './test-setup';
 import path from 'node:path';
+import { db } from '../src/database';
+import { sessions } from '../src/database/schema-sqlite';
+import { eq } from 'drizzle-orm';
 
 describe('SessionService Integration Tests', () => {
   beforeEach(async () => {
@@ -154,6 +157,26 @@ describe('SessionService Integration Tests', () => {
       expect(page1.sessions).toHaveLength(2);
       expect(page2.sessions).toHaveLength(1);
       expect(page1.sessions[0].id).not.toBe(page2.sessions[0]?.id);
+    });
+
+    it('should exclude sessions without messages in the last 24 hours', async () => {
+      const targetSessionId = sessionIds[0];
+      if (!targetSessionId) {
+        throw new Error('Expected at least one session for filtering test');
+      }
+
+      const staleTimestamp = new Date(Date.now() - 26 * 60 * 60 * 1000);
+
+      await db
+        .update(sessions)
+        .set({ lastMessageSentAt: staleTimestamp })
+        .where(eq(sessions.id, targetSessionId));
+
+      const result = await sessionService.listSessions();
+
+      expect(result.sessions.some((session) => session.id === targetSessionId)).toBe(false);
+      expect(result.sessions).toHaveLength(2);
+      expect(result.total).toBe(2);
     });
 
     it('should return all sessions', async () => {

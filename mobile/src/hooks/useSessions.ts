@@ -16,15 +16,19 @@ export function useSessions() {
     queryKey: SESSIONS_QUERY_KEY,
     queryFn: async (): Promise<Session[]> => {
       const response = await apiClient.getSessions();
+      const cutoffTimestamp = Date.now() - 24 * 60 * 60 * 1000;
       // Server returns only sessions with lastMessageSentAt and orders by it desc.
-      // Keep a defensive client-side filter and stable sort by that field only.
+      // Keep a defensive client-side filter that mirrors the backend constraint.
       return response.sessions
-        .filter((s) => !!s.lastMessageSentAt)
+        .filter(
+          (session): session is Session & { lastMessageSentAt: string } =>
+            typeof session.lastMessageSentAt === 'string',
+        )
+        .filter((session) => new Date(session.lastMessageSentAt).getTime() >= cutoffTimestamp)
         .slice()
         .sort(
           (a, b) =>
-            new Date(b.lastMessageSentAt || 0).getTime() -
-            new Date(a.lastMessageSentAt || 0).getTime(),
+            new Date(b.lastMessageSentAt).getTime() - new Date(a.lastMessageSentAt).getTime(),
         );
     },
     staleTime: 30 * 1000, // Consider data fresh for 30 seconds

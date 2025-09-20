@@ -112,14 +112,6 @@ export const MessageList: React.FC<MessageListProps> = ({
       return true; // Keep all other messages
     });
 
-    // Debug logging
-    console.log('MessageList processing:', {
-      totalMessages: messages.length,
-      filteredMessages: filteredMessages.length,
-      toolIds,
-      toolResultsKeys: Object.keys(toolResultsDict),
-    });
-
     return {
       finalMessages: filteredMessages,
       toolResults: toolResultsDict,
@@ -139,8 +131,8 @@ export const MessageList: React.FC<MessageListProps> = ({
   // Do not imperatively scroll here; v2's MVCP handles anchoring when has data
 
   const renderMessage = ({ item, index }: { item: Message; index: number }) => {
-    const nextMessage = finalMessages[index + 1];
-    const shouldShowHeader = !nextMessage || nextMessage.type !== item.type;
+    const previousMessage = finalMessages[index - 1];
+    const shouldShowHeader = !previousMessage || previousMessage.type !== item.type;
 
     return (
       <View>
