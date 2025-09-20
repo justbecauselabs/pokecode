@@ -4,13 +4,14 @@
 process.env.POKECODE_TUI = '1';
 process.env.POKECODE_QUIET = '1';
 
+import packageJson from '../package.json' assert { type: 'json' };
 import { program } from 'commander';
 
 // Normal CLI mode
 
 const pkg = {
-  version: process.env.npm_package_version || '0.1.0',
-  name: 'pokecode',
+  name: packageJson.name,
+  version: packageJson.version,
 };
 
 program

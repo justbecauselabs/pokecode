@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Pokécode",
+    "name": "Pok\u00e9code",
     "slug": "pokecode",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -16,8 +16,10 @@
       "**/*"
     ],
     "ios": {
+      "icon": "./assets/app-icon.png",
       "supportsTablet": true,
       "bundleIdentifier": "com.justbecauselabs.pokecode",
+      "buildNumber": "2",
       "config": {
         "usesNonExemptEncryption": false
       },
