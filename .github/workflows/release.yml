@@ -41,9 +41,7 @@ jobs:
             fi
             RELEASE_VERSION="$STRIPPED_VERSION"
           else
-            IFS='.' read -r MAJOR MINOR PATCH <<EOF
-$CURRENT_VERSION
-EOF
+            IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT_VERSION"
             if [ -z "$MAJOR" ] || [ -z "$MINOR" ] || [ -z "$PATCH" ]; then
               echo "Unable to parse current version: $CURRENT_VERSION"
               exit 1
