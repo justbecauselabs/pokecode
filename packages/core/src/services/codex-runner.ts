@@ -76,15 +76,15 @@ export class CodexRunner implements AgentRunner {
     const promptWithMarker = markerText ? `${params.prompt}\n\n${markerText}` : params.prompt;
 
     const args = [
-      '--yolo',
+      '-m',
+      'gpt-5-codex',
       '-c',
       '"model_reasoning_effort=high"',
       '--search',
-      '-m',
-      'gpt-5',
       'exec',
-      ...(lastProviderSessionId ? (['resume', lastProviderSessionId] as const) : ([] as const)),
       '--json',
+      '--dangerously-bypass-approvals-and-sandbox',
+      ...(lastProviderSessionId ? (['resume', lastProviderSessionId] as const) : ([] as const)),
       promptWithMarker,
     ];
 

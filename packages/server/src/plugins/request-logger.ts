@@ -97,13 +97,7 @@ const requestLoggerPlugin: FastifyPluginAsync = async (fastify) => {
       // For the sessions create endpoint, include a compact snapshot of key fields
       let bodySnapshot: Json | undefined;
       if (body && Object.prototype.toString.call(body) === '[object Object]') {
-        const { provider, projectPath } = body as Record<string, Json>;
-        bodySnapshot = {
-          provider: typeof provider === 'string' ? provider : `[${typeof provider}]`,
-          projectPath: typeof projectPath === 'string' ? projectPath : `[${typeof projectPath}]`,
-          // keep a fully sanitized version as well (truncated/deep-sanitized)
-          full: sanitize(body),
-        };
+        bodySnapshot = sanitize(body);
       } else if (body !== undefined) {
         bodySnapshot = `[${typeof body}]`;
       }

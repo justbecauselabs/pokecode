@@ -7,8 +7,6 @@ import {
   ListDevicesResponseSchema,
   type ListSessionsResponse,
   ListSessionsResponseSchema,
-  type QueueMetrics,
-  QueueMetricsSchema,
 } from '@pokecode/api';
 import { getConfig } from '@pokecode/core';
 import chalk from 'chalk';
@@ -25,7 +23,6 @@ type DashboardState = {
   health: Nullable<HealthResponse>;
   config: Nullable<ConfigStatus>;
   devices: Nullable<ListDevicesResponse>;
-  queue: Nullable<QueueMetrics>;
   sessions: Nullable<ListSessionsResponse>;
   logFilePath: string | null;
   dbFilePath: string | null;
@@ -100,25 +97,22 @@ function drawFrame(params: { serverUrl: string; mode: Mode; state: DashboardStat
   const h = params.state.health;
   const cfg = params.state.config;
   const db = h ? serviceToStatus(h.services.database) : 'unknown';
-  const q = h ? serviceToStatus(h.services.queue) : 'unknown';
   const api = healthToStatus(h);
-  const worker = 'unknown' as Status; // refined later via /api/worker if needed
 
   const tag = (label: string, s: Status) => `${statusColor(s)('●')} ${label}`;
   const cfgTag = (label: string, ok: boolean | undefined) =>
     `${statusColor(boolToStatus(ok))('●')} ${label}`;
 
-  const healthLine = [tag('API', api), tag('DB', db), tag('Queue', q), tag('Worker', worker)];
-  const configLine = cfg
+  const statusLine = cfg
     ? [
+        tag('API', api),
+        tag('DB', db),
         cfgTag('ClaudeCode', cfg.claudeCode.exists),
         cfgTag('CodexCLI', cfg.codexCli.exists),
-        `LogLevel: ${cfg.logLevel}`,
       ]
-    : ['Config: —'];
+    : [tag('API', api), tag('DB', db), 'Config: —'];
 
-  lines.push(` ${healthLine.join('   ')}`);
-  lines.push(` ${configLine.join('   ')}`);
+  lines.push(` ${statusLine.join('   ')}`);
 
   // Paths (log and database)
   const trunc = (s: string, max: number) => (s.length > max ? `${s.slice(0, max - 1)}…` : s);
@@ -195,16 +189,6 @@ function drawFrame(params: { serverUrl: string; mode: Mode; state: DashboardStat
   }
   if (sShow.length === 0) lines.push(` ${chalk.gray('no recently updated sessions')}`);
 
-  // Queue
-  if (params.state.queue) {
-    const qm = params.state.queue;
-    lines.push('');
-    lines.push(chalk.bold(' Queue Metrics'));
-    lines.push(
-      ` waiting: ${qm.waiting}   active: ${qm.active}   completed: ${qm.completed}   failed: ${qm.failed}   delayed: ${qm.delayed}   paused: ${qm.paused}   total: ${qm.total}`,
-    );
-  }
-
   // Logs section
   lines.push('');
   lines.push(chalk.bold(' Logs'));
@@ -212,7 +196,7 @@ function drawFrame(params: { serverUrl: string; mode: Mode; state: DashboardStat
 
   // Footer
   lines.push('');
-  const foot = ` q Quit  r Restart worker  (${params.mode})`;
+  const foot = ` q Quit  (${params.mode})`;
   lines.push(chalk.gray(foot));
 
   if (params.state.statusMessage) {
@@ -240,7 +224,6 @@ export function runDashboard(params: { serverUrl: string; mode: Mode }): void {
     health: undefined,
     config: undefined,
     devices: undefined,
-    queue: undefined,
     sessions: undefined,
     logFilePath: null,
     dbFilePath: null,
@@ -266,14 +249,13 @@ export function runDashboard(params: { serverUrl: string; mode: Mode }): void {
 
   const poll = async () => {
     const base = params.serverUrl;
-    const [health, config, devices, queue, sessions] = await Promise.all([
+    const [health, config, devices, sessions] = await Promise.all([
       safeGet<HealthResponse>(`${base}/health`, HealthResponseSchema),
       safeGet<ConfigStatus>(`${base}/health/config`, ConfigStatusSchema),
       safeGet<ListDevicesResponse>(
         `${base}/api/connect/devices?activeWithinSeconds=3600&limit=20`,
         ListDevicesResponseSchema,
       ),
-      safeGet<QueueMetrics>(`${base}/api/queue/metrics`, QueueMetricsSchema),
       safeGet<ListSessionsResponse>(
         `${base}/api/sessions?state=active&limit=50`,
         ListSessionsResponseSchema,
@@ -282,7 +264,6 @@ export function runDashboard(params: { serverUrl: string; mode: Mode }): void {
     state.health = health;
     state.config = config;
     state.devices = devices;
-    state.queue = queue;
     state.sessions = sessions;
     redraw();
   };
@@ -300,23 +281,6 @@ export function runDashboard(params: { serverUrl: string; mode: Mode }): void {
     if (key === '\u0003' /* Ctrl+C */ || key === 'q' || key === 'Q' || key === '\u001b') {
       cleanup();
       process.exit(0);
-      return;
-    }
-    if (key === 'r' || key === 'R') {
-      void (async () => {
-        try {
-          const res = await fetch(`${params.serverUrl}/api/worker/restart`, { method: 'POST' });
-          if (!res.ok) throw new Error(`HTTP ${res.status}`);
-          state.statusMessage = 'Worker restarted';
-        } catch (_e) {
-          state.statusMessage = `Worker restart failed`;
-        }
-        setTimeout(() => {
-          state.statusMessage = undefined;
-          redraw();
-        }, 2000);
-        redraw();
-      })();
       return;
     }
   };
