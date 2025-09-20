@@ -30,35 +30,12 @@ jobs:
         id: determine_version
         run: |
           cd packages/cli
-          CURRENT_VERSION=$(bun exec jq -r '.version' package.json)
-          INPUT_VERSION_RAW="${{ github.event.inputs.semver }}"
-          INPUT_VERSION=$(echo "$INPUT_VERSION_RAW" | tr -d '[:space:]')
-          if [ -n "$INPUT_VERSION" ]; then
-            STRIPPED_VERSION=${INPUT_VERSION#v}
-            if [ -z "$STRIPPED_VERSION" ]; then
-              echo "Provided semver is invalid: $INPUT_VERSION_RAW"
-              exit 1
-            fi
-            RELEASE_VERSION="$STRIPPED_VERSION"
-          else
-            IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT_VERSION"
-            if [ -z "$MAJOR" ] || [ -z "$MINOR" ] || [ -z "$PATCH" ]; then
-              echo "Unable to parse current version: $CURRENT_VERSION"
-              exit 1
-            fi
-            PATCH=$((10#$PATCH + 1))
-            RELEASE_VERSION="${MAJOR}.${MINOR}.${PATCH}"
-          fi
-          echo "release_version=$RELEASE_VERSION" >> "$GITHUB_OUTPUT"
-          echo "release_tag=v$RELEASE_VERSION" >> "$GITHUB_OUTPUT"
-          echo "previous_version=$CURRENT_VERSION" >> "$GITHUB_OUTPUT"
+          bun scripts/verbump.ts --semver "${{ github.event.inputs.semver }}" --github-output "$GITHUB_OUTPUT"
 
       - name: Update CLI version
         run: |
           cd packages/cli
-          # Update version in package.json
-          bun exec jq --arg version "${{ steps.determine_version.outputs.release_version }}" '.version = $version' package.json > package.json.tmp
-          mv package.json.tmp package.json
+          bun scripts/verbump.ts --semver "${{ steps.determine_version.outputs.release_version }}" --update-package --github-output /dev/null
           
       - name: Build CLI for Linux x64
         run: |
